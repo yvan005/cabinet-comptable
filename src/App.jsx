@@ -124,16 +124,12 @@ export default function App() {
 
   const [clients, setClients] = useState([]);
   const [echeances, setEcheances] = useState([]);
-  const [messages, setMessages] = useState([]);
   const [devisList, setDevisList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [showAddClient, setShowAddClient] = useState(false);
   const [showAddEcheance, setShowAddEcheance] = useState(false);
-  const [showAddMessage, setShowAddMessage] = useState(false);
 
-  const [selectedMsg, setSelectedMsg] = useState(null);
-  const [replyText, setReplyText] = useState("");
 
   const [devisLines, setDevisLines] = useState([{ mission: MISSIONS[0], qty: 1 }]);
   const [devisClient, setDevisClient] = useState("");
@@ -142,16 +138,14 @@ export default function App() {
 
   const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
   const [newEch, setNewEch] = useState({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
-  const [newMsg, setNewMsg] = useState({ de: "", client: "", contenu: "" });
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [c, e, m, d] = await Promise.all([
-      db.get("clients"), db.get("echeances"), db.get("messages"), db.get("devis"),
+    const [c, e, d] = await Promise.all([
+      db.get("clients"), db.get("echeances"), db.get("devis"),
     ]);
     setClients(Array.isArray(c) ? c : []);
     setEcheances(Array.isArray(e) ? e : []);
-    setMessages(Array.isArray(m) ? m : []);
     setDevisList(Array.isArray(d) ? d : []);
     setLoading(false);
   }, []);
@@ -181,17 +175,6 @@ export default function App() {
   const deleteEch = async (id) => { await db.delete("echeances", id); loadAll(); };
 
   // MESSAGES
-  const addMessage = async () => {
-    if (!newMsg.de || !newMsg.contenu) return;
-    await db.post("messages", { ...newMsg, heure: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }), lu: false });
-    setNewMsg({ de: "", client: "", contenu: "" });
-    setShowAddMessage(false); loadAll();
-  };
-  const markRead = async (msg) => {
-    if (!msg.lu) await db.patch("messages", msg.id, { lu: true });
-    setSelectedMsg(msg); loadAll();
-  };
-  const deleteMsg = async (id) => { await db.delete("messages", id); setSelectedMsg(null); loadAll(); };
 
   // DEVIS
   const totalHT = devisLines.reduce((s, l) => s + l.mission.prix * l.qty, 0);
@@ -206,7 +189,6 @@ export default function App() {
     alert(`Devis ${statut === "Brouillon" ? "enregistré" : "envoyé"} avec succès !`);
   };
 
-  const unreadCount = messages.filter(m => !m.lu).length;
   const urgentEch = echeances.filter(e => e.urgence === "haute" && !e.fait);
   const filteredClients = clients.filter(c => {
     const matchF = clientFilter === "Tous" || c.statut === clientFilter;
@@ -217,7 +199,6 @@ export default function App() {
   const kpis = [
     { label: "Clients actifs", value: clients.filter(c => c.statut === "Actif").length, delta: `${clients.length} au total`, color: "#1a5c9e", icon: ic.clients },
     { label: "Échéances", value: echeances.filter(e => !e.fait).length, delta: `${urgentEch.length} urgentes`, color: "#c17f2a", icon: ic.calendar },
-    { label: "Non lus", value: unreadCount, delta: `${messages.length} messages`, color: "#c0392b", icon: ic.message },
     { label: "Devis", value: devisList.length, delta: `${devisList.filter(d => d.statut === "Envoyé").length} envoyés`, color: "#1a7a4a", icon: ic.devis },
   ];
 
@@ -225,7 +206,6 @@ export default function App() {
     { id: "dashboard", label: "Tableau de bord", icon: ic.dashboard },
     { id: "clients",   label: "Clients",          icon: ic.clients },
     { id: "echeances", label: "Échéances",        icon: ic.calendar },
-    { id: "messages",  label: "Messagerie",       icon: ic.message, badge: unreadCount },
     { id: "devis",     label: "Devis",            icon: ic.devis },
     { id: "rapports",  label: "Rapports",         icon: ic.rapports },
     { id: "collab",    label: "Collaborateurs",   icon: ic.collab },
@@ -233,7 +213,7 @@ export default function App() {
     { id: "settings",  label: "Paramètres",       icon: ic.settings },
   ];
 
-  const pageTitle = { dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", messages: "Messagerie", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", settings: "Paramètres" }[page];
+  const pageTitle = { dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", settings: "Paramètres" }[page];
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
@@ -287,9 +267,9 @@ export default function App() {
           ))}
         </nav>
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "20px 20px 0", borderTop: "1px solid #1a3558" }}>
-          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#1a5c9e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13 }}>GL</div>
+          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#1a5c9e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13 }}>PW</div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#e2eaf4" }}>Guillaume Legrand</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#e2eaf4" }}>Pierre WILLA SOUMAI</div>
             <div style={{ fontSize: 11, color: "#6b8aaa" }}>Expert-comptable</div>
           </div>
         </div>
@@ -311,7 +291,7 @@ export default function App() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             
             <button onClick={loadAll} style={{ background: "#f5f8fc", border: "1px solid #e2eaf4", borderRadius: 8, padding: "7px 10px", cursor: "pointer", fontSize: 12, color: "#4a6d8c" }}>↻</button>
-            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#1a5c9e", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>GL</div>
+            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#1a5c9e", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>PW</div>
           </div>
         </header>
 
@@ -482,105 +462,6 @@ export default function App() {
               </div>
             )}
 
-            {/* ── MESSAGERIE ── */}
-            {page === "messages" && (
-              isMobile ? (
-                selectedMsg ? (
-                  <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 140px)" }}>
-                    <div style={{ ...S.card, padding: "12px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
-                      <button onClick={() => setSelectedMsg(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#1a5c9e", fontWeight: 700, fontSize: 20, padding: 0 }}>←</button>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>{selectedMsg.de}</div>
-                        <div style={{ fontSize: 11, color: "#6b8aaa" }}>{selectedMsg.client}</div>
-                      </div>
-                      <button onClick={() => deleteMsg(selectedMsg.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={14} stroke="#c0392b" /></button>
-                    </div>
-                    <div style={{ flex: 1, overflowY: "auto", padding: "0 0 16px" }}>
-                      <div style={{ background: "#f0f4fa", borderRadius: "4px 16px 16px 16px", padding: "14px 16px", fontSize: 14, color: "#1e3a57", lineHeight: 1.6 }}>{selectedMsg.contenu}</div>
-                    </div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <textarea placeholder="Votre réponse…" value={replyText} onChange={e => setReplyText(e.target.value)} style={{ flex: 1, border: "1px solid #87CEEB", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#1e3a57", background: "#ffffff", resize: "none", outline: "none", fontFamily: "inherit" }} rows={2} />
-                      <button onClick={() => setReplyText("")} style={{ width: 44, height: 44, borderRadius: 10, background: "#1a5c9e", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon d={ic.send} size={17} stroke="#fff" /></button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                      <span style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>Conversations ({messages.length})</span>
-                      <button onClick={() => setShowAddMessage(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouveau</button>
-                    </div>
-                    {messages.length === 0 && <div style={{ ...S.card, ...S.empty }}>Aucun message</div>}
-                    {messages.map(m => (
-                      <div key={m.id} onClick={() => markRead(m)} style={{ ...S.card, display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8, padding: "14px 16px", cursor: "pointer" }}>
-                        <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#e2eaf4", color: "#4a6d8c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>{m.de?.split(" ").map(w => w[0]).join("") || "?"}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <span style={{ fontSize: 14, fontWeight: m.lu ? 500 : 700, color: "#1e3a57" }}>{m.de}</span>
-                            <span style={{ fontSize: 11, color: "#8da4c0" }}>{m.heure}</span>
-                          </div>
-                          <div style={{ fontSize: 12, color: "#6b8aaa" }}>{m.client}</div>
-                          <div style={{ fontSize: 12, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.contenu?.substring(0, 50)}…</div>
-                        </div>
-                        {!m.lu && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1a5c9e", marginTop: 6, flexShrink: 0 }} />}
-                      </div>
-                    ))}
-                  </div>
-                )
-              ) : (
-                <div style={{ display: "flex", gap: 16, height: "calc(100vh - 140px)" }}>
-                  <div style={{ ...S.card, width: 300, flexShrink: 0, padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                    <div style={{ padding: "14px 16px", borderBottom: "1px solid #e8eef5", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontWeight: 700, fontSize: 13, color: "#1e3a57" }}>Conversations ({messages.length})</span>
-                      <button onClick={() => setShowAddMessage(true)} style={{ ...S.primaryBtn, padding: "5px 10px", fontSize: 11 }}><Icon d={ic.plus} size={12} stroke="#fff" /> Nouveau</button>
-                    </div>
-                    <div style={{ overflowY: "auto", flex: 1 }}>
-                      {messages.length === 0 && <div style={S.empty}>Aucun message</div>}
-                      {messages.map(m => (
-                        <div key={m.id} onClick={() => markRead(m)} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "12px 14px", cursor: "pointer", borderBottom: "1px solid #f5f8fc", background: selectedMsg?.id === m.id ? "#f0f6ff" : "transparent", borderLeft: selectedMsg?.id === m.id ? "3px solid #1a5c9e" : "3px solid transparent" }}>
-                          <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#e2eaf4", color: "#4a6d8c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{m.de?.split(" ").map(w => w[0]).join("") || "?"}</div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span style={{ fontSize: 13, fontWeight: m.lu ? 500 : 700, color: "#1e3a57" }}>{m.de}</span>
-                              <span style={{ fontSize: 11, color: "#8da4c0" }}>{m.heure}</span>
-                            </div>
-                            <div style={{ fontSize: 11, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.contenu?.substring(0, 40)}…</div>
-                          </div>
-                          {!m.lu && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1a5c9e", marginTop: 6, flexShrink: 0 }} />}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ ...S.card, flex: 1, display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}>
-                    {selectedMsg ? (
-                      <>
-                        <div style={{ padding: "16px 24px", borderBottom: "1px solid #e8eef5", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#e2eaf4", color: "#4a6d8c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700 }}>{selectedMsg.de?.split(" ").map(w => w[0]).join("") || "?"}</div>
-                            <div>
-                              <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>{selectedMsg.de}</div>
-                              <div style={{ fontSize: 12, color: "#6b8aaa" }}>{selectedMsg.client} · {selectedMsg.heure}</div>
-                            </div>
-                          </div>
-                          <button onClick={() => deleteMsg(selectedMsg.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={15} stroke="#c0392b" /></button>
-                        </div>
-                        <div style={{ flex: 1, padding: 24, overflowY: "auto" }}>
-                          <div style={{ background: "#f0f4fa", borderRadius: "4px 16px 16px 16px", padding: "14px 18px", fontSize: 14, color: "#1e3a57", lineHeight: 1.6, maxWidth: 520 }}>{selectedMsg.contenu}</div>
-                        </div>
-                        <div style={{ padding: "16px 24px", borderTop: "1px solid #e8eef5", display: "flex", gap: 12 }}>
-                          <textarea placeholder="Votre réponse…" value={replyText} onChange={e => setReplyText(e.target.value)} style={{ flex: 1, border: "1px solid #87CEEB", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#1e3a57", background: "#ffffff", resize: "none", outline: "none", fontFamily: "inherit" }} rows={2} />
-                          <button onClick={() => setReplyText("")} style={{ width: 44, height: 44, borderRadius: 10, background: "#1a5c9e", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon d={ic.send} size={17} stroke="#fff" /></button>
-                        </div>
-                      </>
-                    ) : (
-                      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#8da4c0" }}>
-                        <Icon d={ic.message} size={40} stroke="#c8d8e8" />
-                        <div style={{ marginTop: 12, fontSize: 14 }}>Sélectionnez une conversation</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            )}
 
             {/* ── DEVIS ── */}
             {page === "devis" && (
@@ -706,7 +587,7 @@ export default function App() {
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 14 }}>
                   {[
-                    { nom: "Guillaume Legrand", role: "Expert-comptable", email: "g.legrand@cabinet.fr", dossiers: 24, statut: "Associé", initials: "GL", color: "#1a5c9e" },
+                    { nom: "Pierre WILLA SOUMAI", role: "Expert-comptable", email: "p.willasoumai@cabinet.fr", dossiers: 24, statut: "Associé", initials: "PW", color: "#1a5c9e" },
                     { nom: "Sophie Morel", role: "Collaboratrice senior", email: "s.morel@cabinet.fr", dossiers: 18, statut: "CDI", initials: "SM", color: "#1a7a4a" },
                     { nom: "Thomas Bernard", role: "Collaborateur", email: "t.bernard@cabinet.fr", dossiers: 12, statut: "CDI", initials: "TB", color: "#c17f2a" },
                     { nom: "Julie Martin", role: "Assistante comptable", email: "j.martin@cabinet.fr", dossiers: 8, statut: "CDI", initials: "JM", color: "#8e44ad" },
