@@ -329,23 +329,6 @@ export default function App() {
                       </div>
                     ))}
                   </div>
-                  <div className="card-hover" style={S.card}>
-                    <div style={S.cardHeader}><Icon d={ic.message} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Messages récents</span></div>
-                    {messages.length === 0 && <div style={S.empty}>Aucun message</div>}
-                    {messages.slice(0, 4).map(m => (
-                      <div key={m.id} onClick={() => { setPage("messages"); markRead(m); }} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 0", borderBottom: "1px solid #f0f4fa", cursor: "pointer" }}>
-                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#e2eaf4", color: "#4a6d8c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{m.de?.split(" ").map(w => w[0]).join("") || "?"}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <span style={{ fontSize: 13, fontWeight: m.lu ? 500 : 700, color: "#1e3a57" }}>{m.de}</span>
-                            <span style={{ fontSize: 11, color: "#8da4c0" }}>{m.heure}</span>
-                          </div>
-                          <div style={{ fontSize: 12, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.contenu?.substring(0, 45)}…</div>
-                        </div>
-                        {!m.lu && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1a5c9e", marginTop: 6, flexShrink: 0 }} />}
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}
