@@ -236,6 +236,20 @@ export default function App() {
         @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         body { margin: 0; }
         input:focus, select:focus, textarea:focus { border-color: #87CEEB !important; box-shadow: 0 0 0 3px rgba(135,206,235,0.2); }
+
+        /* Hover effects */
+        button { transition: all 0.2s ease; }
+        button:hover { box-shadow: 0 4px 14px rgba(0,30,80,0.15); transform: translateY(-1px); }
+        button:active { transform: translateY(0px); box-shadow: 0 1px 4px rgba(0,30,80,0.1); }
+
+        .card-hover { transition: all 0.2s ease; }
+        .card-hover:hover { box-shadow: 0 8px 24px rgba(0,30,80,0.12) !important; transform: translateY(-2px); }
+
+        .row-hover { transition: background 0.15s ease, box-shadow 0.15s ease; }
+        .row-hover:hover { background: #f5f9ff !important; box-shadow: inset 3px 0 0 #1a5c9e; }
+
+        .nav-hover { transition: all 0.2s ease; }
+        .nav-hover:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.25); transform: translateX(3px); }
       `}</style>
 
       {/* OVERLAY mobile */}
@@ -257,7 +271,7 @@ export default function App() {
         </div>
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 12px", flex: 1 }}>
           {navItems.map(item => (
-            <button key={item.id} onClick={() => navigate(item.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", borderRadius: 9, background: page === item.id ? "linear-gradient(135deg,#2e7fcf,#1a5c9e)" : "none", border: "none", cursor: "pointer", color: page === item.id ? "#fff" : "#8da4c0", fontSize: 13, fontWeight: page === item.id ? 600 : 500, textAlign: "left", width: "100%" }}>
+            <button key={item.id} onClick={() => navigate(item.id)} className="nav-hover" style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", borderRadius: 9, background: page === item.id ? "linear-gradient(135deg,#2e7fcf,#1a5c9e)" : "none", border: "none", cursor: "pointer", color: page === item.id ? "#fff" : "#8da4c0", fontSize: 13, fontWeight: page === item.id ? 600 : 500, textAlign: "left", width: "100%" }}>
               <Icon d={item.icon} size={17} stroke={page === item.id ? "#fff" : "#8da4c0"} />
               <span style={{ flex: 1 }}>{item.label}</span>
               {item.badge > 0 && <span style={{ background: "#c0392b", color: "#fff", borderRadius: 10, fontSize: 10, fontWeight: 700, padding: "1px 6px" }}>{item.badge}</span>}
@@ -307,7 +321,7 @@ export default function App() {
               <div>
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: isMobile ? 10 : 14, marginBottom: 16 }}>
                   {kpis.map((k, i) => (
-                    <div key={i} style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "14px" : "18px 20px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "14px" : "18px 20px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", display: "flex", flexDirection: "column", gap: 4 }}>
                       <div style={{ width: 36, height: 36, borderRadius: 9, background: k.color + "18", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 4 }}>
                         <Icon d={k.icon} size={18} stroke={k.color} />
                       </div>
@@ -318,7 +332,7 @@ export default function App() {
                   ))}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
-                  <div style={S.card}>
+                  <div className="card-hover" style={S.card}>
                     <div style={S.cardHeader}><Icon d={ic.alert} size={16} stroke="#c0392b" /><span style={S.cardTitle}>Échéances urgentes</span></div>
                     {urgentEch.length === 0 && <div style={S.empty}>Aucune échéance urgente 🎉</div>}
                     {urgentEch.slice(0, 4).map(e => (
@@ -332,7 +346,7 @@ export default function App() {
                       </div>
                     ))}
                   </div>
-                  <div style={S.card}>
+                  <div className="card-hover" style={S.card}>
                     <div style={S.cardHeader}><Icon d={ic.message} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Messages récents</span></div>
                     {messages.length === 0 && <div style={S.empty}>Aucun message</div>}
                     {messages.slice(0, 4).map(m => (
@@ -394,7 +408,7 @@ export default function App() {
                     </div>
                     {filteredClients.length === 0 && <div style={{ ...S.empty, padding: 24 }}>Aucun client trouvé</div>}
                     {filteredClients.map(c => (
-                      <div key={c.id} style={{ display: "flex", alignItems: "center", padding: "13px 20px", borderBottom: "1px solid #f0f4fa" }}>
+                      <div key={c.id} className="row-hover" style={{ display: "flex", alignItems: "center", padding: "13px 20px", borderBottom: "1px solid #f0f4fa", cursor: "pointer" }}>
                         <div style={{ flex: 2.5, display: "flex", alignItems: "center", gap: 10 }}>
                           <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#2e7fcf,#1a5c9e)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, flexShrink: 0 }}>{c.nom?.charAt(0) || "?"}</div>
                           <span style={{ fontWeight: 600, color: "#1e3a57", fontSize: 13 }}>{c.nom}</span>
@@ -433,7 +447,7 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                <div style={S.card}>
+                <div className="card-hover" style={S.card}>
                   {echeances.length === 0 && <div style={S.empty}>Aucune échéance enregistrée</div>}
                   {[...echeances].sort((a, b) => new Date(a.date) - new Date(b.date)).map(e => {
                     const uc = { haute: { bg: "#fff0f0", dot: "#c0392b" }, moyenne: { bg: "#fff8e6", dot: "#c17f2a" }, normale: { bg: "#e8f5ee", dot: "#1a7a4a" } }[e.urgence] || { bg: "#f5f5f5", dot: "#888" };
@@ -562,7 +576,7 @@ export default function App() {
             {/* ── DEVIS ── */}
             {page === "devis" && (
               <div style={{ maxWidth: 780 }}>
-                <div style={S.card}>
+                <div className="card-hover" style={S.card}>
                   <div style={S.cardHeader}><Icon d={ic.devis} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Simuler un devis</span></div>
                   <div style={{ display: "flex", gap: 12, marginBottom: 16, flexDirection: isMobile ? "column" : "row" }}>
                     <div style={S.formGroup}>
