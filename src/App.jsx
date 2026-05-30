@@ -58,6 +58,10 @@ const ic = {
   close:     "M18 6L6 18 M6 6l12 12",
   folder:    "M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z",
   menu:      "M3 12h18 M3 6h18 M3 18h18",
+  rapports:  "M18 20V10 M12 20V4 M6 20v-6",
+  collab:    "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8 M16 3.13a4 4 0 010 7.75 M21 21v-2a4 4 0 00-3-3.87",
+  docs:      "M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z M13 2v7h7",
+  settings:  "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z",
 };
 
 const MISSIONS = [
@@ -223,9 +227,13 @@ export default function App() {
     { id: "echeances", label: "Échéances",        icon: ic.calendar },
     { id: "messages",  label: "Messagerie",       icon: ic.message, badge: unreadCount },
     { id: "devis",     label: "Devis",            icon: ic.devis },
+    { id: "rapports",  label: "Rapports",         icon: ic.rapports },
+    { id: "collab",    label: "Collaborateurs",   icon: ic.collab },
+    { id: "documents", label: "Documents",        icon: ic.docs },
+    { id: "settings",  label: "Paramètres",       icon: ic.settings },
   ];
 
-  const pageTitle = { dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", messages: "Messagerie", devis: "Devis" }[page];
+  const pageTitle = { dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", messages: "Messagerie", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", settings: "Paramètres" }[page];
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
@@ -265,8 +273,8 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 20px 28px" }}>
           <div style={{ width: 38, height: 38, borderRadius: 10, background: "linear-gradient(135deg,#2e7fcf,#1a5c9e)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 14 }}>EC</div>
           <div>
-            <div style={{ color: "#e2eaf4", fontWeight: 800, fontSize: 15 }}>ExpertCab</div>
-            <div style={{ color: "#4a6d8c", fontSize: 11 }}>Gestion cabinet</div>
+            <div style={{ color: "#e2eaf4", fontWeight: 800, fontSize: 15 }}>CGA-CDA</div>
+            <div style={{ color: "#4a6d8c", fontSize: 9, lineHeight: 1.3 }}>Centrale des Associés -<br/>Conseils & Expertise<br/>Comptable et Fiscale</div>
           </div>
         </div>
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 12px", flex: 1 }}>
@@ -301,12 +309,7 @@ export default function App() {
             <div style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "#1e3a57" }}>{pageTitle}</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {!isMobile && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f5f8fc", border: "1px solid #e2eaf4", borderRadius: 8, padding: "7px 14px" }}>
-                <Icon d={ic.search} size={15} stroke="#8da4c0" />
-                <input placeholder="Rechercher…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#1e3a57", width: 150 }} />
-              </div>
-            )}
+            
             <button onClick={loadAll} style={{ background: "#f5f8fc", border: "1px solid #e2eaf4", borderRadius: 8, padding: "7px 10px", cursor: "pointer", fontSize: 12, color: "#4a6d8c" }}>↻</button>
             <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#1a5c9e", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>GL</div>
           </div>
@@ -376,7 +379,13 @@ export default function App() {
                       <button key={f} onClick={() => setClientFilter(f)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: clientFilter === f ? "#1a5c9e" : "#fff", color: clientFilter === f ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12, fontWeight: 500 }}>{f}</button>
                     ))}
                   </div>
-                  <button onClick={() => setShowAddClient(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouveau</button>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f5f8fc", border: "1px solid #87CEEB", borderRadius: 8, padding: "7px 14px" }}>
+                      <Icon d={ic.search} size={15} stroke="#8da4c0" />
+                      <input placeholder="Rechercher un client…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#1e3a57", width: 160 }} />
+                    </div>
+                    <button onClick={() => setShowAddClient(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouveau</button>
+                  </div>
                 </div>
                 {isMobile ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -639,6 +648,195 @@ export default function App() {
                 )}
               </div>
             )}
+
+            {/* ── RAPPORTS ── */}
+            {page === "rapports" && (
+              <div>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                  <div className="card-hover" style={S.card}>
+                    <div style={S.cardHeader}><Icon d={ic.rapports} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Chiffre d'affaires mensuel</span></div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {[["Janvier", 12400, 100], ["Février", 15200, 82], ["Mars", 18900, 100], ["Avril", 14300, 75], ["Mai", 21000, 100]].map(([m, v, pct]) => (
+                        <div key={m} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ width: 60, fontSize: 12, color: "#6b8aaa", flexShrink: 0 }}>{m}</div>
+                          <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
+                            <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg,#2e7fcf,#1a5c9e)", borderRadius: 4 }} />
+                          </div>
+                          <div style={{ width: 80, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{v.toLocaleString("fr-FR")} €</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="card-hover" style={S.card}>
+                    <div style={S.cardHeader}><Icon d={ic.clients} size={16} stroke="#1a7a4a" /><span style={S.cardTitle}>Clients par secteur</span></div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {[["BTP", 4, "#1a5c9e", 40], ["Informatique", 6, "#1a7a4a", 60], ["Conseil", 3, "#c17f2a", 30], ["Alimentaire", 5, "#8e44ad", 50], ["Médical", 2, "#c0392b", 20]].map(([s, n, color, pct]) => (
+                        <div key={s} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ width: 80, fontSize: 12, color: "#6b8aaa", flexShrink: 0 }}>{s}</div>
+                          <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
+                            <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 4 }} />
+                          </div>
+                          <div style={{ width: 24, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{n}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 16 }}>
+                  {[
+                    { label: "CA total annuel", value: "245 800 €", delta: "+18% vs N-1", color: "#1a5c9e" },
+                    { label: "Nb missions réalisées", value: "138", delta: "+12 ce mois", color: "#1a7a4a" },
+                    { label: "Taux de recouvrement", value: "94%", delta: "12 impayés", color: "#c17f2a" },
+                  ].map((k, i) => (
+                    <div key={i} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: k.color }}>{k.value}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57" }}>{k.label}</div>
+                      <div style={{ fontSize: 11, color: "#8da4c0" }}>{k.delta}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── COLLABORATEURS ── */}
+            {page === "collab" && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+                  <button style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Ajouter</button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 14 }}>
+                  {[
+                    { nom: "Guillaume Legrand", role: "Expert-comptable", email: "g.legrand@cabinet.fr", dossiers: 24, statut: "Associé", initials: "GL", color: "#1a5c9e" },
+                    { nom: "Sophie Morel", role: "Collaboratrice senior", email: "s.morel@cabinet.fr", dossiers: 18, statut: "CDI", initials: "SM", color: "#1a7a4a" },
+                    { nom: "Thomas Bernard", role: "Collaborateur", email: "t.bernard@cabinet.fr", dossiers: 12, statut: "CDI", initials: "TB", color: "#c17f2a" },
+                    { nom: "Julie Martin", role: "Assistante comptable", email: "j.martin@cabinet.fr", dossiers: 8, statut: "CDI", initials: "JM", color: "#8e44ad" },
+                    { nom: "Lucas Petit", role: "Stagiaire", email: "l.petit@cabinet.fr", dossiers: 3, statut: "Stage", initials: "LP", color: "#c0392b" },
+                  ].map((c, i) => (
+                    <div key={i} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ width: 46, height: 46, borderRadius: "50%", background: c.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15, flexShrink: 0 }}>{c.initials}</div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>{c.nom}</div>
+                          <div style={{ fontSize: 12, color: "#6b8aaa" }}>{c.role}</div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 12, color: "#8da4c0" }}>{c.email}</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 12, color: "#4a6d8c" }}><b style={{ color: "#1e3a57" }}>{c.dossiers}</b> dossiers</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: c.statut === "Associé" ? "#e8f0fb" : c.statut === "Stage" ? "#fff8e6" : "#e8f5ee", color: c.statut === "Associé" ? "#1a5c9e" : c.statut === "Stage" ? "#c17f2a" : "#1a7a4a" }}>{c.statut}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── DOCUMENTS ── */}
+            {page === "documents" && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {["Tous", "Bilans", "Contrats", "Liasses", "Courriers"].map(f => (
+                      <button key={f} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: f === "Tous" ? "#1a5c9e" : "#fff", color: f === "Tous" ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12 }}>{f}</button>
+                    ))}
+                  </div>
+                  <button style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Déposer</button>
+                </div>
+                <div className="card-hover" style={S.card}>
+                  {[
+                    { nom: "Bilan_TechVision_2025.pdf", client: "SAS TechVision", type: "Bilan", taille: "1.2 Mo", date: "15/04/2026", color: "#c0392b" },
+                    { nom: "Liasse_Dupont_2025.pdf", client: "SARL Dupont & Fils", type: "Liasse", taille: "856 Ko", date: "10/04/2026", color: "#c0392b" },
+                    { nom: "Contrat_mission_Atlasmed.docx", client: "SA Groupe Atlasmed", type: "Contrat", taille: "245 Ko", date: "02/04/2026", color: "#1a5c9e" },
+                    { nom: "Courrier_DGFiP_Boulangerie.pdf", client: "EURL Boulangerie Soleil", type: "Courrier", taille: "128 Ko", date: "28/03/2026", color: "#c0392b" },
+                    { nom: "Rapport_audit_Atlasmed.xlsx", client: "SA Groupe Atlasmed", type: "Rapport", taille: "3.4 Mo", date: "20/03/2026", color: "#1a7a4a" },
+                    { nom: "CGV_Cabinet_2026.docx", client: "Cabinet", type: "Contrat", taille: "98 Ko", date: "01/01/2026", color: "#1a5c9e" },
+                  ].map((d, i) => (
+                    <div key={i} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #f0f4fa", flexWrap: isMobile ? "wrap" : "nowrap", cursor: "pointer" }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 8, background: d.color + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Icon d={ic.docs} size={16} stroke={d.color} />
+                      </div>
+                      <div style={{ flex: 2, minWidth: 120 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: "#1e3a57" }}>{d.nom}</div>
+                        <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.client}</div>
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "#f0f4fa", color: "#4a6d8c", flexShrink: 0 }}>{d.type}</div>
+                      <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0 }}>{d.taille}</div>
+                      <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0, minWidth: 80 }}>{d.date}</div>
+                      <button style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── PARAMÈTRES ── */}
+            {page === "settings" && (
+              <div style={{ maxWidth: 680 }}>
+                <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
+                  <div style={S.cardHeader}><Icon d={ic.collab} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Profil du cabinet</span></div>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+                    {[
+                      { label: "Nom du cabinet", placeholder: "Cabinet Legrand & Associés", val: "" },
+                      { label: "N° SIRET", placeholder: "123 456 789 00012", val: "" },
+                      { label: "Adresse", placeholder: "12 rue de la Paix, Paris", val: "" },
+                      { label: "Téléphone", placeholder: "+33 1 23 45 67 89", val: "" },
+                      { label: "Email de contact", placeholder: "contact@cabinet.fr", val: "" },
+                      { label: "Site web", placeholder: "www.cabinet.fr", val: "" },
+                    ].map(f => (
+                      <div key={f.label} style={S.formGroup}>
+                        <label style={S.label}>{f.label}</label>
+                        <input placeholder={f.placeholder} style={S.input} />
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                    <button style={S.primaryBtn}>Enregistrer</button>
+                  </div>
+                </div>
+                <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
+                  <div style={S.cardHeader}><Icon d={ic.bell} size={16} stroke="#c17f2a" /><span style={S.cardTitle}>Notifications</span></div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {[
+                      { label: "Alertes échéances fiscales", desc: "Recevoir une alerte 7 jours avant", active: true },
+                      { label: "Nouveaux messages clients", desc: "Notification immédiate", active: true },
+                      { label: "Rappels devis non signés", desc: "Relance automatique après 14 jours", active: false },
+                      { label: "Rapport hebdomadaire", desc: "Synthèse envoyée chaque lundi", active: false },
+                    ].map((n, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f0f4fa" }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57" }}>{n.label}</div>
+                          <div style={{ fontSize: 11, color: "#8da4c0" }}>{n.desc}</div>
+                        </div>
+                        <div style={{ width: 42, height: 24, borderRadius: 12, background: n.active ? "#1a5c9e" : "#e2eaf4", cursor: "pointer", position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
+                          <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: n.active ? 21 : 3, transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="card-hover" style={S.card}>
+                  <div style={S.cardHeader}><Icon d={ic.settings} size={16} stroke="#6b8aaa" /><span style={S.cardTitle}>Préférences</span></div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={S.formGroup}>
+                      <label style={S.label}>Devise</label>
+                      <select style={S.select}><option>Euro (€)</option><option>Franc CFA (XAF)</option><option>Dollar ($)</option></select>
+                    </div>
+                    <div style={S.formGroup}>
+                      <label style={S.label}>Taux de TVA par défaut</label>
+                      <select style={S.select}><option>20%</option><option>10%</option><option>5.5%</option><option>0%</option></select>
+                    </div>
+                    <div style={S.formGroup}>
+                      <label style={S.label}>Langue</label>
+                      <select style={S.select}><option>Français</option><option>Anglais</option></select>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                    <button style={S.primaryBtn}>Enregistrer</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </>}
         </div>
 
