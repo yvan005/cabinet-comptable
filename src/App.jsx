@@ -773,24 +773,6 @@ export default function App() {
         </Modal>
       )}
 
-      {showAddMessage && (
-        <Modal title="Nouveau message" onClose={() => setShowAddMessage(false)}>
-          {[{ label: "De *", key: "de", placeholder: "M. Dupont" }, { label: "Client", key: "client", placeholder: "SARL Exemple" }].map(f => (
-            <div key={f.key} style={S.formGroup}>
-              <label style={S.label}>{f.label}</label>
-              <input placeholder={f.placeholder} value={newMsg[f.key]} onChange={e => setNewMsg(p => ({ ...p, [f.key]: e.target.value }))} style={S.input} />
-            </div>
-          ))}
-          <div style={S.formGroup}>
-            <label style={S.label}>Message *</label>
-            <textarea rows={4} placeholder="Contenu du message…" value={newMsg.contenu} onChange={e => setNewMsg(p => ({ ...p, contenu: e.target.value }))} style={{ ...S.input, resize: "vertical" }} />
-          </div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
-            <button onClick={() => setShowAddMessage(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
-            <button onClick={addMessage} style={S.primaryBtn}>Enregistrer</button>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 }
