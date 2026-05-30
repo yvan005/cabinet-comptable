@@ -73,10 +73,17 @@ const MISSIONS = [
 
 // ── RESPONSIVE HOOK ──────────────────────────────────────────────────────────
 const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const getIsMobile = () => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 768 ||
+      /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  };
+  const [isMobile, setIsMobile] = useState(getIsMobile);
   useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
+    const handler = () => setIsMobile(getIsMobile());
     window.addEventListener("resize", handler);
+    // Force re-check after mount (fixes mobile initial render)
+    setTimeout(() => setIsMobile(getIsMobile()), 100);
     return () => window.removeEventListener("resize", handler);
   }, []);
   return isMobile;
@@ -221,9 +228,10 @@ export default function App() {
   const pageTitle = { dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", messages: "Messagerie", devis: "Devis" }[page];
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
+    <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
       <style>{`
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body, #root { height: 100%; width: 100%; overflow: hidden; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         body { margin: 0; }
@@ -266,7 +274,7 @@ export default function App() {
       </aside>
 
       {/* MAIN */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, ...(isMobile ? { width: "100%" } : {}) }}>
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden", ...(isMobile ? { width: "100%" } : {}) }}>
 
         {/* TOPBAR */}
         <header style={{ background: "#fff", borderBottom: "1px solid #e2eaf4", padding: isMobile ? "0 16px" : "0 28px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, gap: 12 }}>
