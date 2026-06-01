@@ -707,7 +707,7 @@ export default function App() {
         {/* BOTTOM NAV mobile */}
         {isMobile && (
           <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e2eaf4", display: "flex", zIndex: 50, paddingBottom: "env(safe-area-inset-bottom)" }}>
-            {navItems.map(item => (
+            {navItems.filter(item => ["dashboard", "clients", "rapports", "collab", "devis"].includes(item.id)).map(item => (
               <button key={item.id} onClick={() => navigate(item.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", background: "none", border: "none", cursor: "pointer", color: page === item.id ? "#1a5c9e" : "#8da4c0", position: "relative" }}>
                 <Icon d={item.icon} size={20} stroke={page === item.id ? "#1a5c9e" : "#8da4c0"} />
                 <span style={{ fontSize: 9, marginTop: 3, fontWeight: page === item.id ? 700 : 400 }}>{item.label.split(" ")[0]}</span>
