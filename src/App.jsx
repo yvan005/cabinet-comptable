@@ -133,7 +133,7 @@ export default function App() {
   const [showAddEcheance, setShowAddEcheance] = useState(false);
 
 
-  const [devisLines, setDevisLines] = useState([{ mission: MISSIONS[0], qty: 1 }]);
+  const [devisLines, setDevisLines] = useState([{ nom: "", groupe: "", tarif: 0, unite: "forfait", qty: 1 }]);
   const [devisClient, setDevisClient] = useState("");
   const [devisDate, setDevisDate] = useState(new Date().toISOString().split("T")[0]);
   const [devisSaving, setDevisSaving] = useState(false);
@@ -232,11 +232,11 @@ export default function App() {
   };
 
   // DEVIS
-  const totalHT = devisLines.reduce((s, l) => s + l.mission.prix * l.qty, 0);
-  const totalTTC = totalHT * 1.2;
-  const addLine = () => setDevisLines(l => [...l, { mission: MISSIONS[0], qty: 1 }]);
+  const totalHT = devisLines.reduce((s, l) => s + (l.tarif || 0) * (l.qty || 1), 0);
+  const totalTTC = totalHT * 1.1925;
+  const addLine = () => setDevisLines(l => [...l, { nom: "", groupe: "", tarif: 0, unite: "forfait", qty: 1 }]);
   const removeLine = (i) => setDevisLines(l => l.filter((_, idx) => idx !== i));
-  const updateLine = (i, field, val) => setDevisLines(l => l.map((ln, idx) => idx === i ? { ...ln, [field]: val } : ln));
+  const updateLine = (i, field, val) => setDevisLines(l => l.map((ln, idx) => idx === i ? (field === 'full' ? { ...ln, nom: val.nom, groupe: val.groupe, tarif: val.tarif || 0, unite: val.unite } : { ...ln, [field]: val }) : ln));
   const saveDevis = async (statut) => {
     setDevisSaving(true);
     await db.post("devis", { client: devisClient, date: devisDate, lignes: devisLines.map(l => ({ mission: l.mission.label, prix: l.mission.prix, qty: l.qty })), total_ht: totalHT, total_ttc: totalTTC, statut });
@@ -504,71 +504,164 @@ export default function App() {
 
 
             {/* ── DEVIS ── */}
-            {page === "devis" && (
-              <div style={{ maxWidth: 780 }}>
-                <div className="card-hover" style={S.card}>
-                  <div style={S.cardHeader}><Icon d={ic.devis} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Simuler un devis</span></div>
-                  <div style={{ display: "flex", gap: 12, marginBottom: 16, flexDirection: isMobile ? "column" : "row" }}>
-                    <div style={S.formGroup}>
-                      <label style={S.label}>Client</label>
-                      <select value={devisClient} onChange={e => setDevisClient(e.target.value)} style={S.select}>
-                        {clients.map(c => <option key={c.id}>{c.nom}</option>)}
-                      </select>
-                    </div>
-                    <div style={S.formGroup}>
-                      <label style={S.label}>Date</label>
-                      <input type="date" value={devisDate} onChange={e => setDevisDate(e.target.value)} style={S.select} />
-                    </div>
-                  </div>
-                  {devisLines.map((line, i) => (
-                    <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f0f4fa", flexWrap: isMobile ? "wrap" : "nowrap" }}>
-                      <div style={{ flex: isMobile ? "1 1 100%" : 3 }}>
-                        <select value={line.mission.label} onChange={e => updateLine(i, "mission", MISSIONS.find(m => m.label === e.target.value))} style={{ ...S.select, width: "100%" }}>
-                          {MISSIONS.map(m => <option key={m.label}>{m.label}</option>)}
+            {page === "devis" && (() => {
+              // Build missions list from real services + defaults
+              const DEFAULTS = [
+                { nom: "Conseils et stratégies financiers", groupe: "Assistance Comptable" },
+                { nom: "Analyse et diagnostic financier", groupe: "Assistance Comptable" },
+                { nom: "Ingénierie financière", groupe: "Assistance Comptable" },
+                { nom: "Installation et paramétrage de logiciel de gestion", groupe: "Assistance Comptable" },
+                { nom: "Production des états financiers (DSF - CEP - PT)", groupe: "Assistance Comptable" },
+                { nom: "Audit comptable", groupe: "Assistance Comptable" },
+                { nom: "Manuel de procédures", groupe: "Assistance Comptable" },
+                { nom: "Déclaration fiscale (TVA - AIR/AIS - RTS - DSF)", groupe: "Assistance Fiscale" },
+                { nom: "Respect des échéances fiscales", groupe: "Assistance Fiscale" },
+                { nom: "Élaboration des correspondances fiscales", groupe: "Assistance Fiscale" },
+                { nom: "Mesures de sécurité juridico-fiscales", groupe: "Assistance Fiscale" },
+                { nom: "Optimisation fiscale légale", groupe: "Assistance Fiscale" },
+                { nom: "Audit et simulation fiscale avant dépôt DSF", groupe: "Assistance Fiscale" },
+                { nom: "Constitution d'office en phase juridictionnelle", groupe: "Assistance Fiscale" },
+                { nom: "Déclarations sociales", groupe: "Assistance Sociale" },
+                { nom: "Respect des échéances sociales", groupe: "Assistance Sociale" },
+                { nom: "Élaboration des correspondances sociales", groupe: "Assistance Sociale" },
+                { nom: "Mesures de sécurité juridico-sociales", groupe: "Assistance Sociale" },
+                { nom: "Optimisation sociales annuelles légales", groupe: "Assistance Sociale" },
+                { nom: "Rédaction des contrats", groupe: "Assistance Juridique" },
+                { nom: "Rédaction des statuts sous seing privé", groupe: "Assistance Juridique" },
+                { nom: "Aide à la création d'entreprise", groupe: "Assistance Juridique" },
+                { nom: "Formation du personnel interne", groupe: "Assistance Juridique" },
+              ];
+
+              const allMissions = [
+                ...DEFAULTS.map(d => {
+                  const dbS = services.find(s => s.nom === d.nom && s.groupe === d.groupe);
+                  return { nom: d.nom, groupe: d.groupe, tarif: dbS?.tarif || 0, unite: dbS?.unite || "forfait" };
+                }),
+                ...services.filter(s => !DEFAULTS.find(d => d.nom === s.nom && d.groupe === s.groupe))
+                  .map(s => ({ nom: s.nom, groupe: s.groupe, tarif: s.tarif || 0, unite: s.unite || "forfait" }))
+              ];
+
+              // Numéro devis auto
+              const nextNum = "DEV-" + String((devisList.length + 1)).padStart(4, "0") + "-" + new Date().getFullYear();
+              const selectedClientData = clients.find(c => c.nom === devisClient);
+              const totalHT = devisLines.reduce((s, l) => s + (l.tarif || 0) * l.qty, 0);
+              const totalTTC = totalHT * 1.1925;
+
+              return (
+                <div style={{ maxWidth: 860 }}>
+                  <div className="card-hover" style={S.card}>
+                    <div style={S.cardHeader}><Icon d={ic.devis} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Nouveau devis</span><span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#1a5c9e", background: "#e8f0fb", padding: "4px 10px", borderRadius: 8 }}>{nextNum}</span></div>
+
+                    {/* Infos client + date */}
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 20, padding: "16px", background: "#f5f8fc", borderRadius: 10 }}>
+                      <div style={S.formGroup}>
+                        <label style={S.label}>Client *</label>
+                        <select value={devisClient} onChange={e => setDevisClient(e.target.value)} style={S.select}>
+                          {clients.map(c => <option key={c.id}>{c.nom}</option>)}
                         </select>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <input type="number" min={1} value={line.qty} onChange={e => updateLine(i, "qty", parseInt(e.target.value) || 1)} style={{ ...S.select, width: 60, textAlign: "center" }} />
+                      <div style={S.formGroup}>
+                        <label style={S.label}>Date</label>
+                        <input type="date" value={devisDate} onChange={e => setDevisDate(e.target.value)} style={S.select} />
                       </div>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "#1a5c9e", minWidth: 80, textAlign: "right" }}>{(line.mission.prix * line.qty).toLocaleString("fr-FR")} FCFA</div>
-                      <button onClick={() => removeLine(i)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#fff", cursor: "pointer", color: "#c0392b", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
-                    </div>
-                  ))}
-                  <button onClick={addLine} style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 0", background: "none", border: "none", cursor: "pointer", color: "#1a5c9e", fontSize: 13, fontWeight: 600, marginTop: 8 }}><Icon d={ic.plus} size={14} stroke="#1a5c9e" /> Ajouter une ligne</button>
-                  <div style={{ background: "#f5f8fc", borderRadius: 10, padding: "16px 20px", marginTop: 16 }}>
-                    {[["Total HT", `${totalHT.toLocaleString("fr-FR")} FCFA`], ["TVA (20%)", `${(totalHT * 0.2).toLocaleString("fr-FR")} FCFA`]].map(([k, v]) => (
-                      <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "#1e3a57", marginBottom: 8 }}>
-                        <span style={{ color: "#6b8aaa" }}>{k}</span><span style={{ fontWeight: 600 }}>{v}</span>
+                      <div style={S.formGroup}>
+                        <label style={S.label}>N° Devis</label>
+                        <input value={nextNum} readOnly style={{ ...S.select, background: "#e8f0fb", color: "#1a5c9e", fontWeight: 700 }} />
                       </div>
-                    ))}
-                    <div style={{ display: "flex", justifyContent: "space-between", borderTop: "2px solid #1a5c9e", paddingTop: 12, marginTop: 4 }}>
-                      <span style={{ fontWeight: 700, fontSize: 16, color: "#1e3a57" }}>Total TTC</span>
-                      <span style={{ fontWeight: 800, fontSize: 20, color: "#1a5c9e" }}>{totalTTC.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} FCFA</span>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16, flexWrap: "wrap" }}>
-                    <button onClick={() => saveDevis("Brouillon")} disabled={devisSaving} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>{devisSaving ? "…" : "Brouillon"}</button>
-                    <button onClick={() => saveDevis("Envoyé")} disabled={devisSaving} style={S.primaryBtn}><Icon d={ic.send} size={14} stroke="#fff" />{devisSaving ? "…" : "Envoyer"}</button>
-                  </div>
-                </div>
-                {devisList.length > 0 && (
-                  <div style={{ ...S.card, marginTop: 14 }}>
-                    <div style={S.cardHeader}><Icon d={ic.folder} size={16} stroke="#4a6d8c" /><span style={S.cardTitle}>Historique des devis</span></div>
-                    {devisList.map(d => (
-                      <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderBottom: "1px solid #f0f4fa", flexWrap: "wrap" }}>
-                        <div style={{ flex: 2 }}>
-                          <div style={{ fontWeight: 600, fontSize: 13, color: "#1e3a57" }}>{d.client}</div>
-                          <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.date ? new Date(d.date).toLocaleDateString("fr-FR") : "—"}</div>
+                      {selectedClientData && (
+                        <div style={{ gridColumn: isMobile ? "1" : "1 / -1", display: "flex", gap: 16, flexWrap: "wrap" }}>
+                          {selectedClientData.secteur && <span style={{ fontSize: 12, color: "#6b8aaa" }}>Secteur : <b style={{ color: "#1e3a57" }}>{selectedClientData.secteur}</b></span>}
+                          {selectedClientData.responsable && <span style={{ fontSize: 12, color: "#6b8aaa" }}>Responsable : <b style={{ color: "#1e3a57" }}>{selectedClientData.responsable}</b></span>}
+                          {selectedClientData.ca && <span style={{ fontSize: 12, color: "#6b8aaa" }}>CA : <b style={{ color: "#1e3a57" }}>{selectedClientData.ca}</b></span>}
                         </div>
-                        <div style={{ fontWeight: 700, fontSize: 14, color: "#1a5c9e" }}>{d.total_ttc?.toLocaleString("fr-FR")} FCFA TTC</div>
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20, background: d.statut === "Envoyé" ? "#e8f5ee" : "#f5f8fc", color: d.statut === "Envoyé" ? "#1a7a4a" : "#6b8aaa" }}>{d.statut}</span>
-                        <button onClick={() => db.delete("devis", d.id).then(loadAll)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
+                      )}
+                    </div>
+
+                    {/* Lignes devis */}
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ display: "flex", padding: "8px 0", borderBottom: "2px solid #e2eaf4", fontSize: 11, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", letterSpacing: 0.5, gap: 8 }}>
+                        <div style={{ flex: 3 }}>Service</div>
+                        <div style={{ flex: 1.2 }}>Groupe</div>
+                        <div style={{ width: 60, textAlign: "center" }}>Qté</div>
+                        <div style={{ width: 130, textAlign: "right" }}>P.U. HT (FCFA)</div>
+                        <div style={{ width: 130, textAlign: "right" }}>Total HT</div>
+                        <div style={{ width: 32 }} />
                       </div>
-                    ))}
+
+                      {devisLines.map((line, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0", borderBottom: "1px solid #f0f4fa", flexWrap: isMobile ? "wrap" : "nowrap" }}>
+                          <div style={{ flex: 3, minWidth: isMobile ? "100%" : "auto" }}>
+                            <select value={line.nom || ""} onChange={e => {
+                              const found = allMissions.find(m => m.nom === e.target.value);
+                              updateLine(i, "full", found || { nom: e.target.value, groupe: "", tarif: 0, unite: "forfait" });
+                            }} style={{ ...S.select, width: "100%", fontSize: 12 }}>
+                              <optgroup label="Assistance Comptable">{allMissions.filter(m => m.groupe === "Assistance Comptable").map(m => <option key={m.nom}>{m.nom}</option>)}</optgroup>
+                              <optgroup label="Assistance Fiscale">{allMissions.filter(m => m.groupe === "Assistance Fiscale").map(m => <option key={m.nom}>{m.nom}</option>)}</optgroup>
+                              <optgroup label="Assistance Sociale">{allMissions.filter(m => m.groupe === "Assistance Sociale").map(m => <option key={m.nom}>{m.nom}</option>)}</optgroup>
+                              <optgroup label="Assistance Juridique">{allMissions.filter(m => m.groupe === "Assistance Juridique").map(m => <option key={m.nom}>{m.nom}</option>)}</optgroup>
+                            </select>
+                          </div>
+                          <div style={{ flex: 1.2, fontSize: 11, color: "#6b8aaa", display: isMobile ? "none" : "block" }}>{line.groupe || "—"}</div>
+                          <div style={{ width: 60 }}>
+                            <input type="number" min={1} value={line.qty} onChange={e => updateLine(i, "qty", parseInt(e.target.value) || 1)} style={{ ...S.select, width: "100%", textAlign: "center", padding: "8px 4px" }} />
+                          </div>
+                          <div style={{ width: 130 }}>
+                            <input type="number" value={line.tarif || 0} onChange={e => updateLine(i, "tarif", parseFloat(e.target.value) || 0)} style={{ ...S.select, width: "100%", textAlign: "right", padding: "8px 6px" }} />
+                          </div>
+                          <div style={{ width: 130, textAlign: "right", fontSize: 13, fontWeight: 700, color: "#1a5c9e" }}>{((line.tarif || 0) * line.qty).toLocaleString("fr-FR")} FCFA</div>
+                          <button onClick={() => removeLine(i)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#fff", cursor: "pointer", color: "#c0392b", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button onClick={addLine} style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 0", background: "none", border: "none", cursor: "pointer", color: "#1a5c9e", fontSize: 13, fontWeight: 600, marginTop: 8 }}>
+                      <Icon d={ic.plus} size={14} stroke="#1a5c9e" /> Ajouter une ligne
+                    </button>
+
+                    {/* Totaux */}
+                    <div style={{ background: "#f5f8fc", borderRadius: 10, padding: "16px 20px", marginTop: 16 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "#1e3a57", marginBottom: 8 }}>
+                        <span style={{ color: "#6b8aaa" }}>Total HT</span>
+                        <span style={{ fontWeight: 600 }}>{totalHT.toLocaleString("fr-FR")} FCFA</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "#1e3a57", marginBottom: 8 }}>
+                        <span style={{ color: "#6b8aaa" }}>TVA (19.25%)</span>
+                        <span style={{ fontWeight: 600 }}>{(totalHT * 0.1925).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", borderTop: "2px solid #1a5c9e", paddingTop: 12, marginTop: 4 }}>
+                        <span style={{ fontWeight: 700, fontSize: 16, color: "#1e3a57" }}>Total TTC</span>
+                        <span style={{ fontWeight: 800, fontSize: 20, color: "#1a5c9e" }}>{(totalHT * 1.1925).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA</span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16, flexWrap: "wrap" }}>
+                      <button onClick={() => saveDevis("Brouillon")} disabled={devisSaving} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>{devisSaving ? "…" : "Brouillon"}</button>
+                      <button onClick={() => saveDevis("Envoyé")} disabled={devisSaving} style={S.primaryBtn}><Icon d={ic.send} size={14} stroke="#fff" />{devisSaving ? "…" : "Envoyer au client"}</button>
+                    </div>
                   </div>
-                )}
-              </div>
-            )}
+
+                  {/* Historique */}
+                  {devisList.length > 0 && (
+                    <div className="card-hover" style={{ ...S.card, marginTop: 14 }}>
+                      <div style={S.cardHeader}><Icon d={ic.folder} size={16} stroke="#4a6d8c" /><span style={S.cardTitle}>Historique des devis</span></div>
+                      {devisList.map((d, idx) => (
+                        <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderBottom: "1px solid #f0f4fa", flexWrap: "wrap" }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "#1a5c9e", background: "#e8f0fb", padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>{"DEV-" + String(devisList.length - idx).padStart(4, "0") + "-" + new Date(d.created_at || d.date).getFullYear()}</div>
+                          <div style={{ flex: 2 }}>
+                            <div style={{ fontWeight: 600, fontSize: 13, color: "#1e3a57" }}>{d.client}</div>
+                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.date ? new Date(d.date).toLocaleDateString("fr-FR") : "—"}</div>
+                          </div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: "#1a5c9e" }}>{(d.total_ttc || 0).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA TTC</div>
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20, background: d.statut === "Envoyé" ? "#e8f5ee" : "#f5f8fc", color: d.statut === "Envoyé" ? "#1a7a4a" : "#6b8aaa" }}>{d.statut}</span>
+                          <button onClick={() => db.delete("devis", d.id).then(loadAll)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
 
             {/* ── RAPPORTS ── */}
             {page === "rapports" && (() => {
