@@ -62,6 +62,7 @@ const ic = {
   collab:    "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8 M16 3.13a4 4 0 010 7.75 M21 21v-2a4 4 0 00-3-3.87",
   docs:      "M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z M13 2v7h7",
   depenses:  "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M12 6v6l4 2 M8 13h8 M8 17h8",
+  service:   "M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12",
   settings:  "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z",
 };
 
@@ -140,19 +141,23 @@ export default function App() {
   const [showAddDepense, setShowAddDepense] = useState(false);
   const [newDepense, setNewDepense] = useState({ libelle: "", montant: "", categorie: "Fournitures", date: new Date().toISOString().split("T")[0], note: "" });
   const [depensePeriode, setDepensePeriode] = useState("jour");
+  const [services, setServices] = useState([]);
+  const [showAddService, setShowAddService] = useState(false);
+  const [newService, setNewService] = useState({ nom: "", description: "", tarif: "", unite: "forfait", categorie: "Comptabilité", actif: true });
 
   const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
   const [newEch, setNewEch] = useState({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [c, e, d, dep] = await Promise.all([
-      db.get("clients"), db.get("echeances"), db.get("devis"), db.get("depenses"),
+    const [c, e, d, dep, srv] = await Promise.all([
+      db.get("clients"), db.get("echeances"), db.get("devis"), db.get("depenses"), db.get("services"),
     ]);
     setClients(Array.isArray(c) ? c : []);
     setEcheances(Array.isArray(e) ? e : []);
     setDevisList(Array.isArray(d) ? d : []);
     setDepenses(Array.isArray(dep) ? dep : []);
+    setServices(Array.isArray(srv) ? srv : []);
     setLoading(false);
   }, []);
 
@@ -181,6 +186,16 @@ export default function App() {
   const deleteEch = async (id) => { await db.delete("echeances", id); loadAll(); };
 
   // MESSAGES
+
+  // SERVICES
+  const addService = async () => {
+    if (!newService.nom || !newService.tarif) return;
+    await db.post("services", { ...newService, tarif: parseFloat(newService.tarif) });
+    setNewService({ nom: "", description: "", tarif: "", unite: "forfait", categorie: "Comptabilité", actif: true });
+    setShowAddService(false); loadAll();
+  };
+  const toggleServiceActif = async (s) => { await db.patch("services", s.id, { actif: !s.actif }); loadAll(); };
+  const deleteService = async (id) => { await db.delete("services", id); loadAll(); };
 
   // DEPENSES
   const addDepense = async () => {
@@ -239,11 +254,12 @@ export default function App() {
     { id: "rapports",  label: "Rapports",         icon: ic.rapports },
     { id: "collab",    label: "Collaborateurs",   icon: ic.collab },
     { id: "documents", label: "Documents",        icon: ic.docs },
+    { id: "services",  label: "Services",         icon: ic.service },
     { id: "depenses",  label: "Dépenses",         icon: ic.depenses },
     { id: "settings",  label: "Paramètres",       icon: ic.settings },
   ];
 
-  const pageTitle = { dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", depenses: "Dépenses", settings: "Paramètres" }[page];
+  const pageTitle = { dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", depenses: "Dépenses", settings: "Paramètres" }[page];
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
@@ -728,6 +744,69 @@ export default function App() {
               </div>
             )}
 
+            {/* ── SERVICES ── */}
+            {page === "services" && (
+              <div>
+                {/* Toolbar */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <div style={{ background: "#e8f5ee", borderRadius: 10, padding: "8px 16px", display: "flex", gap: 6, alignItems: "center" }}>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: "#1a7a4a" }}>{services.filter(s => s.actif).length}</span>
+                      <span style={{ fontSize: 12, color: "#1a7a4a", fontWeight: 500 }}>Actifs</span>
+                    </div>
+                    <div style={{ background: "#f5f5f5", borderRadius: 10, padding: "8px 16px", display: "flex", gap: 6, alignItems: "center" }}>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: "#8a9aac" }}>{services.filter(s => !s.actif).length}</span>
+                      <span style={{ fontSize: 12, color: "#8a9aac", fontWeight: 500 }}>Inactifs</span>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowAddService(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouveau service</button>
+                </div>
+
+                {/* Grille de services par catégorie */}
+                {services.length === 0 ? (
+                  <div style={{ ...S.card, ...S.empty, padding: 40 }}>
+                    <Icon d={ic.service} size={36} stroke="#c8d8e8" />
+                    <div style={{ marginTop: 12 }}>Aucun service enregistré</div>
+                    <div style={{ fontSize: 12, marginTop: 4 }}>Cliquez sur "Nouveau service" pour commencer</div>
+                  </div>
+                ) : (() => {
+                  const cats = [...new Set(services.map(s => s.categorie))];
+                  const catColors = { "Comptabilité": "#1a5c9e", "Fiscal": "#c0392b", "Social": "#1a7a4a", "Juridique": "#8e44ad", "Conseil": "#c17f2a", "Audit": "#2980b9", "Autre": "#7f8c8d" };
+                  return cats.map(cat => (
+                    <div key={cat} style={{ marginBottom: 20 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: catColors[cat] || "#888" }} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#1e3a57" }}>{cat}</span>
+                        <span style={{ fontSize: 11, color: "#8da4c0" }}>({services.filter(s => s.categorie === cat).length} service{services.filter(s => s.categorie === cat).length > 1 ? "s" : ""})</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 12 }}>
+                        {services.filter(s => s.categorie === cat).map(s => (
+                          <div key={s.id} className="card-hover" style={{ ...S.card, opacity: s.actif ? 1 : 0.6, position: "relative", borderTop: `3px solid ${catColors[cat] || "#888"}` }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57", flex: 1, paddingRight: 8 }}>{s.nom}</div>
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 20, background: s.actif ? "#e8f5ee" : "#f5f5f5", color: s.actif ? "#1a7a4a" : "#8a9aac", flexShrink: 0 }}>{s.actif ? "Actif" : "Inactif"}</span>
+                            </div>
+                            {s.description && <div style={{ fontSize: 12, color: "#6b8aaa", marginBottom: 12, lineHeight: 1.5 }}>{s.description}</div>}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto" }}>
+                              <div>
+                                <span style={{ fontSize: 18, fontWeight: 800, color: catColors[cat] || "#1a5c9e" }}>{(s.tarif || 0).toLocaleString("fr-FR")}</span>
+                                <span style={{ fontSize: 11, color: "#8da4c0", marginLeft: 4 }}>FCFA / {s.unite}</span>
+                              </div>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button onClick={() => toggleServiceActif(s)} title={s.actif ? "Désactiver" : "Activer"} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.check} size={13} stroke={s.actif ? "#1a7a4a" : "#8da4c0"} /></button>
+                                <button onClick={() => deleteService(s.id)} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            )}
+
+
             {/* ── DÉPENSES ── */}
             {page === "depenses" && (
               <div>
@@ -960,6 +1039,42 @@ export default function App() {
           </div>
         </Modal>
       )}
+
+      {showAddService && (
+        <Modal title="Nouveau service" onClose={() => setShowAddService(false)}>
+          <div style={S.formGroup}>
+            <label style={S.label}>Nom du service *</label>
+            <input placeholder="Ex: Tenue comptable, Déclaration TVA..." value={newService.nom} onChange={e => setNewService(p => ({ ...p, nom: e.target.value }))} style={S.input} />
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Description</label>
+            <textarea rows={3} placeholder="Décrivez brièvement ce service..." value={newService.description} onChange={e => setNewService(p => ({ ...p, description: e.target.value }))} style={{ ...S.input, resize: "vertical" }} />
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Tarif (FCFA) *</label>
+              <input type="number" placeholder="0" value={newService.tarif} onChange={e => setNewService(p => ({ ...p, tarif: e.target.value }))} style={S.input} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Unité</label>
+              <select value={newService.unite} onChange={e => setNewService(p => ({ ...p, unite: e.target.value }))} style={S.select}>
+                {["forfait", "mois", "an", "heure", "acte", "dossier"].map(u => <option key={u}>{u}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Catégorie</label>
+            <select value={newService.categorie} onChange={e => setNewService(p => ({ ...p, categorie: e.target.value }))} style={S.select}>
+              {["Comptabilité", "Fiscal", "Social", "Juridique", "Conseil", "Audit", "Autre"].map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={() => setShowAddService(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={addService} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
+      )}
+
 
       {showAddDepense && (
         <Modal title="Nouvelle dépense" onClose={() => setShowAddDepense(false)}>
