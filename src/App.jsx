@@ -61,18 +61,19 @@ const ic = {
   rapports:  "M18 20V10 M12 20V4 M6 20v-6",
   collab:    "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8 M16 3.13a4 4 0 010 7.75 M21 21v-2a4 4 0 00-3-3.87",
   docs:      "M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z M13 2v7h7",
+  depenses:  "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M12 6v6l4 2 M8 13h8 M8 17h8",
   settings:  "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z",
 };
 
 const MISSIONS = [
-  { label: "Tenue comptable mensuelle", prix: 150, unite: "mois" },
-  { label: "Révision annuelle des comptes", prix: 800, unite: "an" },
-  { label: "Établissement bilan & liasse", prix: 1200, unite: "an" },
-  { label: "Déclaration IS", prix: 400, unite: "an" },
-  { label: "Gestion paie (par salarié)", prix: 50, unite: "mois/salarié" },
-  { label: "Conseil juridique ponctuel", prix: 200, unite: "heure" },
-  { label: "Accompagnement création société", prix: 1500, unite: "forfait" },
-  { label: "Audit et diagnostic comptable", prix: 2500, unite: "forfait" },
+  { label: "Tenue comptable mensuelle", prix: 98000, unite: "mois" },
+  { label: "Révision annuelle des comptes", prix: 520000, unite: "an" },
+  { label: "Établissement bilan & liasse", prix: 780000, unite: "an" },
+  { label: "Déclaration IS", prix: 260000, unite: "an" },
+  { label: "Gestion paie (par salarié)", prix: 32500, unite: "mois/salarié" },
+  { label: "Conseil juridique ponctuel", prix: 130000, unite: "heure" },
+  { label: "Accompagnement création société", prix: 975000, unite: "forfait" },
+  { label: "Audit et diagnostic comptable", prix: 1625000, unite: "forfait" },
 ];
 
 // ── RESPONSIVE HOOK ──────────────────────────────────────────────────────────
@@ -135,18 +136,23 @@ export default function App() {
   const [devisClient, setDevisClient] = useState("");
   const [devisDate, setDevisDate] = useState(new Date().toISOString().split("T")[0]);
   const [devisSaving, setDevisSaving] = useState(false);
+  const [depenses, setDepenses] = useState([]);
+  const [showAddDepense, setShowAddDepense] = useState(false);
+  const [newDepense, setNewDepense] = useState({ libelle: "", montant: "", categorie: "Fournitures", date: new Date().toISOString().split("T")[0], note: "" });
+  const [depensePeriode, setDepensePeriode] = useState("jour");
 
   const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
   const [newEch, setNewEch] = useState({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [c, e, d] = await Promise.all([
-      db.get("clients"), db.get("echeances"), db.get("devis"),
+    const [c, e, d, dep] = await Promise.all([
+      db.get("clients"), db.get("echeances"), db.get("devis"), db.get("depenses"),
     ]);
     setClients(Array.isArray(c) ? c : []);
     setEcheances(Array.isArray(e) ? e : []);
     setDevisList(Array.isArray(d) ? d : []);
+    setDepenses(Array.isArray(dep) ? dep : []);
     setLoading(false);
   }, []);
 
@@ -175,6 +181,29 @@ export default function App() {
   const deleteEch = async (id) => { await db.delete("echeances", id); loadAll(); };
 
   // MESSAGES
+
+  // DEPENSES
+  const addDepense = async () => {
+    if (!newDepense.libelle || !newDepense.montant) return;
+    await db.post("depenses", { ...newDepense, montant: parseFloat(newDepense.montant) });
+    setNewDepense({ libelle: "", montant: "", categorie: "Fournitures", date: new Date().toISOString().split("T")[0], note: "" });
+    setShowAddDepense(false); loadAll();
+  };
+  const deleteDepense = async (id) => { await db.delete("depenses", id); loadAll(); };
+
+  const filterDepenses = (periode) => {
+    const now = new Date();
+    return depenses.filter(d => {
+      const date = new Date(d.date);
+      if (periode === "jour") return date.toDateString() === now.toDateString();
+      if (periode === "semestre") {
+        const semStart = now.getMonth() < 6 ? new Date(now.getFullYear(), 0, 1) : new Date(now.getFullYear(), 6, 1);
+        return date >= semStart && date <= now;
+      }
+      if (periode === "annee") return date.getFullYear() === now.getFullYear();
+      return true;
+    });
+  };
 
   // DEVIS
   const totalHT = devisLines.reduce((s, l) => s + l.mission.prix * l.qty, 0);
@@ -210,10 +239,11 @@ export default function App() {
     { id: "rapports",  label: "Rapports",         icon: ic.rapports },
     { id: "collab",    label: "Collaborateurs",   icon: ic.collab },
     { id: "documents", label: "Documents",        icon: ic.docs },
+    { id: "depenses",  label: "Dépenses",         icon: ic.depenses },
     { id: "settings",  label: "Paramètres",       icon: ic.settings },
   ];
 
-  const pageTitle = { dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", settings: "Paramètres" }[page];
+  const pageTitle = { dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", depenses: "Dépenses", settings: "Paramètres" }[page];
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
@@ -473,20 +503,20 @@ export default function App() {
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <input type="number" min={1} value={line.qty} onChange={e => updateLine(i, "qty", parseInt(e.target.value) || 1)} style={{ ...S.select, width: 60, textAlign: "center" }} />
                       </div>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: "#1a5c9e", minWidth: 80, textAlign: "right" }}>{(line.mission.prix * line.qty).toLocaleString("fr-FR")} €</div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: "#1a5c9e", minWidth: 80, textAlign: "right" }}>{(line.mission.prix * line.qty).toLocaleString("fr-FR")} FCFA</div>
                       <button onClick={() => removeLine(i)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#fff", cursor: "pointer", color: "#c0392b", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
                     </div>
                   ))}
                   <button onClick={addLine} style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 0", background: "none", border: "none", cursor: "pointer", color: "#1a5c9e", fontSize: 13, fontWeight: 600, marginTop: 8 }}><Icon d={ic.plus} size={14} stroke="#1a5c9e" /> Ajouter une ligne</button>
                   <div style={{ background: "#f5f8fc", borderRadius: 10, padding: "16px 20px", marginTop: 16 }}>
-                    {[["Total HT", `${totalHT.toLocaleString("fr-FR")} €`], ["TVA (20%)", `${(totalHT * 0.2).toLocaleString("fr-FR")} €`]].map(([k, v]) => (
+                    {[["Total HT", `${totalHT.toLocaleString("fr-FR")} FCFA`], ["TVA (20%)", `${(totalHT * 0.2).toLocaleString("fr-FR")} FCFA`]].map(([k, v]) => (
                       <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: "#1e3a57", marginBottom: 8 }}>
                         <span style={{ color: "#6b8aaa" }}>{k}</span><span style={{ fontWeight: 600 }}>{v}</span>
                       </div>
                     ))}
                     <div style={{ display: "flex", justifyContent: "space-between", borderTop: "2px solid #1a5c9e", paddingTop: 12, marginTop: 4 }}>
                       <span style={{ fontWeight: 700, fontSize: 16, color: "#1e3a57" }}>Total TTC</span>
-                      <span style={{ fontWeight: 800, fontSize: 20, color: "#1a5c9e" }}>{totalTTC.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €</span>
+                      <span style={{ fontWeight: 800, fontSize: 20, color: "#1a5c9e" }}>{totalTTC.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} FCFA</span>
                     </div>
                   </div>
                   <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16, flexWrap: "wrap" }}>
@@ -503,7 +533,7 @@ export default function App() {
                           <div style={{ fontWeight: 600, fontSize: 13, color: "#1e3a57" }}>{d.client}</div>
                           <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.date ? new Date(d.date).toLocaleDateString("fr-FR") : "—"}</div>
                         </div>
-                        <div style={{ fontWeight: 700, fontSize: 14, color: "#1a5c9e" }}>{d.total_ttc?.toLocaleString("fr-FR")} € TTC</div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: "#1a5c9e" }}>{d.total_ttc?.toLocaleString("fr-FR")} FCFA TTC</div>
                         <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20, background: d.statut === "Envoyé" ? "#e8f5ee" : "#f5f8fc", color: d.statut === "Envoyé" ? "#1a7a4a" : "#6b8aaa" }}>{d.statut}</span>
                         <button onClick={() => db.delete("devis", d.id).then(loadAll)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
                       </div>
@@ -526,7 +556,7 @@ export default function App() {
                           <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
                             <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg,#2e7fcf,#1a5c9e)", borderRadius: 4 }} />
                           </div>
-                          <div style={{ width: 80, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{v.toLocaleString("fr-FR")} €</div>
+                          <div style={{ width: 80, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{v.toLocaleString("fr-FR")} FCFA</div>
                         </div>
                       ))}
                     </div>
@@ -633,7 +663,100 @@ export default function App() {
               </div>
             )}
 
-            {/* ── PARAMÈTRES ── */}
+            {/* ── DÉPENSES ── */}
+            {page === "depenses" && (
+              <div>
+                {/* Période selector */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {[["jour", "Aujourd'hui"], ["semestre", "Ce semestre"], ["annee", "Cette année"], ["tout", "Tout"]].map(([val, label]) => (
+                      <button key={val} onClick={() => setDepensePeriode(val)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: depensePeriode === val ? "#1a5c9e" : "#fff", color: depensePeriode === val ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12, fontWeight: 500 }}>{label}</button>
+                    ))}
+                  </div>
+                  <button onClick={() => setShowAddDepense(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouvelle dépense</button>
+                </div>
+
+                {/* KPIs période */}
+                {(() => {
+                  const filtered = filterDepenses(depensePeriode);
+                  const total = filtered.reduce((s, d) => s + (d.montant || 0), 0);
+                  const cats = {};
+                  filtered.forEach(d => { cats[d.categorie] = (cats[d.categorie] || 0) + d.montant; });
+                  const topCat = Object.entries(cats).sort((a,b) => b[1]-a[1])[0];
+                  return (
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
+                      {[
+                        { label: "Total dépenses", value: total.toLocaleString("fr-FR") + " FCFA", color: "#c0392b", icon: ic.depenses },
+                        { label: "Nb de dépenses", value: filtered.length, color: "#1a5c9e", icon: ic.folder },
+                        { label: "Catégorie principale", value: topCat ? topCat[0] : "—", color: "#c17f2a", icon: ic.alert },
+                        { label: "Moyenne / dépense", value: filtered.length ? Math.round(total/filtered.length).toLocaleString("fr-FR") + " FCFA" : "—", color: "#1a7a4a", icon: ic.trend },
+                      ].map((k, i) => (
+                        <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "12px" : "16px 18px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", display: "flex", flexDirection: "column", gap: 4 }}>
+                          <div style={{ width: 34, height: 34, borderRadius: 9, background: k.color + "18", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 4 }}>
+                            <Icon d={k.icon} size={16} stroke={k.color} />
+                          </div>
+                          <div style={{ fontSize: isMobile ? 14 : 18, fontWeight: 800, color: "#1e3a57", lineHeight: 1.2 }}>{k.value}</div>
+                          <div style={{ fontSize: 11, color: "#6b8aaa" }}>{k.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+
+                {/* Répartition par catégorie */}
+                {(() => {
+                  const filtered = filterDepenses(depensePeriode);
+                  const total = filtered.reduce((s, d) => s + (d.montant || 0), 0);
+                  const cats = {};
+                  filtered.forEach(d => { cats[d.categorie] = (cats[d.categorie] || 0) + d.montant; });
+                  const catColors = { Fournitures: "#1a5c9e", Loyer: "#1a7a4a", Salaires: "#c17f2a", Transport: "#8e44ad", Informatique: "#c0392b", Communication: "#2980b9", Honoraires: "#e67e22", Autres: "#7f8c8d" };
+                  return Object.keys(cats).length > 0 ? (
+                    <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
+                      <div style={S.cardHeader}><Icon d={ic.trend} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Répartition par catégorie</span></div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {Object.entries(cats).sort((a,b) => b[1]-a[1]).map(([cat, montant]) => (
+                          <div key={cat} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ width: 100, fontSize: 12, color: "#4a6d8c", flexShrink: 0 }}>{cat}</div>
+                            <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
+                              <div style={{ width: `${total ? (montant/total*100) : 0}%`, height: "100%", background: catColors[cat] || "#1a5c9e", borderRadius: 4 }} />
+                            </div>
+                            <div style={{ width: 120, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{montant.toLocaleString("fr-FR")} FCFA</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+
+                {/* Liste des dépenses */}
+                <div className="card-hover" style={S.card}>
+                  <div style={S.cardHeader}><Icon d={ic.depenses} size={16} stroke="#c0392b" /><span style={S.cardTitle}>Liste des dépenses — {{"jour": "Aujourd'hui", "semestre": "Ce semestre", "annee": "Cette année", "tout": "Tout"}[depensePeriode]}</span></div>
+                  {filterDepenses(depensePeriode).length === 0 && <div style={S.empty}>Aucune dépense enregistrée pour cette période</div>}
+                  {filterDepenses(depensePeriode).map((d, i) => {
+                    const catColors = { Fournitures: "#1a5c9e", Loyer: "#1a7a4a", Salaires: "#c17f2a", Transport: "#8e44ad", Informatique: "#c0392b", Communication: "#2980b9", Honoraires: "#e67e22", Autres: "#7f8c8d" };
+                    const color = catColors[d.categorie] || "#6b8aaa";
+                    return (
+                      <div key={d.id} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #f0f4fa", flexWrap: isMobile ? "wrap" : "nowrap" }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 8, background: color + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon d={ic.depenses} size={15} stroke={color} />
+                        </div>
+                        <div style={{ flex: 2, minWidth: 120 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: "#1e3a57" }}>{d.libelle}</div>
+                          {d.note && <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.note}</div>}
+                        </div>
+                        <div style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: color + "18", color, flexShrink: 0 }}>{d.categorie}</div>
+                        <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0 }}>{d.date ? new Date(d.date).toLocaleDateString("fr-FR") : "—"}</div>
+                        <div style={{ fontWeight: 800, fontSize: 14, color: "#c0392b", flexShrink: 0, minWidth: 120, textAlign: "right" }}>{(d.montant || 0).toLocaleString("fr-FR")} FCFA</div>
+                        <button onClick={() => deleteDepense(d.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+
+            {/* ── PARAMÈTRES ── */
             {page === "settings" && (
               <div style={{ maxWidth: 680 }}>
                 <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
@@ -683,7 +806,7 @@ export default function App() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={S.formGroup}>
                       <label style={S.label}>Devise</label>
-                      <select style={S.select}><option>Euro (€)</option><option>Franc CFA (XAF)</option><option>Dollar ($)</option></select>
+                      <select style={S.select}><option>Euro (FCFA)</option><option>Franc CFA (XAF)</option><option>Dollar ($)</option></select>
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Taux de TVA par défaut</label>
@@ -772,6 +895,40 @@ export default function App() {
           </div>
         </Modal>
       )}
+
+      {showAddDepense && (
+        <Modal title="Nouvelle dépense" onClose={() => setShowAddDepense(false)}>
+          <div style={S.formGroup}>
+            <label style={S.label}>Libellé *</label>
+            <input placeholder="Ex: Achat papier, Loyer bureau..." value={newDepense.libelle} onChange={e => setNewDepense(p => ({ ...p, libelle: e.target.value }))} style={S.input} />
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Montant (FCFA) *</label>
+              <input type="number" placeholder="0" value={newDepense.montant} onChange={e => setNewDepense(p => ({ ...p, montant: e.target.value }))} style={S.input} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Date</label>
+              <input type="date" value={newDepense.date} onChange={e => setNewDepense(p => ({ ...p, date: e.target.value }))} style={S.select} />
+            </div>
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Catégorie</label>
+            <select value={newDepense.categorie} onChange={e => setNewDepense(p => ({ ...p, categorie: e.target.value }))} style={S.select}>
+              {["Fournitures", "Loyer", "Salaires", "Transport", "Informatique", "Communication", "Honoraires", "Autres"].map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Note (optionnel)</label>
+            <input placeholder="Précision sur la dépense..." value={newDepense.note} onChange={e => setNewDepense(p => ({ ...p, note: e.target.value }))} style={S.input} />
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={() => setShowAddDepense(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={addDepense} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
+      )}
+
 
     </div>
   );
