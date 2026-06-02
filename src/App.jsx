@@ -143,7 +143,9 @@ export default function App() {
   const [depensePeriode, setDepensePeriode] = useState("jour");
   const [services, setServices] = useState([]);
   const [showAddService, setShowAddService] = useState(false);
-  const [newService, setNewService] = useState({ nom: "", description: "", tarif: "", unite: "forfait", categorie: "Comptabilité", actif: true });
+  const [newService, setNewService] = useState({ nom: "", description: "", tarif: "", unite: "forfait", groupe: "Assistance Comptable", actif: true });
+  const [showEditService, setShowEditService] = useState(false);
+  const [editService, setEditService] = useState(null);
 
   const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
   const [newEch, setNewEch] = useState({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
@@ -189,12 +191,21 @@ export default function App() {
 
   // SERVICES
   const addService = async () => {
-    if (!newService.nom || !newService.tarif) return;
-    await db.post("services", { ...newService, tarif: parseFloat(newService.tarif) });
-    setNewService({ nom: "", description: "", tarif: "", unite: "forfait", categorie: "Comptabilité", actif: true });
+    if (!newService.nom) return;
+    await db.post("services", { nom: newService.nom, tarif: parseFloat(newService.tarif) || null, unite: newService.unite, groupe: newService.groupe, actif: true });
+    setNewService({ nom: "", description: "", tarif: "", unite: "forfait", groupe: "Assistance Comptable", actif: true });
     setShowAddService(false); loadAll();
   };
   const toggleServiceActif = async (s) => { await db.patch("services", s.id, { actif: !s.actif }); loadAll(); };
+  const updateService = async () => {
+    if (!editService) return;
+    if (editService.id) {
+      await db.patch("services", editService.id, { nom: editService.nom, tarif: parseFloat(editService.tarif) || null, unite: editService.unite, groupe: editService.groupe });
+    } else {
+      await db.post("services", { nom: editService.nom, tarif: parseFloat(editService.tarif) || null, unite: editService.unite || 'forfait', groupe: editService.groupe, actif: true });
+    }
+    setShowEditService(false); setEditService(null); loadAll();
+  };
   const deleteService = async (id) => { await db.delete("services", id); loadAll(); };
 
   // DEPENSES
@@ -746,117 +757,127 @@ export default function App() {
 
             {/* ── SERVICES ── */}
             {page === "services" && (() => {
-              const SERVICES_DATA = [
-                {
-                  groupe: "Assistance Comptable",
-                  color: "#1a5c9e",
-                  bg: "#e8f0fb",
-                  icon: ic.folder,
-                  items: [
-                    "Conseils et stratégies financiers",
-                    "Analyse et diagnostic financier",
-                    "Ingénierie financière",
-                    "Installation et paramétrage de logiciel de gestion (Sage Saari...)",
-                    "Production des états financiers de systèmes (DSF - CEP - PT)",
-                    "Audit comptable",
-                    "Manuel de procédures",
-                  ]
-                },
-                {
-                  groupe: "Assistance Fiscale",
-                  color: "#c0392b",
-                  bg: "#fff0f0",
-                  icon: ic.devis,
-                  items: [
-                    "Déclaration fiscale (TVA - AIR/AIS - RTS - DSF)",
-                    "Respect des échéances fiscales",
-                    "Élaboration et rédaction des correspondances fiscales",
-                    "Élaboration des mesures de sécurité juridico-fiscales",
-                    "Élaboration légale des mesures d'optimisation fiscale",
-                    "Audit et simulation fiscale avant dépôt DSF",
-                    "Constitution d'office en phase juridictionnelle",
-                  ]
-                },
-                {
-                  groupe: "Assistance Sociale",
-                  color: "#1a7a4a",
-                  bg: "#e8f5ee",
-                  icon: ic.collab,
-                  items: [
-                    "Déclarations sociales",
-                    "Respect des échéances",
-                    "Élaboration des correspondances sociales",
-                    "Élaboration des mesures de sécurité juridico-sociales",
-                    "Élaboration légale des mesures d'optimisation sociales annuelles",
-                  ]
-                },
-                {
-                  groupe: "Assistance Juridique",
-                  color: "#8e44ad",
-                  bg: "#f5eefb",
-                  icon: ic.docs,
-                  items: [
-                    "Rédaction des contrats",
-                    "Rédaction des statuts sous seing privé",
-                    "Aide à la création d'entreprise",
-                    "Formation du personnel interne",
-                  ]
-                },
+              const GROUPES = ["Assistance Comptable", "Assistance Fiscale", "Assistance Sociale", "Assistance Juridique"];
+              const groupColors = {
+                "Assistance Comptable": { color: "#1a5c9e", bg: "#e8f0fb", icon: ic.folder },
+                "Assistance Fiscale":   { color: "#c0392b", bg: "#fff0f0", icon: ic.devis },
+                "Assistance Sociale":   { color: "#1a7a4a", bg: "#e8f5ee", icon: ic.collab },
+                "Assistance Juridique": { color: "#8e44ad", bg: "#f5eefb", icon: ic.docs },
+              };
+
+              // Merge static defaults with dynamic services from DB
+              const DEFAULTS = [
+                { groupe: "Assistance Comptable", nom: "Conseils et stratégies financiers", tarif: null },
+                { groupe: "Assistance Comptable", nom: "Analyse et diagnostic financier", tarif: null },
+                { groupe: "Assistance Comptable", nom: "Ingénierie financière", tarif: null },
+                { groupe: "Assistance Comptable", nom: "Installation et paramétrage de logiciel de gestion (Sage Saari...)", tarif: null },
+                { groupe: "Assistance Comptable", nom: "Production des états financiers de systèmes (DSF - CEP - PT)", tarif: null },
+                { groupe: "Assistance Comptable", nom: "Audit comptable", tarif: null },
+                { groupe: "Assistance Comptable", nom: "Manuel de procédures", tarif: null },
+                { groupe: "Assistance Fiscale", nom: "Déclaration fiscale (TVA - AIR/AIS - RTS - DSF)", tarif: null },
+                { groupe: "Assistance Fiscale", nom: "Respect des échéances fiscales", tarif: null },
+                { groupe: "Assistance Fiscale", nom: "Élaboration et rédaction des correspondances fiscales", tarif: null },
+                { groupe: "Assistance Fiscale", nom: "Élaboration des mesures de sécurité juridico-fiscales", tarif: null },
+                { groupe: "Assistance Fiscale", nom: "Élaboration légale des mesures d'optimisation fiscale", tarif: null },
+                { groupe: "Assistance Fiscale", nom: "Audit et simulation fiscale avant dépôt DSF", tarif: null },
+                { groupe: "Assistance Fiscale", nom: "Constitution d'office en phase juridictionnelle", tarif: null },
+                { groupe: "Assistance Sociale", nom: "Déclarations sociales", tarif: null },
+                { groupe: "Assistance Sociale", nom: "Respect des échéances", tarif: null },
+                { groupe: "Assistance Sociale", nom: "Élaboration des correspondances sociales", tarif: null },
+                { groupe: "Assistance Sociale", nom: "Élaboration des mesures de sécurité juridico-sociales", tarif: null },
+                { groupe: "Assistance Sociale", nom: "Élaboration légale des mesures d'optimisation sociales annuelles", tarif: null },
+                { groupe: "Assistance Juridique", nom: "Rédaction des contrats", tarif: null },
+                { groupe: "Assistance Juridique", nom: "Rédaction des statuts sous seing privé", tarif: null },
+                { groupe: "Assistance Juridique", nom: "Aide à la création d'entreprise", tarif: null },
+                { groupe: "Assistance Juridique", nom: "Formation du personnel interne", tarif: null },
               ];
 
-              const totalServices = SERVICES_DATA.reduce((s, g) => s + g.items.length, 0);
+              // Merge: DB services override defaults by nom+groupe
+              const allServices = DEFAULTS.map(def => {
+                const dbMatch = services.find(s => s.nom === def.nom && s.groupe === def.groupe);
+                return dbMatch || { ...def, id: null };
+              });
+              // Add extra services from DB not in defaults
+              services.forEach(s => {
+                if (!DEFAULTS.find(d => d.nom === s.nom && d.groupe === s.groupe)) {
+                  allServices.push(s);
+                }
+              });
+
+              const totalServices = allServices.length;
 
               return (
                 <div>
-                  {/* Header KPIs */}
+                  {/* KPIs */}
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
-                    {SERVICES_DATA.map((g, i) => (
-                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", borderTop: `3px solid ${g.color}` }}>
-                        <div style={{ width: 34, height: 34, borderRadius: 9, background: g.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
-                          <Icon d={g.icon} size={16} stroke={g.color} />
+                    {GROUPES.map((g, i) => {
+                      const gc = groupColors[g];
+                      const count = allServices.filter(s => s.groupe === g).length;
+                      return (
+                        <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", borderTop: `3px solid ${gc.color}` }}>
+                          <div style={{ width: 34, height: 34, borderRadius: 9, background: gc.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+                            <Icon d={gc.icon} size={16} stroke={gc.color} />
+                          </div>
+                          <div style={{ fontSize: 22, fontWeight: 800, color: gc.color }}>{count}</div>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: "#1e3a57", marginTop: 2 }}>{g}</div>
                         </div>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: g.color }}>{g.items.length}</div>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: "#1e3a57", marginTop: 2 }}>{g.groupe}</div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
-                  {/* Groupes de services */}
+                  {/* Bouton ajouter */}
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+                    <button onClick={() => { setNewService({ nom: "", description: "", tarif: "", unite: "forfait", groupe: "Assistance Comptable", actif: true }); setShowAddService(true); }} style={S.primaryBtn}>
+                      <Icon d={ic.plus} size={14} stroke="#fff" /> Nouveau service
+                    </button>
+                  </div>
+
+                  {/* Groupes */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    {SERVICES_DATA.map((g, gi) => (
-                      <div key={gi} className="card-hover" style={{ ...S.card, borderLeft: `4px solid ${g.color}` }}>
-                        {/* En-tête groupe */}
-                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${g.bg}` }}>
-                          <div style={{ width: 40, height: 40, borderRadius: 10, background: g.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <Icon d={g.icon} size={18} stroke={g.color} />
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: "#1e3a57" }}>{g.groupe}</div>
-                            <div style={{ fontSize: 12, color: "#8da4c0" }}>{g.items.length} service{g.items.length > 1 ? "s" : ""}</div>
-                          </div>
-                        </div>
-
-                        {/* Liste des services */}
-                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2,1fr)", gap: 10 }}>
-                          {g.items.map((item, ii) => (
-                            <div key={ii} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", borderRadius: 9, background: g.bg, transition: "all 0.2s" }}>
-                              <div style={{ width: 20, height: 20, borderRadius: "50%", background: g.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-                                <Icon d={ic.check} size={11} stroke="#fff" />
-                              </div>
-                              <span style={{ fontSize: 13, color: "#1e3a57", fontWeight: 500, lineHeight: 1.4 }}>{item}</span>
+                    {GROUPES.map((g, gi) => {
+                      const gc = groupColors[g];
+                      const groupItems = allServices.filter(s => s.groupe === g);
+                      return (
+                        <div key={gi} className="card-hover" style={{ ...S.card, borderLeft: `4px solid ${gc.color}` }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${gc.bg}` }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 10, background: gc.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <Icon d={gc.icon} size={18} stroke={gc.color} />
                             </div>
-                          ))}
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 15, fontWeight: 800, color: "#1e3a57" }}>{g}</div>
+                              <div style={{ fontSize: 12, color: "#8da4c0" }}>{groupItems.length} service{groupItems.length > 1 ? "s" : ""}</div>
+                            </div>
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2,1fr)", gap: 10 }}>
+                            {groupItems.map((item, ii) => (
+                              <div key={ii} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", borderRadius: 9, background: gc.bg, position: "relative" }}>
+                                <div style={{ width: 20, height: 20, borderRadius: "50%", background: gc.color, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                                  <Icon d={ic.check} size={11} stroke="#fff" />
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 500, lineHeight: 1.4 }}>{item.nom}</div>
+                                  {item.tarif && <div style={{ fontSize: 12, fontWeight: 700, color: gc.color, marginTop: 4 }}>{Number(item.tarif).toLocaleString("fr-FR")} FCFA / {item.unite || "forfait"}</div>}
+                                </div>
+                                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                                  <button onClick={() => { setEditService(item); setShowEditService(true); }} style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid #e2eaf4", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <Icon d={ic.trend} size={12} stroke="#1a5c9e" />
+                                  </button>
+                                  {item.id && <button onClick={() => deleteService(item.id)} style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={12} stroke="#c0392b" /></button>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
-                  {/* Footer total */}
+                  {/* Footer */}
                   <div style={{ marginTop: 16, textAlign: "center", padding: "14px", background: "#fff", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,30,80,.06)" }}>
                     <span style={{ fontSize: 13, color: "#6b8aaa" }}>Total : </span>
                     <span style={{ fontSize: 15, fontWeight: 800, color: "#1a5c9e" }}>{totalServices} services</span>
                     <span style={{ fontSize: 13, color: "#6b8aaa" }}> répartis en </span>
-                    <span style={{ fontSize: 15, fontWeight: 800, color: "#1a5c9e" }}>{SERVICES_DATA.length} groupes</span>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: "#1a5c9e" }}>{GROUPES.length} groupes</span>
                   </div>
                 </div>
               );
@@ -1092,6 +1113,69 @@ export default function App() {
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
             <button onClick={() => setShowAddEcheance(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
             <button onClick={addEcheance} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
+      )}
+
+
+      {showAddService && (
+        <Modal title="Nouveau service" onClose={() => setShowAddService(false)}>
+          <div style={S.formGroup}>
+            <label style={S.label}>Groupe *</label>
+            <select value={newService.groupe} onChange={e => setNewService(p => ({ ...p, groupe: e.target.value }))} style={S.select}>
+              {["Assistance Comptable", "Assistance Fiscale", "Assistance Sociale", "Assistance Juridique"].map(g => <option key={g}>{g}</option>)}
+            </select>
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Nom du service *</label>
+            <input placeholder="Ex: Conseil en gestion..." value={newService.nom} onChange={e => setNewService(p => ({ ...p, nom: e.target.value }))} style={S.input} />
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Tarif (FCFA)</label>
+              <input type="number" placeholder="0" value={newService.tarif} onChange={e => setNewService(p => ({ ...p, tarif: e.target.value }))} style={S.input} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Unité</label>
+              <select value={newService.unite} onChange={e => setNewService(p => ({ ...p, unite: e.target.value }))} style={S.select}>
+                {["forfait", "mois", "an", "heure", "acte", "dossier"].map(u => <option key={u}>{u}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={() => setShowAddService(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={addService} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
+      )}
+
+      {showEditService && editService && (
+        <Modal title="Modifier le service" onClose={() => { setShowEditService(false); setEditService(null); }}>
+          <div style={S.formGroup}>
+            <label style={S.label}>Groupe</label>
+            <select value={editService.groupe} onChange={e => setEditService(p => ({ ...p, groupe: e.target.value }))} style={S.select}>
+              {["Assistance Comptable", "Assistance Fiscale", "Assistance Sociale", "Assistance Juridique"].map(g => <option key={g}>{g}</option>)}
+            </select>
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Nom du service</label>
+            <input value={editService.nom} onChange={e => setEditService(p => ({ ...p, nom: e.target.value }))} style={S.input} />
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Tarif (FCFA)</label>
+              <input type="number" placeholder="0" value={editService.tarif || ""} onChange={e => setEditService(p => ({ ...p, tarif: e.target.value }))} style={S.input} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Unité</label>
+              <select value={editService.unite || "forfait"} onChange={e => setEditService(p => ({ ...p, unite: e.target.value }))} style={S.select}>
+                {["forfait", "mois", "an", "heure", "acte", "dossier"].map(u => <option key={u}>{u}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={() => { setShowEditService(false); setEditService(null); }} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={updateService} style={S.primaryBtn}>Enregistrer</button>
           </div>
         </Modal>
       )}
