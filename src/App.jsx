@@ -146,6 +146,7 @@ export default function App() {
   const [newService, setNewService] = useState({ nom: "", description: "", tarif: "", unite: "forfait", groupe: "Assistance Comptable", actif: true });
   const [showEditService, setShowEditService] = useState(false);
   const [editService, setEditService] = useState(null);
+  const [serviceSearch, setServiceSearch] = useState("");
 
   const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
   const [newEch, setNewEch] = useState({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
@@ -919,7 +920,11 @@ export default function App() {
                   </div>
 
                   {/* Bouton ajouter */}
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f5f8fc", border: "1px solid #87CEEB", borderRadius: 8, padding: "7px 14px", flex: isMobile ? "1" : "0 0 260px" }}>
+                      <Icon d={ic.search} size={15} stroke="#8da4c0" />
+                      <input placeholder="Rechercher un service…" value={serviceSearch} onChange={e => setServiceSearch(e.target.value)} style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#1e3a57", width: "100%" }} />
+                    </div>
                     <button onClick={() => { setNewService({ nom: "", description: "", tarif: "", unite: "forfait", groupe: "Assistance Comptable", actif: true }); setShowAddService(true); }} style={S.primaryBtn}>
                       <Icon d={ic.plus} size={14} stroke="#fff" /> Nouveau service
                     </button>
@@ -929,7 +934,7 @@ export default function App() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     {GROUPES.map((g, gi) => {
                       const gc = groupColors[g];
-                      const groupItems = allServices.filter(s => s.groupe === g);
+                      const groupItems = allServices.filter(s => s.groupe === g && (serviceSearch === "" || s.nom.toLowerCase().includes(serviceSearch.toLowerCase())));
                       return (
                         <div key={gi} className="card-hover" style={{ ...S.card, borderLeft: `4px solid ${gc.color}` }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${gc.bg}` }}>
