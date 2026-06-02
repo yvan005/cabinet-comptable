@@ -147,6 +147,10 @@ export default function App() {
   const [showEditService, setShowEditService] = useState(false);
   const [editService, setEditService] = useState(null);
   const [serviceSearch, setServiceSearch] = useState("");
+  const [devisClientSearch, setDevisClientSearch] = useState("");
+  const [devisServiceSearch, setDevisServiceSearch] = useState("");
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(null);
 
   const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
   const [newEch, setNewEch] = useState({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
@@ -557,9 +561,30 @@ export default function App() {
                     <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 20, padding: "16px", background: "#f5f8fc", borderRadius: 10 }}>
                       <div style={S.formGroup}>
                         <label style={S.label}>Client *</label>
-                        <select value={devisClient} onChange={e => setDevisClient(e.target.value)} style={S.select}>
-                          {clients.map(c => <option key={c.id}>{c.nom}</option>)}
-                        </select>
+                        <div style={{ position: "relative" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid #87CEEB", borderRadius: 8, padding: "8px 12px", background: "#fff", cursor: "pointer" }} onClick={() => setShowClientDropdown(v => !v)}>
+                            <span style={{ flex: 1, fontSize: 13, color: devisClient ? "#1e3a57" : "#8da4c0" }}>{devisClient || "Sélectionner un client…"}</span>
+                            <Icon d={ic.search} size={14} stroke="#8da4c0" />
+                          </div>
+                          {showClientDropdown && (
+                            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #87CEEB", borderRadius: 8, zIndex: 200, boxShadow: "0 8px 24px rgba(0,30,80,0.12)", marginTop: 4 }}>
+                              <div style={{ padding: "8px 10px", borderBottom: "1px solid #f0f4fa" }}>
+                                <input autoFocus placeholder="Rechercher un client…" value={devisClientSearch} onChange={e => setDevisClientSearch(e.target.value)} style={{ width: "100%", border: "none", outline: "none", fontSize: 13, color: "#1e3a57", background: "transparent" }} />
+                              </div>
+                              <div style={{ maxHeight: 200, overflowY: "auto" }}>
+                                {clients.filter(c => c.nom.toLowerCase().includes(devisClientSearch.toLowerCase())).map(c => (
+                                  <div key={c.id} onClick={() => { setDevisClient(c.nom); setShowClientDropdown(false); setDevisClientSearch(""); }} style={{ padding: "10px 14px", cursor: "pointer", fontSize: 13, color: "#1e3a57", borderBottom: "1px solid #f5f8fc", background: devisClient === c.nom ? "#e8f0fb" : "transparent", fontWeight: devisClient === c.nom ? 700 : 400 }}>
+                                    <div>{c.nom}</div>
+                                    {c.secteur && <div style={{ fontSize: 11, color: "#8da4c0" }}>{c.secteur}</div>}
+                                  </div>
+                                ))}
+                                {clients.filter(c => c.nom.toLowerCase().includes(devisClientSearch.toLowerCase())).length === 0 && (
+                                  <div style={{ padding: "12px 14px", fontSize: 13, color: "#8da4c0", textAlign: "center" }}>Aucun client trouvé</div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div style={S.formGroup}>
                         <label style={S.label}>Date</label>
@@ -591,16 +616,38 @@ export default function App() {
 
                       {devisLines.map((line, i) => (
                         <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0", borderBottom: "1px solid #f0f4fa", flexWrap: isMobile ? "wrap" : "nowrap" }}>
-                          <div style={{ flex: 3, minWidth: isMobile ? "100%" : "auto" }}>
-                            <select value={line.nom || ""} onChange={e => {
-                              const found = allMissions.find(m => m.nom === e.target.value);
-                              updateLine(i, "full", found || { nom: e.target.value, groupe: "", tarif: 0, unite: "forfait" });
-                            }} style={{ ...S.select, width: "100%", fontSize: 12 }}>
-                              <optgroup label="Assistance Comptable">{allMissions.filter(m => m.groupe === "Assistance Comptable").map(m => <option key={m.nom}>{m.nom}</option>)}</optgroup>
-                              <optgroup label="Assistance Fiscale">{allMissions.filter(m => m.groupe === "Assistance Fiscale").map(m => <option key={m.nom}>{m.nom}</option>)}</optgroup>
-                              <optgroup label="Assistance Sociale">{allMissions.filter(m => m.groupe === "Assistance Sociale").map(m => <option key={m.nom}>{m.nom}</option>)}</optgroup>
-                              <optgroup label="Assistance Juridique">{allMissions.filter(m => m.groupe === "Assistance Juridique").map(m => <option key={m.nom}>{m.nom}</option>)}</optgroup>
-                            </select>
+                          <div style={{ flex: 3, minWidth: isMobile ? "100%" : "auto", position: "relative" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid #87CEEB", borderRadius: 8, padding: "8px 10px", background: "#fff", cursor: "pointer", fontSize: 12 }} onClick={() => setShowServiceDropdown(showServiceDropdown === i ? null : i)}>
+                              <span style={{ flex: 1, color: line.nom ? "#1e3a57" : "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{line.nom || "Sélectionner un service…"}</span>
+                              <Icon d={ic.search} size={13} stroke="#8da4c0" />
+                            </div>
+                            {showServiceDropdown === i && (
+                              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#fff", border: "1px solid #87CEEB", borderRadius: 8, zIndex: 200, boxShadow: "0 8px 24px rgba(0,30,80,0.12)", marginTop: 4, minWidth: 320 }}>
+                                <div style={{ padding: "8px 10px", borderBottom: "1px solid #f0f4fa" }}>
+                                  <input autoFocus placeholder="Rechercher un service…" value={devisServiceSearch} onChange={e => setDevisServiceSearch(e.target.value)} style={{ width: "100%", border: "none", outline: "none", fontSize: 12, color: "#1e3a57", background: "transparent" }} />
+                                </div>
+                                <div style={{ maxHeight: 250, overflowY: "auto" }}>
+                                  {["Assistance Comptable","Assistance Fiscale","Assistance Sociale","Assistance Juridique"].map(groupe => {
+                                    const filtered = allMissions.filter(m => m.groupe === groupe && m.nom.toLowerCase().includes(devisServiceSearch.toLowerCase()));
+                                    if (filtered.length === 0) return null;
+                                    return (
+                                      <div key={groupe}>
+                                        <div style={{ padding: "6px 12px", fontSize: 10, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", background: "#f5f8fc", letterSpacing: 0.5 }}>{groupe}</div>
+                                        {filtered.map(m => (
+                                          <div key={m.nom} onClick={() => { updateLine(i, "full", m); setShowServiceDropdown(null); setDevisServiceSearch(""); }} style={{ padding: "9px 14px", cursor: "pointer", fontSize: 12, color: "#1e3a57", borderBottom: "1px solid #f5f8fc", background: line.nom === m.nom ? "#e8f0fb" : "transparent" }}>
+                                            <div style={{ fontWeight: line.nom === m.nom ? 700 : 400 }}>{m.nom}</div>
+                                            {m.tarif > 0 && <div style={{ fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>{m.tarif.toLocaleString("fr-FR")} FCFA / {m.unite}</div>}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    );
+                                  })}
+                                  {allMissions.filter(m => m.nom.toLowerCase().includes(devisServiceSearch.toLowerCase())).length === 0 && (
+                                    <div style={{ padding: "12px 14px", fontSize: 12, color: "#8da4c0", textAlign: "center" }}>Aucun service trouvé</div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                           <div style={{ flex: 1.2, fontSize: 11, color: "#6b8aaa", display: isMobile ? "none" : "block" }}>{line.groupe || "—"}</div>
                           <div style={{ width: 60 }}>
