@@ -151,6 +151,8 @@ export default function App() {
   const [devisServiceSearch, setDevisServiceSearch] = useState("");
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [showServiceDropdown, setShowServiceDropdown] = useState(null);
+  const [previewDevis, setPreviewDevis] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
   const [newEch, setNewEch] = useState({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
@@ -193,6 +195,17 @@ export default function App() {
   const deleteEch = async (id) => { await db.delete("echeances", id); loadAll(); };
 
   // MESSAGES
+
+  // DEVIS ACTIONS
+  const dupliquerDevis = (d) => {
+    setDevisClient(d.client);
+    const lignes = (d.lignes || []).map(l => ({ nom: l.service || l.mission || "", groupe: l.groupe || "", tarif: l.tarif || l.prix || 0, unite: l.unite || "forfait", qty: l.qty || 1 }));
+    setDevisLines(lignes.length > 0 ? lignes : [{ nom: "", groupe: "", tarif: 0, unite: "forfait", qty: 1 }]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const marquerPaye = async (id) => { await db.patch("devis", id, { statut: "Payé", date_paiement: new Date().toISOString().split("T")[0] }); loadAll(); };
+  const marquerAnnule = async (id) => { await db.patch("devis", id, { statut: "Annulé" }); loadAll(); };
+  const ouvrirApercu = (d, lignes, client, num) => { setPreviewDevis({ ...d, lignes, client, num }); setShowPreview(true); };
 
   // SERVICES
   const addService = async () => {
@@ -683,8 +696,15 @@ export default function App() {
                     </div>
 
                     <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16, flexWrap: "wrap" }}>
-                      <button onClick={() => saveDevis("Brouillon")} disabled={devisSaving} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>{devisSaving ? "…" : "Brouillon"}</button>
-                      <button onClick={() => saveDevis("Envoyé")} disabled={devisSaving} style={S.primaryBtn}><Icon d={ic.send} size={14} stroke="#fff" />{devisSaving ? "…" : "Envoyer au client"}</button>
+                      <button onClick={() => saveDevis("Brouillon")} disabled={devisSaving} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>
+                        {devisSaving ? "…" : "💾 Brouillon"}
+                      </button>
+                      <button onClick={() => ouvrirApercu({ client: devisClient, date: devisDate, total_ht: totalHT, total_ttc: totalHT * 1.1925 }, devisLines, clients.find(c => c.nom === devisClient), "DEV-" + String((devisList.length + 1)).padStart(4, "0") + "-" + new Date().getFullYear())} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#fff8e6", color: "#c17f2a", border: "1px solid #f0d080", cursor: "pointer", fontSize: 13 }}>
+                        👁 Aperçu
+                      </button>
+                      <button onClick={() => saveDevis("Envoyé")} disabled={devisSaving} style={S.primaryBtn}>
+                        <Icon d={ic.send} size={14} stroke="#fff" />{devisSaving ? "…" : "Enregistrer"}
+                      </button>
                     </div>
                   </div>
 
@@ -700,8 +720,14 @@ export default function App() {
                             <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.date ? new Date(d.date).toLocaleDateString("fr-FR") : "—"}</div>
                           </div>
                           <div style={{ fontWeight: 700, fontSize: 14, color: "#1a5c9e" }}>{(d.total_ttc || 0).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA TTC</div>
-                          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20, background: d.statut === "Envoyé" ? "#e8f5ee" : "#f5f8fc", color: d.statut === "Envoyé" ? "#1a7a4a" : "#6b8aaa" }}>{d.statut}</span>
-                          <button onClick={() => db.delete("devis", d.id).then(loadAll)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20, flexShrink: 0, background: d.statut === "Payé" ? "#e8f5ee" : d.statut === "Envoyé" ? "#e8f0fb" : d.statut === "Annulé" ? "#fff0f0" : "#f5f8fc", color: d.statut === "Payé" ? "#1a7a4a" : d.statut === "Envoyé" ? "#1a5c9e" : d.statut === "Annulé" ? "#c0392b" : "#6b8aaa" }}>{d.statut}</span>
+                          <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                            <button title="Aperçu" onClick={() => ouvrirApercu(d, d.lignes || [], clients.find(c => c.nom === d.client), "DEV-" + String(devisList.length - idx).padStart(4, "0") + "-" + new Date(d.created_at || d.date).getFullYear())} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>👁</button>
+                            <button title="Dupliquer" onClick={() => dupliquerDevis(d)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>📋</button>
+                            {d.statut === "Envoyé" && <button title="Marquer Payé" onClick={() => marquerPaye(d.id)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>✅</button>}
+                            {d.statut !== "Annulé" && d.statut !== "Payé" && <button title="Annuler" onClick={() => marquerAnnule(d.id)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🚫</button>}
+                            <button title="Supprimer" onClick={() => db.delete("devis", d.id).then(loadAll)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1260,6 +1286,96 @@ export default function App() {
             <button onClick={addEcheance} style={S.primaryBtn}>Enregistrer</button>
           </div>
         </Modal>
+      )}
+
+
+      {/* ── APERÇU DEVIS ── */}
+      {showPreview && previewDevis && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(15,39,68,.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}>
+          <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 720, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,.3)" }}>
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: "1px solid #e2eaf4" }}>
+              <span style={{ fontWeight: 700, fontSize: 15, color: "#1e3a57" }}>Aperçu du devis</span>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => window.print()} style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 16px", borderRadius: 8, background: "#1a5c9e", color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                  🖨 Imprimer / PDF
+                </button>
+                <button onClick={() => setShowPreview(false)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.close} size={16} stroke="#4a6d8c" /></button>
+              </div>
+            </div>
+
+            {/* Contenu imprimable */}
+            <div id="devis-print" style={{ overflowY: "auto", flex: 1, padding: "32px" }}>
+              <style>{`@media print { body * { visibility: hidden; } #devis-print, #devis-print * { visibility: visible; } #devis-print { position: fixed; top: 0; left: 0; width: 100%; padding: 32px; } }`}</style>
+
+              {/* En-tête cabinet */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
+                <div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: "#1a5c9e" }}>CGA-CDA</div>
+                  <div style={{ fontSize: 11, color: "#6b8aaa", maxWidth: 240, lineHeight: 1.5 }}>Centrale des Associés - Conseils & Expertise Comptable et Fiscale</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#1e3a57" }}>DEVIS</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1a5c9e" }}>{previewDevis.num}</div>
+                  <div style={{ fontSize: 12, color: "#6b8aaa", marginTop: 4 }}>Date : {previewDevis.date ? new Date(previewDevis.date).toLocaleDateString("fr-FR") : new Date().toLocaleDateString("fr-FR")}</div>
+                </div>
+              </div>
+
+              {/* Infos client */}
+              <div style={{ background: "#f5f8fc", borderRadius: 10, padding: "16px 20px", marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", marginBottom: 8, letterSpacing: 0.5 }}>Client</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "#1e3a57" }}>{previewDevis.client}</div>
+                {previewDevis.clientData?.secteur && <div style={{ fontSize: 12, color: "#6b8aaa", marginTop: 2 }}>Secteur : {previewDevis.clientData.secteur}</div>}
+              </div>
+
+              {/* Lignes */}
+              <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 24 }}>
+                <thead>
+                  <tr style={{ background: "#1a5c9e" }}>
+                    <th style={{ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: "#fff", textAlign: "left", borderRadius: "6px 0 0 0" }}>Service</th>
+                    <th style={{ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: "#fff", textAlign: "left" }}>Groupe</th>
+                    <th style={{ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: "#fff", textAlign: "center" }}>Qté</th>
+                    <th style={{ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: "#fff", textAlign: "right" }}>P.U. HT</th>
+                    <th style={{ padding: "10px 12px", fontSize: 11, fontWeight: 700, color: "#fff", textAlign: "right", borderRadius: "0 6px 0 0" }}>Total HT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(previewDevis.lignes || []).map((l, i) => (
+                    <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f5f8fc" }}>
+                      <td style={{ padding: "10px 12px", fontSize: 12, color: "#1e3a57", borderBottom: "1px solid #f0f4fa" }}>{l.service || l.nom || l.mission || "—"}</td>
+                      <td style={{ padding: "10px 12px", fontSize: 11, color: "#6b8aaa", borderBottom: "1px solid #f0f4fa" }}>{l.groupe || "—"}</td>
+                      <td style={{ padding: "10px 12px", fontSize: 12, color: "#1e3a57", textAlign: "center", borderBottom: "1px solid #f0f4fa" }}>{l.qty || 1}</td>
+                      <td style={{ padding: "10px 12px", fontSize: 12, color: "#1e3a57", textAlign: "right", borderBottom: "1px solid #f0f4fa" }}>{(l.tarif || l.prix || 0).toLocaleString("fr-FR")} FCFA</td>
+                      <td style={{ padding: "10px 12px", fontSize: 12, fontWeight: 700, color: "#1a5c9e", textAlign: "right", borderBottom: "1px solid #f0f4fa" }}>{((l.tarif || l.prix || 0) * (l.qty || 1)).toLocaleString("fr-FR")} FCFA</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* Totaux */}
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div style={{ width: 280 }}>
+                  {[
+                    ["Total HT", (previewDevis.total_ht || 0).toLocaleString("fr-FR") + " FCFA", false],
+                    ["TVA (19.25%)", ((previewDevis.total_ht || 0) * 0.1925).toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " FCFA", false],
+                    ["Total TTC", ((previewDevis.total_ht || 0) * 1.1925).toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " FCFA", true],
+                  ].map(([label, val, bold]) => (
+                    <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: bold ? "12px 0 0" : "6px 0", borderTop: bold ? "2px solid #1a5c9e" : "none", marginTop: bold ? 8 : 0 }}>
+                      <span style={{ fontSize: bold ? 15 : 13, fontWeight: bold ? 700 : 400, color: bold ? "#1e3a57" : "#6b8aaa" }}>{label}</span>
+                      <span style={{ fontSize: bold ? 17 : 13, fontWeight: bold ? 800 : 600, color: bold ? "#1a5c9e" : "#1e3a57" }}>{val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pied de page */}
+              <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid #e2eaf4", fontSize: 11, color: "#8da4c0", textAlign: "center" }}>
+                CGA-CDA — Centrale des Associés - Conseils & Expertise Comptable et Fiscale<br/>
+                Devis valable 30 jours à compter de la date d'émission
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
 
