@@ -756,7 +756,7 @@ export default function App() {
             )}
 
 
-            {/* ── PARAMÈTRES ── */
+            {/* ── PARAMÈTRES ── */}
             {page === "settings" && (
               <div style={{ maxWidth: 680 }}>
                 <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
