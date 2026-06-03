@@ -205,7 +205,6 @@ export default function App() {
   };
   const marquerPaye = async (id) => { await db.patch("devis", id, { statut: "Payé", date_paiement: new Date().toISOString().split("T")[0] }); loadAll(); };
   const marquerAnnule = async (id) => { await db.patch("devis", id, { statut: "Annulé" }); loadAll(); };
-  const ouvrirApercu = (d, lignes, client, num) => { setPreviewDevis({ ...d, lignes, client, num }); setShowPreview(true); };
 
   // SERVICES
   const addService = async () => {
@@ -699,7 +698,12 @@ export default function App() {
                       <button onClick={() => saveDevis("Brouillon")} disabled={devisSaving} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>
                         {devisSaving ? "…" : "💾 Brouillon"}
                       </button>
-                      <button onClick={() => ouvrirApercu({ client: devisClient, date: devisDate, total_ht: totalHT, total_ttc: totalHT * 1.1925 }, devisLines, clients.find(c => c.nom === devisClient), "DEV-" + String((devisList.length + 1)).padStart(4, "0") + "-" + new Date().getFullYear())} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#fff8e6", color: "#c17f2a", border: "1px solid #f0d080", cursor: "pointer", fontSize: 13 }}>
+                      <button onClick={() => {
+                        const clientData = clients.find(c => c.nom === devisClient);
+                        const num = "DEV-" + String((devisList.length + 1)).padStart(4, "0") + "-" + new Date().getFullYear();
+                        setPreviewDevis({ client: devisClient, clientData, date: devisDate, total_ht: totalHT, total_ttc: totalHT * 1.1925, lignes: devisLines, num });
+                        setShowPreview(true);
+                      }} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#fff8e6", color: "#c17f2a", border: "1px solid #f0d080", cursor: "pointer", fontSize: 13 }}>
                         👁 Aperçu
                       </button>
                       <button onClick={() => saveDevis("Envoyé")} disabled={devisSaving} style={S.primaryBtn}>
@@ -720,9 +724,15 @@ export default function App() {
                             <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.date ? new Date(d.date).toLocaleDateString("fr-FR") : "—"}</div>
                           </div>
                           <div style={{ fontWeight: 700, fontSize: 14, color: "#1a5c9e" }}>{(d.total_ttc || 0).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA TTC</div>
-                          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20, flexShrink: 0, background: d.statut === "Payé" ? "#e8f5ee" : d.statut === "Envoyé" ? "#e8f0fb" : d.statut === "Annulé" ? "#fff0f0" : "#f5f8fc", color: d.statut === "Payé" ? "#1a7a4a" : d.statut === "Envoyé" ? "#1a5c9e" : d.statut === "Annulé" ? "#c0392b" : "#6b8aaa" }}>{d.statut}</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: d.statut === "Payé" ? "5px 12px" : "4px 10px", borderRadius: 20, flexShrink: 0, letterSpacing: d.statut === "Payé" ? 0.3 : 0, border: d.statut === "Payé" ? "2px solid #1a7a4a" : "none", background: d.statut === "Payé" ? "#1a7a4a" : d.statut === "Enregistré" ? "#e8f0fb" : d.statut === "Annulé" ? "#fff0f0" : "#f5f8fc", color: d.statut === "Payé" ? "#fff" : d.statut === "Enregistré" ? "#1a5c9e" : d.statut === "Annulé" ? "#c0392b" : "#6b8aaa" }}>
+                            {d.statut === "Payé" ? "✅ Payé" : d.statut === "Annulé" ? "🚫 Annulé" : d.statut}
+                          </span>
                           <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
-                            <button title="Aperçu" onClick={() => ouvrirApercu(d, d.lignes || [], clients.find(c => c.nom === d.client), "DEV-" + String(devisList.length - idx).padStart(4, "0") + "-" + new Date(d.created_at || d.date).getFullYear())} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>👁</button>
+                            <button title="Aperçu" onClick={() => {
+                              const num = "DEV-" + String(devisList.length - idx).padStart(4, "0") + "-" + new Date(d.created_at || d.date || Date.now()).getFullYear();
+                              setPreviewDevis({ ...d, clientData: clients.find(c => c.nom === d.client), num });
+                              setShowPreview(true);
+                            }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>👁</button>
                             <button title="Dupliquer" onClick={() => dupliquerDevis(d)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>📋</button>
                             {d.statut === "Envoyé" && <button title="Marquer Payé" onClick={() => marquerPaye(d.id)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>✅</button>}
                             {d.statut !== "Annulé" && d.statut !== "Payé" && <button title="Annuler" onClick={() => marquerAnnule(d.id)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🚫</button>}
