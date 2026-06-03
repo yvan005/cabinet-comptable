@@ -66,16 +66,6 @@ const ic = {
   settings:  "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z",
 };
 
-const MISSIONS = [
-  { label: "Tenue comptable mensuelle", prix: 98000, unite: "mois" },
-  { label: "Révision annuelle des comptes", prix: 520000, unite: "an" },
-  { label: "Établissement bilan & liasse", prix: 780000, unite: "an" },
-  { label: "Déclaration IS", prix: 260000, unite: "an" },
-  { label: "Gestion paie (par salarié)", prix: 32500, unite: "mois/salarié" },
-  { label: "Conseil juridique ponctuel", prix: 130000, unite: "heure" },
-  { label: "Accompagnement création société", prix: 975000, unite: "forfait" },
-  { label: "Audit et diagnostic comptable", prix: 1625000, unite: "forfait" },
-];
 
 // ── RESPONSIVE HOOK ──────────────────────────────────────────────────────────
 const useIsMobile = () => {
@@ -251,15 +241,31 @@ export default function App() {
   // DEVIS
   const totalHT = devisLines.reduce((s, l) => s + (l.tarif || 0) * (l.qty || 1), 0);
   const totalTTC = totalHT * 1.1925;
+  const saveDevis = async (statut) => {
+    if (!devisClient) { alert("Veuillez sélectionner un client."); return; }
+    if (devisLines.every(l => !l.nom)) { alert("Veuillez ajouter au moins un service."); return; }
+    setDevisSaving(true);
+    try {
+      await db.post("devis", {
+        client: devisClient,
+        date: devisDate,
+        lignes: devisLines.map(l => ({ service: l.nom, groupe: l.groupe, tarif: l.tarif || 0, qty: l.qty || 1 })),
+        total_ht: totalHT,
+        total_ttc: totalHT * 1.1925,
+        statut
+      });
+      await loadAll();
+      alert("Devis " + (statut === "Brouillon" ? "sauvegardé en brouillon" : "enregistré") + " avec succès !");
+    } catch(e) {
+      alert("Erreur : " + e.message);
+    }
+    setDevisSaving(false);
+  };
+
   const addLine = () => setDevisLines(l => [...l, { nom: "", groupe: "", tarif: 0, unite: "forfait", qty: 1 }]);
   const removeLine = (i) => setDevisLines(l => l.filter((_, idx) => idx !== i));
   const updateLine = (i, field, val) => setDevisLines(l => l.map((ln, idx) => idx === i ? (field === 'full' ? { ...ln, nom: val.nom, groupe: val.groupe, tarif: val.tarif || 0, unite: val.unite } : { ...ln, [field]: val }) : ln));
-  const saveDevis = async (statut) => {
-    setDevisSaving(true);
-    await db.post("devis", { client: devisClient, date: devisDate, lignes: devisLines.map(l => ({ mission: l.mission.label, prix: l.mission.prix, qty: l.qty })), total_ht: totalHT, total_ttc: totalTTC, statut });
-    setDevisSaving(false); await loadAll();
-    alert(`Devis ${statut === "Brouillon" ? "enregistré" : "envoyé"} avec succès !`);
-  };
+
 
   const urgentEch = echeances.filter(e => e.urgence === "haute" && !e.fait);
   const filteredClients = clients.filter(c => {
