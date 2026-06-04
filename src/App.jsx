@@ -771,7 +771,17 @@ export default function App() {
                           opacity: d.statut === "Annulé" ? 0.6 : 1,
                           transition: "all 0.3s ease",
                         }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "#1a5c9e", background: "#e8f0fb", padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>{"DEV-" + String(devisList.length - idx).padStart(4, "0") + "-" + new Date(d.created_at || d.date).getFullYear()}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: "#1a5c9e", background: "#e8f0fb", padding: "3px 8px", borderRadius: 6 }}>{"DEV-" + String(devisList.length - idx).padStart(4, "0") + "-" + new Date(d.created_at || d.date).getFullYear()}</div>
+                            {d.statut === "Payé" && (
+                              <div style={{ display: "flex", alignItems: "center", gap: 4, background: "linear-gradient(135deg,#1a7a4a,#27ae60)", color: "#fff", fontSize: 11, fontWeight: 800, padding: "3px 10px", borderRadius: 20, boxShadow: "0 2px 8px rgba(26,122,74,0.35)", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                                ✅ PAYÉ
+                              </div>
+                            )}
+                            {d.date_paiement && d.statut === "Payé" && (
+                              <div style={{ fontSize: 10, color: "#1a7a4a", fontWeight: 600 }}>le {new Date(d.date_paiement).toLocaleDateString("fr-FR")}</div>
+                            )}
+                          </div>
                           <div style={{ flex: 2 }}>
                             <div style={{ fontWeight: 600, fontSize: 13, color: "#1e3a57" }}>{d.client}</div>
                             <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.date ? new Date(d.date).toLocaleDateString("fr-FR") : "—"}</div>
