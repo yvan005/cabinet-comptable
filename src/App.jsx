@@ -1320,6 +1320,53 @@ export default function App() {
                     <button style={S.primaryBtn}>Enregistrer</button>
                   </div>
                 </div>
+
+                {/* Section Administration */}
+                <div className="card-hover" style={{ ...S.card, marginTop: 16, borderLeft: "4px solid #c0392b" }}>
+                  <div style={S.cardHeader}>
+                    <Icon d={ic.trash} size={16} stroke="#c0392b" />
+                    <span style={{ ...S.cardTitle, color: "#c0392b" }}>Administration — Historique des devis</span>
+                    <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, background: "#fff0f0", color: "#c0392b", padding: "3px 8px", borderRadius: 6 }}>ADMIN</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {[
+                      { label: "Supprimer les brouillons", desc: "Efface tous les devis avec statut Brouillon", color: "#c17f2a", bg: "#fff8e6", border: "#f0d080", statut: "Brouillon", emoji: "📝" },
+                      { label: "Supprimer les devis annulés", desc: "Efface tous les devis avec statut Annulé", color: "#8e44ad", bg: "#f5eefb", border: "#d7b8f5", statut: "Annulé", emoji: "🚫" },
+                      { label: "Supprimer les devis enregistrés", desc: "Efface tous les devis enregistrés non payés", color: "#1a5c9e", bg: "#e8f0fb", border: "#b0c8e8", statut: "Enregistré", emoji: "📄" },
+                      { label: "Vider tout l'historique", desc: "Supprime TOUS les devis sauf ceux Payés", color: "#c0392b", bg: "#fff0f0", border: "#f5b8b8", statut: "ALL", emoji: "🗑" },
+                    ].map((action, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: 10, background: action.bg, border: "1px solid " + action.border, flexWrap: "wrap", gap: 10 }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: action.color }}>{action.emoji} {action.label}</div>
+                          <div style={{ fontSize: 11, color: "#8da4c0", marginTop: 2 }}>{action.desc}</div>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: action.color, marginTop: 4 }}>
+                            {action.statut === "ALL"
+                              ? devisList.filter(d => d.statut !== "Payé").length + " devis concernés"
+                              : devisList.filter(d => d.statut === action.statut).length + " devis concernés"}
+                          </div>
+                        </div>
+                        <button onClick={async () => {
+                          const toDelete = action.statut === "ALL"
+                            ? devisList.filter(d => d.statut !== "Payé")
+                            : devisList.filter(d => d.statut === action.statut);
+                          if (toDelete.length === 0) { alert("Aucun devis à supprimer."); return; }
+                          const msg = action.statut === "ALL"
+                            ? "Supprimer " + toDelete.length + " devis (sauf Payés) ? Action irréversible."
+                            : "Supprimer " + toDelete.length + " devis " + action.statut + " ? Action irréversible.";
+                          if (!window.confirm(msg)) return;
+                          await Promise.all(toDelete.map(d => db.delete("devis", d.id)));
+                          await loadAll();
+                          alert(toDelete.length + " devis supprimé(s) avec succès.");
+                        }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, background: action.color, color: "#fff", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
+                          <Icon d={ic.trash} size={13} stroke="#fff" /> Supprimer
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 14, padding: "10px 14px", background: "#fff8e6", borderRadius: 8, fontSize: 11, color: "#c17f2a", fontWeight: 500 }}>
+                    Les devis <b>Payés</b> ne peuvent jamais être supprimés pour des raisons de traçabilité comptable.
+                  </div>
+                </div>
               </div>
             )}
 
