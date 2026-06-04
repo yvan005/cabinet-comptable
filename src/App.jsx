@@ -194,7 +194,15 @@ export default function App() {
     setDevisLines(lignes.length > 0 ? lignes : [{ nom: "", groupe: "", tarif: 0, unite: "forfait", qty: 1 }]);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  const marquerPaye = async (id) => { await db.patch("devis", id, { statut: "Payé", date_paiement: new Date().toISOString().split("T")[0] }); loadAll(); };
+  const marquerPaye = async (id) => {
+    try {
+      await db.patch("devis", id, { statut: "Payé", date_paiement: new Date().toISOString().split("T")[0] });
+    } catch(e) {
+      // Fallback if date_paiement column doesn't exist
+      await db.patch("devis", id, { statut: "Payé" });
+    }
+    loadAll();
+  };
   const marquerAnnule = async (id) => { await db.patch("devis", id, { statut: "Annulé" }); loadAll(); };
 
   // SERVICES
