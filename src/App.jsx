@@ -769,8 +769,17 @@ export default function App() {
                             <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.date ? new Date(d.date).toLocaleDateString("fr-FR") : "—"}</div>
                           </div>
                           <div style={{ fontWeight: 700, fontSize: 14, color: "#1a5c9e" }}>{(d.total_ttc || 0).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA TTC</div>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: d.statut === "Payé" ? "5px 12px" : "4px 10px", borderRadius: 20, flexShrink: 0, letterSpacing: d.statut === "Payé" ? 0.3 : 0, border: d.statut === "Payé" ? "2px solid #1a7a4a" : "none", background: d.statut === "Payé" ? "#1a7a4a" : d.statut === "Enregistré" ? "#e8f0fb" : d.statut === "Annulé" ? "#fff0f0" : "#f5f8fc", color: d.statut === "Payé" ? "#fff" : d.statut === "Enregistré" ? "#1a5c9e" : d.statut === "Annulé" ? "#c0392b" : "#6b8aaa" }}>
-                            {d.statut === "Payé" ? "✅ Payé" : d.statut === "Annulé" ? "🚫 Annulé" : d.statut}
+                          <span style={{
+                            fontSize: 11, fontWeight: 700, borderRadius: 20, flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 4,
+                            padding: d.statut === "Payé" ? "6px 14px" : "4px 10px",
+                            letterSpacing: d.statut === "Payé" ? 0.5 : 0,
+                            border: d.statut === "Payé" ? "2px solid #1a7a4a" : d.statut === "Enregistré" ? "2px solid #1a5c9e" : d.statut === "Annulé" ? "2px solid #c0392b" : "2px solid #ccc",
+                            background: d.statut === "Payé" ? "linear-gradient(135deg,#1a7a4a,#27ae60)" : d.statut === "Enregistré" ? "#e8f0fb" : d.statut === "Annulé" ? "#fff0f0" : "#f5f5f5",
+                            color: d.statut === "Payé" ? "#fff" : d.statut === "Enregistré" ? "#1a5c9e" : d.statut === "Annulé" ? "#c0392b" : "#6b8aaa",
+                            boxShadow: d.statut === "Payé" ? "0 3px 10px rgba(26,122,74,0.35)" : "none",
+                            textTransform: "uppercase",
+                          }}>
+                            {d.statut === "Payé" ? "✅ Payé" : d.statut === "Annulé" ? "🚫 Annulé" : d.statut === "Enregistré" ? "📄 Enregistré" : "📝 " + d.statut}
                           </span>
                           <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
                             <button title="Aperçu" onClick={() => {
