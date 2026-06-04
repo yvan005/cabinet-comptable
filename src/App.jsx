@@ -1490,7 +1490,31 @@ export default function App() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", borderBottom: "1px solid #e2eaf4" }}>
               <span style={{ fontWeight: 700, fontSize: 15, color: "#1e3a57" }}>Aperçu du devis</span>
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => window.print()} style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 16px", borderRadius: 8, background: "#1a5c9e", color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+                <button onClick={() => {
+                  const printContent = document.getElementById("devis-print").innerHTML;
+                  const style = `
+                    <style>
+                      * { box-sizing: border-box; margin: 0; padding: 0; }
+                      body { font-family: 'Segoe UI', sans-serif; padding: 32px; color: #1e3a57; }
+                      table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+                      th { background: #1a5c9e; color: #fff; padding: 10px 12px; font-size: 11px; text-align: left; }
+                      td { padding: 10px 12px; font-size: 12px; border-bottom: 1px solid #f0f4fa; }
+                      tr:nth-child(even) td { background: #f5f8fc; }
+                    </style>`;
+                  // Create hidden iframe
+                  let iframe = document.getElementById("print-iframe");
+                  if (!iframe) {
+                    iframe = document.createElement("iframe");
+                    iframe.id = "print-iframe";
+                    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:800px;height:600px;";
+                    document.body.appendChild(iframe);
+                  }
+                  const doc = iframe.contentWindow.document;
+                  doc.open();
+                  doc.write(`<html><head>${style}</head><body>${printContent}</body></html>`);
+                  doc.close();
+                  setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); }, 400);
+                }} style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 16px", borderRadius: 8, background: "#1a5c9e", color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                   🖨 Imprimer / PDF
                 </button>
                 <button onClick={() => setShowPreview(false)} style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.close} size={16} stroke="#4a6d8c" /></button>
@@ -1499,7 +1523,7 @@ export default function App() {
 
             {/* Contenu imprimable */}
             <div id="devis-print" style={{ overflowY: "auto", flex: 1, padding: "32px" }}>
-              <style>{`@media print { body * { visibility: hidden; } #devis-print, #devis-print * { visibility: visible; } #devis-print { position: fixed; top: 0; left: 0; width: 100%; padding: 32px; } }`}</style>
+
 
               {/* En-tête cabinet */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
