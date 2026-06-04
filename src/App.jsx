@@ -143,6 +143,7 @@ export default function App() {
   const [showServiceDropdown, setShowServiceDropdown] = useState(null);
   const [previewDevis, setPreviewDevis] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [editingDevisId, setEditingDevisId] = useState(null);
 
   const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
   const [newEch, setNewEch] = useState({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
@@ -241,6 +242,27 @@ export default function App() {
   // DEVIS
   const totalHT = devisLines.reduce((s, l) => s + (l.tarif || 0) * (l.qty || 1), 0);
   const totalTTC = totalHT * 1.1925;
+  const updateDevis = async (id, statut) => {
+    if (!devisClient) { alert("Veuillez sélectionner un client."); return; }
+    setDevisSaving(true);
+    try {
+      await db.patch("devis", id, {
+        client: devisClient,
+        date: devisDate,
+        lignes: devisLines.map(l => ({ service: l.nom, groupe: l.groupe, tarif: l.tarif || 0, qty: l.qty || 1 })),
+        total_ht: totalHT,
+        total_ttc: totalHT * 1.1925,
+        statut
+      });
+      await loadAll();
+      setEditingDevisId(null);
+      setDevisLines([{ nom: "", groupe: "", tarif: 0, unite: "forfait", qty: 1 }]);
+      setDevisClient(clients[0]?.nom || "");
+      alert("Devis mis à jour avec succès !");
+    } catch(e) { alert("Erreur : " + e.message); }
+    setDevisSaving(false);
+  };
+
   const saveDevis = async (statut) => {
     if (!devisClient) { alert("Veuillez sélectionner un client."); return; }
     if (devisLines.every(l => !l.nom)) { alert("Veuillez ajouter au moins un service."); return; }
@@ -255,6 +277,10 @@ export default function App() {
         statut
       });
       await loadAll();
+      if (statut !== "Brouillon") {
+        setDevisLines([{ nom: "", groupe: "", tarif: 0, unite: "forfait", qty: 1 }]);
+        setDevisClient(clients[0]?.nom || "");
+      }
       alert("Devis " + (statut === "Brouillon" ? "sauvegardé en brouillon" : "enregistré") + " avec succès !");
     } catch(e) {
       alert("Erreur : " + e.message);
@@ -573,7 +599,11 @@ export default function App() {
               return (
                 <div style={{ maxWidth: 860 }}>
                   <div className="card-hover" style={S.card}>
-                    <div style={S.cardHeader}><Icon d={ic.devis} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Nouveau devis</span><span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: "#1a5c9e", background: "#e8f0fb", padding: "4px 10px", borderRadius: 8 }}>{nextNum}</span></div>
+                    <div style={S.cardHeader}>
+                      <Icon d={ic.devis} size={16} stroke={editingDevisId ? "#1a7a4a" : "#1a5c9e"} />
+                      <span style={S.cardTitle}>{editingDevisId ? "✏️ Modifier le brouillon" : "Nouveau devis"}</span>
+                      <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: editingDevisId ? "#1a7a4a" : "#1a5c9e", background: editingDevisId ? "#e8f5ee" : "#e8f0fb", padding: "4px 10px", borderRadius: 8 }}>{nextNum}</span>
+                    </div>
 
                     {/* Infos client + date */}
                     <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 20, padding: "16px", background: "#f5f8fc", borderRadius: 10 }}>
@@ -701,20 +731,29 @@ export default function App() {
                     </div>
 
                     <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16, flexWrap: "wrap" }}>
-                      <button onClick={() => saveDevis("Brouillon")} disabled={devisSaving} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>
+                      <button onClick={() => { setEditingDevisId(null); setDevisLines([{ nom: "", groupe: "", tarif: 0, unite: "forfait", qty: 1 }]); setDevisClient(clients[0]?.nom || ""); }} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>
+                        🔄 Réinitialiser
+                      </button>
+                      <button onClick={() => saveDevis("Brouillon")} disabled={devisSaving} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#fff8e6", color: "#c17f2a", border: "1px solid #f0d080", cursor: "pointer", fontSize: 13 }}>
                         {devisSaving ? "…" : "💾 Brouillon"}
                       </button>
                       <button onClick={() => {
                         const clientData = clients.find(c => c.nom === devisClient);
-                        const num = "DEV-" + String((devisList.length + 1)).padStart(4, "0") + "-" + new Date().getFullYear();
+                        const num = editingDevisId ? ("DEV-" + String(devisList.findIndex(d => d.id === editingDevisId) + 1).padStart(4,"0") + "-" + new Date().getFullYear()) : ("DEV-" + String((devisList.length + 1)).padStart(4, "0") + "-" + new Date().getFullYear());
                         setPreviewDevis({ client: devisClient, clientData, date: devisDate, total_ht: totalHT, total_ttc: totalHT * 1.1925, lignes: devisLines, num });
                         setShowPreview(true);
-                      }} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#fff8e6", color: "#c17f2a", border: "1px solid #f0d080", cursor: "pointer", fontSize: 13 }}>
+                      }} style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 9, background: "#f0f6ff", color: "#1a5c9e", border: "1px solid #c0d8f0", cursor: "pointer", fontSize: 13 }}>
                         👁 Aperçu
                       </button>
-                      <button onClick={() => saveDevis("Envoyé")} disabled={devisSaving} style={S.primaryBtn}>
-                        <Icon d={ic.send} size={14} stroke="#fff" />{devisSaving ? "…" : "Enregistrer"}
-                      </button>
+                      {editingDevisId ? (
+                        <button onClick={() => updateDevis(editingDevisId, "Enregistré")} disabled={devisSaving} style={{ ...S.primaryBtn, background: "#1a7a4a" }}>
+                          <Icon d={ic.check} size={14} stroke="#fff" />{devisSaving ? "…" : "Mettre à jour"}
+                        </button>
+                      ) : (
+                        <button onClick={() => saveDevis("Enregistré")} disabled={devisSaving} style={S.primaryBtn}>
+                          <Icon d={ic.send} size={14} stroke="#fff" />{devisSaving ? "…" : "Enregistrer"}
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -740,6 +779,14 @@ export default function App() {
                               setShowPreview(true);
                             }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>👁</button>
                             <button title="Dupliquer" onClick={() => dupliquerDevis(d)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>📋</button>
+                            {d.statut === "Brouillon" && <button title="Modifier" onClick={() => {
+                              setEditingDevisId(d.id);
+                              setDevisClient(d.client);
+                              setDevisDate(d.date || new Date().toISOString().split("T")[0]);
+                              const lignes = (d.lignes || []).map(l => ({ nom: l.service || l.nom || "", groupe: l.groupe || "", tarif: l.tarif || l.prix || 0, unite: l.unite || "forfait", qty: l.qty || 1 }));
+                              setDevisLines(lignes.length > 0 ? lignes : [{ nom: "", groupe: "", tarif: 0, unite: "forfait", qty: 1 }]);
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>✏️</button>}
                             {d.statut === "Envoyé" && <button title="Marquer Payé" onClick={() => marquerPaye(d.id)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>✅</button>}
                             {d.statut !== "Annulé" && d.statut !== "Payé" && <button title="Annuler" onClick={() => marquerAnnule(d.id)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🚫</button>}
                             <button title="Supprimer" onClick={() => db.delete("devis", d.id).then(loadAll)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
