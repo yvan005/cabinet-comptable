@@ -762,7 +762,15 @@ export default function App() {
                     <div className="card-hover" style={{ ...S.card, marginTop: 14 }}>
                       <div style={S.cardHeader}><Icon d={ic.folder} size={16} stroke="#4a6d8c" /><span style={S.cardTitle}>Historique des devis</span></div>
                       {devisList.map((d, idx) => (
-                        <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderBottom: "1px solid #f0f4fa", flexWrap: "wrap" }}>
+                        <div key={d.id} style={{
+                          display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid #f0f4fa", flexWrap: "wrap",
+                          background: d.statut === "Payé" ? "linear-gradient(135deg, #e8f5ee, #f0faf4)" : d.statut === "Annulé" ? "#fff9f9" : d.statut === "Brouillon" ? "#fafafa" : "#fff",
+                          borderLeft: d.statut === "Payé" ? "4px solid #1a7a4a" : d.statut === "Annulé" ? "4px solid #c0392b" : d.statut === "Brouillon" ? "4px solid #ccc" : "4px solid #1a5c9e",
+                          borderRadius: 8, marginBottom: 6,
+                          boxShadow: d.statut === "Payé" ? "0 2px 12px rgba(26,122,74,0.12)" : "0 1px 3px rgba(0,30,80,0.04)",
+                          opacity: d.statut === "Annulé" ? 0.6 : 1,
+                          transition: "all 0.3s ease",
+                        }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: "#1a5c9e", background: "#e8f0fb", padding: "3px 8px", borderRadius: 6, flexShrink: 0 }}>{"DEV-" + String(devisList.length - idx).padStart(4, "0") + "-" + new Date(d.created_at || d.date).getFullYear()}</div>
                           <div style={{ flex: 2 }}>
                             <div style={{ fontWeight: 600, fontSize: 13, color: "#1e3a57" }}>{d.client}</div>
