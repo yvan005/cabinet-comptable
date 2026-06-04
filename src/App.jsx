@@ -1363,6 +1363,45 @@ export default function App() {
                       </div>
                     ))}
                   </div>
+                  {/* Archivage par année */}
+                  <div style={{ marginTop: 8, padding: "14px 16px", borderRadius: 10, background: "#f0f6ff", border: "1px solid #b0c8e8" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1a5c9e", marginBottom: 10 }}>📦 Archiver les devis d'une année</div>
+                    <div style={{ fontSize: 11, color: "#6b8aaa", marginBottom: 12 }}>Supprime tous les devis non-Payés d'une année sélectionnée. Les devis Payés sont conservés.</div>
+                    <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                      <select id="archiveYear" style={{ ...S.select, flex: 1, minWidth: 120 }}>
+                        {[...new Set(devisList.map(d => new Date(d.created_at || d.date || Date.now()).getFullYear()))].sort((a,b) => b-a).map(y => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                        {devisList.length === 0 && <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>}
+                      </select>
+                      <button onClick={async () => {
+                        const yearEl = document.getElementById("archiveYear");
+                        const year = parseInt(yearEl?.value || new Date().getFullYear());
+                        const toDelete = devisList.filter(d => {
+                          const dy = new Date(d.created_at || d.date || Date.now()).getFullYear();
+                          return dy === year && d.statut !== "Payé";
+                        });
+                        if (toDelete.length === 0) { alert("Aucun devis non-Payé trouvé pour " + year + "."); return; }
+                        if (!window.confirm("Archiver (supprimer) " + toDelete.length + " devis de " + year + " (sauf Payés) ? Action irréversible.")) return;
+                        await Promise.all(toDelete.map(d => db.delete("devis", d.id)));
+                        await loadAll();
+                        alert(toDelete.length + " devis de " + year + " archivés avec succès.");
+                      }} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", borderRadius: 8, background: "#1a5c9e", color: "#fff", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
+                        <Icon d={ic.folder} size={13} stroke="#fff" /> Archiver cette année
+                      </button>
+                    </div>
+                    <div style={{ marginTop: 10, fontSize: 11, color: "#6b8aaa" }}>
+                      {(() => {
+                        const years = [...new Set(devisList.map(d => new Date(d.created_at || d.date || Date.now()).getFullYear()))].sort((a,b) => b-a);
+                        return years.map(y => {
+                          const count = devisList.filter(d => new Date(d.created_at || d.date || Date.now()).getFullYear() === y && d.statut !== "Payé").length;
+                          const paid = devisList.filter(d => new Date(d.created_at || d.date || Date.now()).getFullYear() === y && d.statut === "Payé").length;
+                          return <span key={y} style={{ marginRight: 12 }}><b style={{ color: "#1a5c9e" }}>{y}</b> : {count} archivable(s), {paid} payé(s)</span>;
+                        });
+                      })()}
+                    </div>
+                  </div>
+
                   <div style={{ marginTop: 14, padding: "10px 14px", background: "#fff8e6", borderRadius: 8, fontSize: 11, color: "#c17f2a", fontWeight: 500 }}>
                     Les devis <b>Payés</b> ne peuvent jamais être supprimés pour des raisons de traçabilité comptable.
                   </div>
