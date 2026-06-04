@@ -814,7 +814,7 @@ export default function App() {
                               setShowPreview(true);
                             }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>👁</button>
                             <button title="Dupliquer" onClick={() => dupliquerDevis(d)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>📋</button>
-                            {d.statut === "Brouillon" && <button title="Modifier" onClick={() => {
+                            {(d.statut === "Brouillon" || d.statut === "Enregistré") && <button title="Modifier" onClick={() => {
                               setEditingDevisId(d.id);
                               setDevisClient(d.client);
                               setDevisDate(d.date || new Date().toISOString().split("T")[0]);
