@@ -824,7 +824,15 @@ export default function App() {
                             }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>✏️</button>}
                             {(d.statut === "Enregistré" || d.statut === "Envoyé") && <button title="Marquer Payé" onClick={() => marquerPaye(d.id)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>✅</button>}
                             {d.statut !== "Annulé" && d.statut !== "Payé" && d.statut !== "Brouillon" && <button title="Annuler" onClick={() => marquerAnnule(d.id)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🚫</button>}
-                            <button title="Supprimer" onClick={() => db.delete("devis", d.id).then(loadAll)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
+                            {d.statut === "Payé" ? (
+                              <div title="Devis payé — suppression impossible" style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", cursor: "not-allowed", opacity: 0.35 }}>
+                                <Icon d={ic.trash} size={13} stroke="#aaa" />
+                              </div>
+                            ) : (
+                              <button title="Supprimer" onClick={() => { if(window.confirm("Supprimer ce devis ?")) db.delete("devis", d.id).then(loadAll); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <Icon d={ic.trash} size={13} stroke="#c0392b" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
