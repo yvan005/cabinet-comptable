@@ -64,6 +64,10 @@ const ic = {
   depenses:  "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M12 6v6l4 2 M8 13h8 M8 17h8",
   service:   "M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12",
   eye:       "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 100 6 3 3 0 000-6z",
+  abonnement: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M12 6v6l4 2 M8 16h8",
+  abo:       "M12 2a10 10 0 100 20A10 10 0 0012 2z M12 6v6l4 2 M8 2h8 M12 22v-2",
+  abonnement:"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M12 6v6l4 2 M8 17h8 M8 13h4",
+  abonnement: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M8 12h8 M12 8v8",
   settings:  "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z",
 };
 
@@ -138,7 +142,20 @@ export default function App() {
   const [showEditService, setShowEditService] = useState(false);
   const [editService, setEditService] = useState(null);
   const [serviceSearch, setServiceSearch] = useState("");
+  const [abonnements, setAbonnements] = useState([]);
+  const [showAddAbo, setShowAddAbo] = useState(false);
+  const [newAbo, setNewAbo] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
+  const [aboFilter, setAboFilter] = useState("Tous");
+  const [abonnements, setAbonnements] = useState([]);
+  const [showAddAbonnement, setShowAddAbonnement] = useState(false);
+  const [newAbo, setNewAbo] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif" });
+  const [abonnements, setAbonnements] = useState([]);
+  const [showAddAbonnement, setShowAddAbonnement] = useState(false);
+  const [newAbonnement, setNewAbonnement] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
   const [devisClientSearch, setDevisClientSearch] = useState("");
+  const [abonnements, setAbonnements] = useState([]);
+  const [showAddAbonnement, setShowAddAbonnement] = useState(false);
+  const [newAbonnement, setNewAbonnement] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" });
   const [devisServiceSearch, setDevisServiceSearch] = useState("");
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [showServiceDropdown, setShowServiceDropdown] = useState(null);
@@ -151,14 +168,15 @@ export default function App() {
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [c, e, d, dep, srv] = await Promise.all([
-      db.get("clients"), db.get("echeances"), db.get("devis"), db.get("depenses"), db.get("services"),
+    const [c, e, d, dep, srv, abo] = await Promise.all([
+      db.get("clients"), db.get("echeances"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"),
     ]);
     setClients(Array.isArray(c) ? c : []);
     setEcheances(Array.isArray(e) ? e : []);
     setDevisList(Array.isArray(d) ? d : []);
     setDepenses(Array.isArray(dep) ? dep : []);
     setServices(Array.isArray(srv) ? srv : []);
+    setAbonnements(Array.isArray(abo) ? abo : []);
     setLoading(false);
   }, []);
 
@@ -187,6 +205,79 @@ export default function App() {
   const deleteEch = async (id) => { await db.delete("echeances", id); loadAll(); };
 
   // MESSAGES
+
+  // ABONNEMENTS
+  const addAbonnement = async () => {
+    if (!newAbonnement.client || !newAbonnement.service || !newAbonnement.montant) return;
+    await db.post("abonnements", { ...newAbonnement, montant: parseFloat(newAbonnement.montant) });
+    setNewAbonnement({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
+    setShowAddAbonnement(false); loadAll();
+  };
+  const toggleAbonnementStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
+  const deleteAbonnement = async (id) => { await db.delete("abonnements", id); loadAll(); };
+  const prochainePaiement = (dateDebut, frequence) => {
+    const d = new Date(dateDebut);
+    const now = new Date();
+    while (d <= now) {
+      if (frequence === "Mensuel") d.setMonth(d.getMonth() + 1);
+      else if (frequence === "Trimestriel") d.setMonth(d.getMonth() + 3);
+      else if (frequence === "Semestriel") d.setMonth(d.getMonth() + 6);
+      else d.setFullYear(d.getFullYear() + 1);
+    }
+    return d;
+  };
+
+  // ABONNEMENTS
+  const addAbonnement = async () => {
+    if (!newAbo.client || !newAbo.service || !newAbo.montant) return;
+    await db.post("abonnements", { ...newAbo, montant: parseFloat(newAbo.montant) });
+    setNewAbo({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif" });
+    setShowAddAbonnement(false); loadAll();
+  };
+  const toggleAboStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
+  const deleteAbonnement = async (id) => { await db.delete("abonnements", id); loadAll(); };
+  const getMRR = () => abonnements.filter(a => a.statut === "Actif").reduce((s, a) => {
+    if (a.frequence === "Mensuel") return s + (a.montant || 0);
+    if (a.frequence === "Trimestriel") return s + (a.montant || 0) / 3;
+    if (a.frequence === "Annuel") return s + (a.montant || 0) / 12;
+    return s;
+  }, 0);
+  const getNextEcheance = (a) => {
+    const start = new Date(a.date_debut);
+    const now = new Date();
+    const next = new Date(start);
+    while (next <= now) {
+      if (a.frequence === "Mensuel") next.setMonth(next.getMonth() + 1);
+      else if (a.frequence === "Trimestriel") next.setMonth(next.getMonth() + 3);
+      else if (a.frequence === "Annuel") next.setFullYear(next.getFullYear() + 1);
+      else break;
+    }
+    return next;
+  };
+
+  // ABONNEMENTS
+  const addAbonnement = async () => {
+    if (!newAbo.client || !newAbo.service || !newAbo.montant) return;
+    const date_debut = newAbo.date_debut;
+    const freq = { Mensuel: 1, Trimestriel: 3, Semestriel: 6, Annuel: 12 }[newAbo.frequence] || 1;
+    const next = new Date(date_debut);
+    next.setMonth(next.getMonth() + freq);
+    await db.post("abonnements", { ...newAbo, montant: parseFloat(newAbo.montant), prochaine_echeance: next.toISOString().split("T")[0] });
+    setNewAbo({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
+    setShowAddAbo(false); loadAll();
+  };
+  const toggleAboStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
+  const deleteAbo = async (id) => { await db.delete("abonnements", id); loadAll(); };
+
+  // ABONNEMENTS
+  const addAbonnement = async () => {
+    if (!newAbonnement.client || !newAbonnement.service || !newAbonnement.montant) return;
+    await db.post("abonnements", { ...newAbonnement, montant: parseFloat(newAbonnement.montant) });
+    setNewAbonnement({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" });
+    setShowAddAbonnement(false); loadAll();
+  };
+  const toggleAbonnementStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
+  const deleteAbonnement = async (id) => { await db.delete("abonnements", id); loadAll(); };
 
   // DEVIS ACTIONS
   const dupliquerDevis = (d) => {
@@ -323,12 +414,16 @@ export default function App() {
     { id: "rapports",  label: "Rapports",         icon: ic.rapports },
     { id: "collab",    label: "Collaborateurs",   icon: ic.collab },
     { id: "documents", label: "Documents",        icon: ic.docs },
+    { id: "abonnements", label: "Abonnements",    icon: ic.abonnement },
+    { id: "abonnements", label: "Abonnements",    icon: ic.abo },
+    { id: "abonnements", label: "Abonnements",    icon: ic.abonnement },
     { id: "services",  label: "Services",         icon: ic.service },
+    { id: "abonnement", label: "Abonnements",      icon: ic.abonnement },
     { id: "depenses",  label: "Dépenses",         icon: ic.depenses },
     { id: "settings",  label: "Paramètres",       icon: ic.settings },
   ];
 
-  const pageTitle = { dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", depenses: "Dépenses", settings: "Paramètres" }[page];
+  const pageTitle = { dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", abonnement: "Abonnements", depenses: "Dépenses", settings: "Paramètres" }[page];
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
@@ -1029,7 +1124,388 @@ export default function App() {
               </div>
             )}
 
-            {/* ── SERVICES ── */}
+            {/* ── ABONNEMENTS ── */}
+            {page === "abonnements" && (() => {
+              const mrr = getMRR();
+              const arr = mrr * 12;
+              const actifs = abonnements.filter(a => a.statut === "Actif");
+              const suspendus = abonnements.filter(a => a.statut === "Suspendu");
+              const resilies = abonnements.filter(a => a.statut === "Résilié");
+              const retards = actifs.filter(a => {
+                const next = getNextEcheance(a);
+                return (next - new Date()) / 86400000 < 7;
+              });
+
+              return (
+                <div>
+                  {/* KPIs */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
+                    {[
+                      { label: "MRR (Revenu mensuel)", value: mrr.toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " FCFA", color: "#1a5c9e", icon: ic.abonnement },
+                      { label: "ARR (Revenu annuel)", value: arr.toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " FCFA", color: "#1a7a4a", icon: ic.trend },
+                      { label: "Abonnés actifs", value: actifs.length, color: "#1a7a4a", icon: ic.clients },
+                      { label: "Échéances proches", value: retards.length, color: "#c0392b", icon: ic.alert },
+                    ].map((k, i) => (
+                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "12px" : "16px 18px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", display: "flex", flexDirection: "column", gap: 4, borderTop: "3px solid " + k.color }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 9, background: k.color + "18", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 4 }}>
+                          <Icon d={k.icon} size={16} stroke={k.color} />
+                        </div>
+                        <div style={{ fontSize: isMobile ? 15 : 20, fontWeight: 800, color: "#1e3a57" }}>{k.value}</div>
+                        <div style={{ fontSize: 11, color: "#6b8aaa" }}>{k.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Alertes retards */}
+                  {retards.length > 0 && (
+                    <div style={{ background: "#fff8e6", border: "1px solid #f0d080", borderRadius: 10, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+                      <Icon d={ic.alert} size={16} stroke="#c17f2a" />
+                      <span style={{ fontSize: 13, color: "#c17f2a", fontWeight: 600 }}>{retards.length} abonnement(s) avec échéance dans moins de 7 jours — pensez à relancer !</span>
+                    </div>
+                  )}
+
+                  {/* Toolbar */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {[
+                        { label: "Actifs (" + actifs.length + ")", color: "#1a7a4a", bg: "#e8f5ee" },
+                        { label: "Suspendus (" + suspendus.length + ")", color: "#c17f2a", bg: "#fff8e6" },
+                        { label: "Résiliés (" + resilies.length + ")", color: "#c0392b", bg: "#fff0f0" },
+                      ].map((f, i) => (
+                        <span key={i} style={{ fontSize: 12, fontWeight: 600, padding: "5px 12px", borderRadius: 20, background: f.bg, color: f.color }}>{f.label}</span>
+                      ))}
+                    </div>
+                    <button onClick={() => { setNewAbo({ client: clients[0]?.nom || "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif" }); setShowAddAbonnement(true); }} style={S.primaryBtn}>
+                      <Icon d={ic.plus} size={14} stroke="#fff" /> Nouvel abonnement
+                    </button>
+                  </div>
+
+                  {/* Liste abonnements */}
+                  <div className="card-hover" style={S.card}>
+                    {abonnements.length === 0 && <div style={S.empty}>Aucun abonnement enregistré</div>}
+                    {abonnements.map((a, i) => {
+                      const next = getNextEcheance(a);
+                      const daysLeft = Math.round((next - new Date()) / 86400000);
+                      const isUrgent = daysLeft < 7 && a.statut === "Actif";
+                      const statutColors = { Actif: { bg: "#e8f5ee", color: "#1a7a4a" }, Suspendu: { bg: "#fff8e6", color: "#c17f2a" }, Résilié: { bg: "#fff0f0", color: "#c0392b" } };
+                      const sc = statutColors[a.statut] || { bg: "#f5f5f5", color: "#888" };
+                      return (
+                        <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 0", borderBottom: "1px solid #f0f4fa", flexWrap: isMobile ? "wrap" : "nowrap", background: isUrgent ? "#fffbf0" : "transparent", borderRadius: isUrgent ? 8 : 0, paddingLeft: isUrgent ? 10 : 0 }}>
+                          <div style={{ width: 38, height: 38, borderRadius: 10, background: sc.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <Icon d={ic.abonnement} size={16} stroke={sc.color} />
+                          </div>
+                          <div style={{ flex: 2, minWidth: 120 }}>
+                            <div style={{ fontWeight: 700, fontSize: 13, color: "#1e3a57" }}>{a.client}</div>
+                            <div style={{ fontSize: 11, color: "#6b8aaa" }}>{a.service}</div>
+                          </div>
+                          <div style={{ flex: 1, textAlign: "center" }}>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: "#1a5c9e" }}>{(a.montant || 0).toLocaleString("fr-FR")} FCFA</div>
+                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{a.frequence}</div>
+                          </div>
+                          <div style={{ flex: 1, textAlign: "center" }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: isUrgent ? "#c0392b" : "#1e3a57" }}>{next.toLocaleDateString("fr-FR")}</div>
+                            <div style={{ fontSize: 11, color: isUrgent ? "#c0392b" : "#8da4c0", fontWeight: isUrgent ? 700 : 400 }}>{isUrgent ? "⚠️ J-" + daysLeft : "J-" + daysLeft}</div>
+                          </div>
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: sc.bg, color: sc.color, flexShrink: 0 }}>{a.statut}</span>
+                          <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                            {a.statut === "Actif" && <button title="Suspendre" onClick={() => toggleAboStatut(a, "Suspendu")} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #f0d080", background: "#fff8e6", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>⏸</button>}
+                            {a.statut === "Suspendu" && <button title="Réactiver" onClick={() => toggleAboStatut(a, "Actif")} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>▶️</button>}
+                            {a.statut !== "Résilié" && <button title="Résilier" onClick={() => { if(window.confirm("Résilier cet abonnement ?")) toggleAboStatut(a, "Résilié"); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🚫</button>}
+                            <button title="Supprimer" onClick={() => { if(window.confirm("Supprimer cet abonnement ?")) deleteAbonnement(a.id); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Répartition par fréquence */}
+                  {abonnements.length > 0 && (
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginTop: 14 }}>
+                      <div className="card-hover" style={S.card}>
+                        <div style={S.cardHeader}><Icon d={ic.trend} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Répartition par fréquence</span></div>
+                        {["Mensuel","Trimestriel","Annuel"].map(f => {
+                          const count = actifs.filter(a => a.frequence === f).length;
+                          const total = actifs.length || 1;
+                          return (
+                            <div key={f} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                              <div style={{ width: 80, fontSize: 12, color: "#4a6d8c" }}>{f}</div>
+                              <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
+                                <div style={{ width: `${(count/total)*100}%`, height: "100%", background: "#1a5c9e", borderRadius: 4 }} />
+                              </div>
+                              <div style={{ width: 20, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{count}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="card-hover" style={S.card}>
+                        <div style={S.cardHeader}><Icon d={ic.clients} size={16} stroke="#1a7a4a" /><span style={S.cardTitle}>Top clients abonnés</span></div>
+                        {Object.entries(actifs.reduce((acc, a) => { acc[a.client] = (acc[a.client] || 0) + (a.montant || 0); return acc; }, {})).sort((a,b) => b[1]-a[1]).slice(0,5).map(([client, total]) => (
+                          <div key={client} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                            <span style={{ fontSize: 13, color: "#1e3a57", fontWeight: 500 }}>{client}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#1a5c9e" }}>{total.toLocaleString("fr-FR")} FCFA</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+
+            {/* ── ABONNEMENTS ── */}
+            {page === "abonnements" && (() => {
+              const filtered = abonnements.filter(a => aboFilter === "Tous" || a.statut === aboFilter);
+              const actifs = abonnements.filter(a => a.statut === "Actif");
+              const freqMois = { Mensuel: 1, Trimestriel: 3, Semestriel: 6, Annuel: 12 };
+              const mrr = actifs.reduce((s, a) => s + (a.montant || 0) / (freqMois[a.frequence] || 1), 0);
+              const arr = mrr * 12;
+              const retards = abonnements.filter(a => a.statut === "Actif" && a.prochaine_echeance && new Date(a.prochaine_echeance) < new Date());
+              const today = new Date();
+              const prochaines = abonnements.filter(a => {
+                if (a.statut !== "Actif" || !a.prochaine_echeance) return false;
+                const diff = Math.round((new Date(a.prochaine_echeance) - today) / 86400000);
+                return diff >= 0 && diff <= 30;
+              });
+
+              return (
+                <div>
+                  {/* KPIs */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
+                    {[
+                      { label: "MRR", value: Math.round(mrr).toLocaleString("fr-FR") + " FCFA", delta: "Revenu mensuel récurrent", color: "#1a5c9e", icon: ic.abo },
+                      { label: "ARR", value: Math.round(arr).toLocaleString("fr-FR") + " FCFA", delta: "Revenu annuel récurrent", color: "#1a7a4a", icon: ic.trend },
+                      { label: "Abonnés actifs", value: actifs.length, delta: abonnements.length + " au total", color: "#c17f2a", icon: ic.clients },
+                      { label: "Retards", value: retards.length, delta: prochaines.length + " échéances < 30j", color: "#c0392b", icon: ic.alert },
+                    ].map((k, i) => (
+                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "12px" : "16px 18px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", display: "flex", flexDirection: "column", gap: 4, borderTop: "3px solid " + k.color }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 9, background: k.color + "18", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 4 }}>
+                          <Icon d={k.icon} size={16} stroke={k.color} />
+                        </div>
+                        <div style={{ fontSize: isMobile ? 16 : 20, fontWeight: 800, color: "#1e3a57" }}>{k.value}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{k.label}</div>
+                        <div style={{ fontSize: 11, color: "#8da4c0" }}>{k.delta}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Alertes retards */}
+                  {retards.length > 0 && (
+                    <div style={{ background: "#fff0f0", border: "1px solid #f5b8b8", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: "#c0392b", marginBottom: 8 }}>⚠️ {retards.length} abonnement(s) en retard de paiement</div>
+                      {retards.map(a => (
+                        <div key={a.id} style={{ fontSize: 12, color: "#c0392b", marginBottom: 4 }}>
+                          • <b>{a.client}</b> — {a.service} — échéance dépassée depuis le {new Date(a.prochaine_echeance).toLocaleDateString("fr-FR")}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Toolbar */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {["Tous", "Actif", "Suspendu", "Résilié"].map(f => (
+                        <button key={f} onClick={() => setAboFilter(f)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: aboFilter === f ? "#1a5c9e" : "#fff", color: aboFilter === f ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12, fontWeight: 500 }}>{f}</button>
+                      ))}
+                    </div>
+                    <button onClick={() => { setNewAbo({ client: clients[0]?.nom || "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" }); setShowAddAbo(true); }} style={S.primaryBtn}>
+                      <Icon d={ic.plus} size={14} stroke="#fff" /> Nouvel abonnement
+                    </button>
+                  </div>
+
+                  {/* Liste abonnements */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {filtered.length === 0 && <div style={{ ...S.card, ...S.empty, padding: 32 }}>Aucun abonnement trouvé</div>}
+                    {filtered.map(a => {
+                      const daysLeft = a.prochaine_echeance ? Math.round((new Date(a.prochaine_echeance) - new Date()) / 86400000) : null;
+                      const isLate = daysLeft !== null && daysLeft < 0;
+                      const isSoon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7;
+                      const statColors = { Actif: { bg: "#e8f5ee", color: "#1a7a4a", border: "#1a7a4a" }, Suspendu: { bg: "#fff8e6", color: "#c17f2a", border: "#c17f2a" }, Résilié: { bg: "#f5f5f5", color: "#8a9aac", border: "#ccc" } };
+                      const sc = statColors[a.statut] || statColors["Actif"];
+                      return (
+                        <div key={a.id} className="card-hover" style={{ ...S.card, padding: "16px 20px", borderLeft: "4px solid " + sc.border, background: isLate ? "#fff9f9" : "#fff" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 14, flexWrap: "wrap" }}>
+                            {/* Avatar client */}
+                            <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#2e7fcf,#1a5c9e)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
+                              {a.client?.charAt(0) || "?"}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 200 }}>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>{a.client}</div>
+                              <div style={{ fontSize: 12, color: "#6b8aaa", marginTop: 2 }}>{a.service}</div>
+                              {a.note && <div style={{ fontSize: 11, color: "#8da4c0", marginTop: 4, fontStyle: "italic" }}>{a.note}</div>}
+                            </div>
+                            {/* Montant */}
+                            <div style={{ textAlign: "center", minWidth: 120 }}>
+                              <div style={{ fontSize: 18, fontWeight: 800, color: "#1a5c9e" }}>{(a.montant || 0).toLocaleString("fr-FR")} FCFA</div>
+                              <div style={{ fontSize: 11, color: "#8da4c0" }}>/ {a.frequence}</div>
+                            </div>
+                            {/* Échéance */}
+                            <div style={{ textAlign: "center", minWidth: 110 }}>
+                              <div style={{ fontSize: 11, color: "#8da4c0", marginBottom: 2 }}>Prochaine échéance</div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: isLate ? "#c0392b" : isSoon ? "#c17f2a" : "#1e3a57" }}>
+                                {a.prochaine_echeance ? new Date(a.prochaine_echeance).toLocaleDateString("fr-FR") : "—"}
+                              </div>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: isLate ? "#c0392b" : isSoon ? "#c17f2a" : "#8da4c0" }}>
+                                {daysLeft === null ? "" : isLate ? "⚠️ " + Math.abs(daysLeft) + "j de retard" : daysLeft === 0 ? "🔔 Aujourd'hui !" : isSoon ? "🔔 J-" + daysLeft : "J-" + daysLeft}
+                              </div>
+                            </div>
+                            {/* Statut + Actions */}
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20, background: sc.bg, color: sc.color, border: "1px solid " + sc.border }}>{a.statut}</span>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                {a.statut === "Actif" && <button onClick={() => toggleAboStatut(a, "Suspendu")} title="Suspendre" style={{ fontSize: 11, padding: "4px 8px", borderRadius: 6, border: "1px solid #f0d080", background: "#fff8e6", color: "#c17f2a", cursor: "pointer" }}>⏸ Suspendre</button>}
+                                {a.statut === "Suspendu" && <button onClick={() => toggleAboStatut(a, "Actif")} title="Réactiver" style={{ fontSize: 11, padding: "4px 8px", borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", color: "#1a7a4a", cursor: "pointer" }}>▶ Réactiver</button>}
+                                {a.statut !== "Résilié" && <button onClick={() => toggleAboStatut(a, "Résilié")} title="Résilier" style={{ fontSize: 11, padding: "4px 8px", borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", color: "#c0392b", cursor: "pointer" }}>🚫 Résilier</button>}
+                                <button onClick={() => deleteAbo(a.id)} title="Supprimer" style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+
+            {/* ── ABONNEMENTS ── */}
+            {page === "abonnements" && (() => {
+              const actifs = abonnements.filter(a => a.statut === "Actif");
+              const suspendus = abonnements.filter(a => a.statut === "Suspendu");
+              const resilies = abonnements.filter(a => a.statut === "Résilié");
+              const freqMult = { "Mensuel": 1, "Trimestriel": 3, "Semestriel": 6, "Annuel": 12 };
+              const mrr = actifs.reduce((s, a) => {
+                const mult = freqMult[a.frequence] || 1;
+                return s + (a.montant || 0) / mult;
+              }, 0);
+              const arr = mrr * 12;
+              const now = new Date();
+              const enRetard = actifs.filter(a => a.prochaine_echeance && new Date(a.prochaine_echeance) < now);
+              const statutColors = { "Actif": { bg: "#e8f5ee", color: "#1a7a4a", border: "#1a7a4a" }, "Suspendu": { bg: "#fff8e6", color: "#c17f2a", border: "#c17f2a" }, "Résilié": { bg: "#fff0f0", color: "#c0392b", border: "#c0392b" } };
+
+              return (
+                <div>
+                  {/* KPIs */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
+                    {[
+                      { label: "MRR", value: Math.round(mrr).toLocaleString("fr-FR") + " FCFA", delta: "Revenu mensuel récurrent", color: "#1a5c9e", icon: ic.abonnement },
+                      { label: "ARR", value: Math.round(arr).toLocaleString("fr-FR") + " FCFA", delta: "Revenu annuel récurrent", color: "#1a7a4a", icon: ic.trend },
+                      { label: "Abonnés actifs", value: actifs.length, delta: suspendus.length + " suspendu(s)", color: "#1a5c9e", icon: ic.clients },
+                      { label: "En retard", value: enRetard.length, delta: resilies.length + " résilié(s)", color: enRetard.length > 0 ? "#c0392b" : "#1a7a4a", icon: ic.alert },
+                    ].map((k, i) => (
+                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "12px" : "16px 18px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", display: "flex", flexDirection: "column", gap: 4, borderTop: "3px solid " + k.color }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 9, background: k.color + "18", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 4 }}>
+                          <Icon d={k.icon} size={16} stroke={k.color} />
+                        </div>
+                        <div style={{ fontSize: isMobile ? 16 : 20, fontWeight: 800, color: "#1e3a57" }}>{k.value}</div>
+                        <div style={{ fontSize: 11, color: "#6b8aaa", fontWeight: 500 }}>{k.label}</div>
+                        <div style={{ fontSize: 10, color: "#8da4c0" }}>{k.delta}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Alertes retard */}
+                  {enRetard.length > 0 && (
+                    <div style={{ background: "#fff0f0", border: "1px solid #f5b8b8", borderRadius: 10, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+                      <Icon d={ic.alert} size={18} stroke="#c0392b" />
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: "#c0392b" }}>⚠️ {enRetard.length} abonnement(s) en retard de paiement</div>
+                        <div style={{ fontSize: 11, color: "#c0392b", marginTop: 2 }}>{enRetard.map(a => a.client).join(", ")}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Toolbar */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {["Tous", "Actif", "Suspendu", "Résilié"].map(f => (
+                        <button key={f} onClick={() => {}} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: "#fff", color: "#4a6d8c", cursor: "pointer", fontSize: 12 }}>{f} ({f === "Tous" ? abonnements.length : abonnements.filter(a => a.statut === f).length})</button>
+                      ))}
+                    </div>
+                    <button onClick={() => { setNewAbonnement({ client: clients[0]?.nom || "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" }); setShowAddAbonnement(true); }} style={S.primaryBtn}>
+                      <Icon d={ic.plus} size={14} stroke="#fff" /> Nouvel abonnement
+                    </button>
+                  </div>
+
+                  {/* Liste */}
+                  <div className="card-hover" style={S.card}>
+                    {abonnements.length === 0 && <div style={S.empty}>Aucun abonnement enregistré</div>}
+                    {abonnements.map((a, i) => {
+                      const sc = statutColors[a.statut] || statutColors["Actif"];
+                      const echeance = a.prochaine_echeance ? new Date(a.prochaine_echeance) : null;
+                      const daysLeft = echeance ? Math.round((echeance - now) / 86400000) : null;
+                      const isLate = daysLeft !== null && daysLeft < 0;
+                      const isSoon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7;
+                      return (
+                        <div key={a.id} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 0", borderBottom: "1px solid #f0f4fa", flexWrap: isMobile ? "wrap" : "nowrap",
+                          background: isLate ? "#fff9f9" : "transparent",
+                          borderLeft: isLate ? "3px solid #c0392b" : isSoon ? "3px solid #c17f2a" : "3px solid transparent",
+                          paddingLeft: 8 }}>
+                          {/* Client & service */}
+                          <div style={{ flex: 2, minWidth: 140 }}>
+                            <div style={{ fontWeight: 700, fontSize: 13, color: "#1e3a57" }}>{a.client}</div>
+                            <div style={{ fontSize: 11, color: "#6b8aaa", marginTop: 2 }}>{a.service}</div>
+                            {a.note && <div style={{ fontSize: 10, color: "#8da4c0", marginTop: 2, fontStyle: "italic" }}>{a.note}</div>}
+                          </div>
+                          {/* Montant & fréquence */}
+                          <div style={{ flex: 1, minWidth: 100 }}>
+                            <div style={{ fontWeight: 800, fontSize: 14, color: "#1a5c9e" }}>{(a.montant || 0).toLocaleString("fr-FR")} FCFA</div>
+                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{a.frequence}</div>
+                          </div>
+                          {/* Échéance */}
+                          <div style={{ flex: 1, minWidth: 90 }}>
+                            {echeance ? (
+                              <>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: isLate ? "#c0392b" : isSoon ? "#c17f2a" : "#1e3a57" }}>{echeance.toLocaleDateString("fr-FR")}</div>
+                                <div style={{ fontSize: 11, color: isLate ? "#c0392b" : isSoon ? "#c17f2a" : "#8da4c0", fontWeight: isLate || isSoon ? 700 : 400 }}>
+                                  {isLate ? "⚠️ " + Math.abs(daysLeft) + "j de retard" : isSoon ? "⏰ J-" + daysLeft : "J-" + daysLeft}
+                                </div>
+                              </>
+                            ) : <div style={{ fontSize: 11, color: "#8da4c0" }}>—</div>}
+                          </div>
+                          {/* Statut */}
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20, background: sc.bg, color: sc.color, border: "1px solid " + sc.border, flexShrink: 0 }}>{a.statut}</span>
+                          {/* Actions */}
+                          <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                            {a.statut === "Actif" && <button title="Suspendre" onClick={() => toggleAbonnementStatut(a, "Suspendu")} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #f0d080", background: "#fff8e6", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>⏸</button>}
+                            {a.statut === "Suspendu" && <button title="Réactiver" onClick={() => toggleAbonnementStatut(a, "Actif")} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>▶️</button>}
+                            {a.statut !== "Résilié" && <button title="Résilier" onClick={() => { if(window.confirm("Résilier cet abonnement ?")) toggleAbonnementStatut(a, "Résilié"); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🚫</button>}
+                            {a.statut === "Résilié" && <button title="Supprimer" onClick={() => { if(window.confirm("Supprimer définitivement ?")) deleteAbonnement(a.id); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Répartition MRR par fréquence */}
+                  {actifs.length > 0 && (
+                    <div className="card-hover" style={{ ...S.card, marginTop: 16 }}>
+                      <div style={S.cardHeader}><Icon d={ic.trend} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Répartition du MRR par fréquence</span></div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {["Mensuel","Trimestriel","Semestriel","Annuel"].map(freq => {
+                          const items = actifs.filter(a => a.frequence === freq);
+                          const mrrFreq = items.reduce((s, a) => s + (a.montant || 0) / (freqMult[freq] || 1), 0);
+                          if (items.length === 0) return null;
+                          return (
+                            <div key={freq} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <div style={{ width: 90, fontSize: 12, color: "#4a6d8c", flexShrink: 0 }}>{freq} ({items.length})</div>
+                              <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
+                                <div style={{ width: mrr > 0 ? (mrrFreq/mrr*100) + "%" : "0%", height: "100%", background: "linear-gradient(90deg,#2e7fcf,#1a5c9e)", borderRadius: 4 }} />
+                              </div>
+                              <div style={{ width: 130, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{Math.round(mrrFreq).toLocaleString("fr-FR")} FCFA/mois</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+
+            {/* ── SERVICES ── */
             {page === "services" && (() => {
               const GROUPES = ["Assistance Comptable", "Assistance Fiscale", "Assistance Sociale", "Assistance Juridique"];
               const groupColors = {
@@ -1593,6 +2069,158 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+
+      {showAddAbonnement && (
+        <Modal title="Nouvel abonnement" onClose={() => setShowAddAbonnement(false)}>
+          <div style={S.formGroup}>
+            <label style={S.label}>Client *</label>
+            <select value={newAbo.client} onChange={e => setNewAbo(p => ({ ...p, client: e.target.value }))} style={S.select}>
+              {clients.map(c => <option key={c.id}>{c.nom}</option>)}
+            </select>
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Service souscrit *</label>
+            <input placeholder="Ex: Tenue comptable mensuelle..." value={newAbo.service} onChange={e => setNewAbo(p => ({ ...p, service: e.target.value }))} style={S.input} />
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Montant (FCFA) *</label>
+              <input type="number" placeholder="0" value={newAbo.montant} onChange={e => setNewAbo(p => ({ ...p, montant: e.target.value }))} style={S.input} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Fréquence</label>
+              <select value={newAbo.frequence} onChange={e => setNewAbo(p => ({ ...p, frequence: e.target.value }))} style={S.select}>
+                {["Mensuel", "Trimestriel", "Annuel"].map(f => <option key={f}>{f}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Date de début</label>
+              <input type="date" value={newAbo.date_debut} onChange={e => setNewAbo(p => ({ ...p, date_debut: e.target.value }))} style={S.select} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Statut</label>
+              <select value={newAbo.statut} onChange={e => setNewAbo(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+                {["Actif", "Suspendu"].map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={() => setShowAddAbonnement(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={addAbonnement} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
+      )}
+
+
+      {showAddAbo && (
+        <Modal title="Nouvel abonnement" onClose={() => setShowAddAbo(false)}>
+          <div style={S.formGroup}>
+            <label style={S.label}>Client *</label>
+            <select value={newAbo.client} onChange={e => setNewAbo(p => ({ ...p, client: e.target.value }))} style={S.select}>
+              {clients.map(c => <option key={c.id}>{c.nom}</option>)}
+            </select>
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Service souscrit *</label>
+            <select value={newAbo.service} onChange={e => setNewAbo(p => ({ ...p, service: e.target.value }))} style={S.select}>
+              <option value="">-- Sélectionner --</option>
+              {["Assistance Comptable","Assistance Fiscale","Assistance Sociale","Assistance Juridique"].map(g => (
+                <optgroup key={g} label={g}>
+                  {services.filter(s => s.groupe === g).map(s => <option key={s.id}>{s.nom}</option>)}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Montant (FCFA) *</label>
+              <input type="number" placeholder="0" value={newAbo.montant} onChange={e => setNewAbo(p => ({ ...p, montant: e.target.value }))} style={S.input} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Fréquence</label>
+              <select value={newAbo.frequence} onChange={e => setNewAbo(p => ({ ...p, frequence: e.target.value }))} style={S.select}>
+                {["Mensuel","Trimestriel","Semestriel","Annuel"].map(f => <option key={f}>{f}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Date de début</label>
+              <input type="date" value={newAbo.date_debut} onChange={e => setNewAbo(p => ({ ...p, date_debut: e.target.value }))} style={S.select} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Statut</label>
+              <select value={newAbo.statut} onChange={e => setNewAbo(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+                {["Actif","Suspendu"].map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Note (optionnel)</label>
+            <input placeholder="Précision sur l'abonnement..." value={newAbo.note} onChange={e => setNewAbo(p => ({ ...p, note: e.target.value }))} style={S.input} />
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={() => setShowAddAbo(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={addAbonnement} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
+      )}
+
+
+      {showAddAbonnement && (
+        <Modal title="Nouvel abonnement" onClose={() => setShowAddAbonnement(false)}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Client *</label>
+              <select value={newAbonnement.client} onChange={e => setNewAbonnement(p => ({ ...p, client: e.target.value }))} style={S.select}>
+                {clients.map(c => <option key={c.id}>{c.nom}</option>)}
+              </select>
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Fréquence</label>
+              <select value={newAbonnement.frequence} onChange={e => setNewAbonnement(p => ({ ...p, frequence: e.target.value }))} style={S.select}>
+                {["Mensuel", "Trimestriel", "Semestriel", "Annuel"].map(f => <option key={f}>{f}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Service souscrit *</label>
+            <select value={newAbonnement.service} onChange={e => setNewAbonnement(p => ({ ...p, service: e.target.value }))} style={S.select}>
+              <option value="">-- Sélectionner --</option>
+              {["Assistance Comptable","Assistance Fiscale","Assistance Sociale","Assistance Juridique"].map(g => (
+                <optgroup key={g} label={g}>
+                  {services.filter(s => s.groupe === g).map(s => <option key={s.id}>{s.nom}</option>)}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Montant (FCFA) *</label>
+              <input type="number" placeholder="0" value={newAbonnement.montant} onChange={e => setNewAbonnement(p => ({ ...p, montant: e.target.value }))} style={S.input} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Date de début</label>
+              <input type="date" value={newAbonnement.date_debut} onChange={e => setNewAbonnement(p => ({ ...p, date_debut: e.target.value }))} style={S.select} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Prochaine échéance</label>
+              <input type="date" value={newAbonnement.prochaine_echeance} onChange={e => setNewAbonnement(p => ({ ...p, prochaine_echeance: e.target.value }))} style={S.select} />
+            </div>
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Note (optionnel)</label>
+            <input placeholder="Remarque sur l'abonnement..." value={newAbonnement.note} onChange={e => setNewAbonnement(p => ({ ...p, note: e.target.value }))} style={S.input} />
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={() => setShowAddAbonnement(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={addAbonnement} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
       )}
 
 
