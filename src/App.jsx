@@ -117,12 +117,10 @@ export default function App() {
   const [clientFilter, setClientFilter] = useState("Tous");
 
   const [clients, setClients] = useState([]);
-  const [echeances, setEcheances] = useState([]);
   const [devisList, setDevisList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [showAddClient, setShowAddClient] = useState(false);
-  const [showAddEcheance, setShowAddEcheance] = useState(false);
 
 
   const [devisLines, setDevisLines] = useState([{ nom: "", groupe: "", tarif: 0, unite: "forfait", qty: 1 }]);
@@ -154,15 +152,13 @@ export default function App() {
   const [editingDevisId, setEditingDevisId] = useState(null);
 
   const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
-  const [newEch, setNewEch] = useState({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [c, e, d, dep, srv, abo] = await Promise.all([
-      db.get("clients"), db.get("echeances"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"),
+    const [c, d, dep, srv, abo] = await Promise.all([
+      db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"),
     ]);
     setClients(Array.isArray(c) ? c : []);
-    setEcheances(Array.isArray(e) ? e : []);
     setDevisList(Array.isArray(d) ? d : []);
     setDepenses(Array.isArray(dep) ? dep : []);
     setServices(Array.isArray(srv) ? srv : []);
@@ -355,7 +351,6 @@ export default function App() {
     { id: "services",     label: "Services",          icon: ic.service },
     { id: "depenses",     label: "Dépenses",          icon: ic.depenses },
     { id: "rapports",     label: "Rapports",          icon: ic.rapports },
-    { id: "echeances",    label: "Échéances",         icon: ic.calendar },
     { id: "collab",       label: "Collaborateurs",    icon: ic.collab },
     { id: "documents",    label: "Documents",         icon: ic.docs },
     { id: "settings",     label: "Paramètres",        icon: ic.settings },
@@ -462,7 +457,7 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+              </div>
             )}
 
             {/* ── CLIENTS ── */}
@@ -1277,7 +1272,7 @@ export default function App() {
                 {/* Période selector */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
                   <div style={{ display: "flex", gap: 8 }}>
-                    {[["jour", "Aujourd'hui"], ["semestre", "Ce semestre"], ["annee", "Cette année"], ["tout", "Tout"]].map(([val, label]) => (
+                    {[["jour", "Aujourd’hui"], ["semestre", "Ce semestre"], ["annee", "Cette année"], ["tout", "Tout"]].map(([val, label]) => (
                       <button key={val} onClick={() => setDepensePeriode(val)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: depensePeriode === val ? "#1a5c9e" : "#fff", color: depensePeriode === val ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12, fontWeight: 500 }}>{label}</button>
                     ))}
                   </div>
@@ -1338,7 +1333,7 @@ export default function App() {
 
                 {/* Liste des dépenses */}
                 <div className="card-hover" style={S.card}>
-                  <div style={S.cardHeader}><Icon d={ic.depenses} size={16} stroke="#c0392b" /><span style={S.cardTitle}>Liste des dépenses — {{"jour": "Aujourd'hui", "semestre": "Ce semestre", "annee": "Cette année", "tout": "Tout"}[depensePeriode]}</span></div>
+                  <div style={S.cardHeader}><Icon d={ic.depenses} size={16} stroke="#c0392b" /><span style={S.cardTitle}>Liste des dépenses — {{"jour": "Aujourd’hui", "semestre": "Ce semestre", "annee": "Cette année", "tout": "Tout"}[depensePeriode]}</span></div>
                   {filterDepenses(depensePeriode).length === 0 && <div style={S.empty}>Aucune dépense enregistrée pour cette période</div>}
                   {filterDepenses(depensePeriode).map((d, i) => {
                     const catColors = { Fournitures: "#1a5c9e", Loyer: "#1a7a4a", Salaires: "#c17f2a", Transport: "#8e44ad", Informatique: "#c0392b", Communication: "#2980b9", Honoraires: "#e67e22", Autres: "#7f8c8d" };
@@ -1474,8 +1469,8 @@ export default function App() {
                   </div>
                   {/* Archivage par année */}
                   <div style={{ marginTop: 8, padding: "14px 16px", borderRadius: 10, background: "#f0f6ff", border: "1px solid #b0c8e8" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1a5c9e", marginBottom: 10 }}>📦 Archiver les devis d'une année</div>
-                    <div style={{ fontSize: 11, color: "#6b8aaa", marginBottom: 12 }}>Supprime tous les devis non-Payés d'une année sélectionnée. Les devis Payés sont conservés.</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1a5c9e", marginBottom: 10 }}>📦 Archiver les devis d&apos;une année</div>
+                    <div style={{ fontSize: 11, color: "#6b8aaa", marginBottom: 12 }}>Supprime tous les devis non-Payés d&apos;une année sélectionnée. Les devis Payés sont conservés.</div>
                     <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                       <select id="archiveYear" style={{ ...S.select, flex: 1, minWidth: 120 }}>
                         {[...new Set(devisList.map(d => new Date(d.created_at || d.date || Date.now()).getFullYear()))].sort((a,b) => b-a).map(y => (
@@ -1665,7 +1660,7 @@ export default function App() {
               {/* Pied de page */}
               <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid #e2eaf4", fontSize: 11, color: "#8da4c0", textAlign: "center" }}>
                 CGA-CDA — Centrale des Associés - Conseils & Expertise Comptable et Fiscale<br/>
-                Devis valable 30 jours à compter de la date d'émission
+                Devis valable 30 jours à compter de la date d&apos;émission
               </div>
             </div>
           </div>
