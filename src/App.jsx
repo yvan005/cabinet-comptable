@@ -1120,112 +1120,461 @@ export default function App() {
             {page === "rapports" && (() => {
               const now = new Date();
               const annee = now.getFullYear();
-              const moisNoms = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Aoû","Sep","Oct","Nov","Déc"];
+              const moisNoms = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+              const catColors = { Fournitures: "#1a5c9e", Loyer: "#1a7a4a", Salaires: "#c17f2a", Transport: "#8e44ad", Informatique: "#c0392b", Communication: "#2980b9", Honoraires: "#e67e22", Autres: "#7f8c8d" };
+              const freqMult = { "Mensuel": 1, "Trimestriel": 3, "Semestriel": 6, "Annuel": 12 };
 
-              // Dépenses par mois (année courante)
+              // ── Revenus (CA devis payés) ──
+              const caMois = Array(12).fill(0);
+              devisList.filter(d => d.statut === "Payé").forEach(d => {
+                const dt = new Date(d.date || d.created_at);
+                if (dt.getFullYear() === annee) caMois[dt.getMonth()] += d.total_ttc || 0;
+              });
+              const totalCA = caMois.reduce((s, v) => s + v, 0);
+              const caAnneePrec = devisList.filter(d => d.statut === "Payé" && new Date(d.date || d.created_at).getFullYear() === annee - 1).reduce((s, d) => s + (d.total_ttc || 0), 0);
+
+              // ── Dépenses ──
               const depMois = Array(12).fill(0);
               depenses.forEach(d => {
-                const date = new Date(d.date);
-                if (date.getFullYear() === annee) depMois[date.getMonth()] += d.montant || 0;
+                const dt = new Date(d.date);
+                if (dt.getFullYear() === annee) depMois[dt.getMonth()] += d.montant || 0;
               });
-              const maxDep = Math.max(...depMois, 1);
-
-              // Dépenses par catégorie (année courante)
+              const totalDep = depMois.reduce((s, v) => s + v, 0);
               const cats = {};
               depenses.forEach(d => {
-                if (new Date(d.date).getFullYear() === annee) {
-                  cats[d.categorie] = (cats[d.categorie] || 0) + (d.montant || 0);
-                }
+                if (new Date(d.date).getFullYear() === annee) cats[d.categorie] = (cats[d.categorie] || 0) + (d.montant || 0);
               });
-              const catColors = { Fournitures: "#1a5c9e", Loyer: "#1a7a4a", Salaires: "#c17f2a", Transport: "#8e44ad", Informatique: "#c0392b", Communication: "#2980b9", Honoraires: "#e67e22", Autres: "#7f8c8d" };
 
-              // KPIs
-              const totalAnnee = depenses.filter(d => new Date(d.date).getFullYear() === annee).reduce((s, d) => s + (d.montant || 0), 0);
-              const totalMois = depenses.filter(d => { const dt = new Date(d.date); return dt.getFullYear() === annee && dt.getMonth() === now.getMonth(); }).reduce((s, d) => s + (d.montant || 0), 0);
-              const totalJour = depenses.filter(d => new Date(d.date).toDateString() === now.toDateString()).reduce((s, d) => s + (d.montant || 0), 0);
-              const topCat = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
+              // ── MRR / ARR ──
+              const mrr = abonnements.filter(a => a.statut === "Actif").reduce((s, a) => s + (a.montant || 0) / (freqMult[a.frequence] || 1), 0);
+              const arr = mrr * 12;
+
+              // ── Résultat net ──
+              const resultatNet = totalCA - totalDep;
+              const margeRate = totalCA > 0 ? Math.round((resultatNet / totalCA) * 100) : 0;
+
+              // ── Devis stats ──
+              const devisPaies = devisList.filter(d => d.statut === "Payé").length;
+              const devisTotal = devisList.length;
+              const tauxConv = devisTotal > 0 ? Math.round((devisPaies / devisTotal) * 100) : 0;
+              const panierMoyen = devisPaies > 0 ? Math.round(totalCA / devisPaies) : 0;
+              const montantEnCours = devisList.filter(d => ["Enregistré","Envoyé"].includes(d.statut)).reduce((s, d) => s + (d.total_ttc || 0), 0);
+
+              // ── Graphique combiné (CA vs Dépenses) ──
+              const maxCombi = Math.max(...caMois, ...depMois, 1);
+
+              // ── Mois le plus rentable ──
+              const resultatsMois = caMois.map((ca, i) => ({ mois: moisNoms[i], net: ca - depMois[i], ca, dep: depMois[i] }));
+              const meilleurMois = resultatsMois.reduce((best, m) => m.net > best.net ? m : best, resultatsMois[0]);
+
+              // ── Clients par secteur ──
+              const secteurs = {};
+              clients.forEach(c => { secteurs[c.secteur || "Autre"] = (secteurs[c.secteur || "Autre"] || 0) + 1; });
+              const maxS = Math.max(...Object.values(secteurs), 1);
+              const sColors = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22","#7f8c8d"];
+
+              // ── Top clients CA ──
+              const caParClient = {};
+              devisList.filter(d => d.statut === "Payé").forEach(d => {
+                caParClient[d.client] = (caParClient[d.client] || 0) + (d.total_ttc || 0);
+              });
+              const topClients = Object.entries(caParClient).sort((a, b) => b[1] - a[1]).slice(0, 5);
+              const maxClientCA = topClients[0]?.[1] || 1;
 
               return (
-                <div>
-                  {/* KPIs */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+                  {/* ── TITRE SECTION ── */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#1e3a57" }}>Synthèse financière {annee}</div>
+                      <div style={{ fontSize: 12, color: "#8da4c0", marginTop: 2 }}>Données en temps réel depuis Supabase</div>
+                    </div>
+                    <div style={{ fontSize: 11, background: "#e8f0fb", color: "#1a5c9e", fontWeight: 700, padding: "6px 14px", borderRadius: 20 }}>
+                      Mis à jour : {now.toLocaleDateString("fr-FR")}
+                    </div>
+                  </div>
+
+                  {/* ── KPIs PRINCIPAUX ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12 }}>
                     {[
-                      { label: "Dépenses aujourd'hui", value: totalJour.toLocaleString("fr-FR") + " FCFA", color: "#c0392b", icon: ic.depenses },
-                      { label: "Dépenses ce mois", value: totalMois.toLocaleString("fr-FR") + " FCFA", color: "#c17f2a", icon: ic.depenses },
-                      { label: "Dépenses cette année", value: totalAnnee.toLocaleString("fr-FR") + " FCFA", color: "#1a5c9e", icon: ic.depenses },
-                      { label: "Catégorie principale", value: topCat ? topCat[0] : "—", color: "#1a7a4a", icon: ic.trend },
+                      { label: "CA encaissé", value: totalCA.toLocaleString("fr-FR") + " FCFA", delta: caAnneePrec > 0 ? `vs ${(caAnneePrec/1000).toFixed(0)}k FCFA en ${annee-1}` : `${devisPaies} devis payés`, color: "#1a7a4a", bg: "#e8f5ee", icon: ic.trend, emoji: "📈" },
+                      { label: "Dépenses totales", value: totalDep.toLocaleString("fr-FR") + " FCFA", delta: `${Object.keys(cats).length} catégories`, color: "#c0392b", bg: "#fff0f0", icon: ic.depenses, emoji: "📉" },
+                      { label: "Résultat net", value: (resultatNet >= 0 ? "+" : "") + resultatNet.toLocaleString("fr-FR") + " FCFA", delta: `Marge : ${margeRate}%`, color: resultatNet >= 0 ? "#1a7a4a" : "#c0392b", bg: resultatNet >= 0 ? "#e8f5ee" : "#fff0f0", icon: ic.rapports, emoji: resultatNet >= 0 ? "✅" : "⚠️" },
+                      { label: "MRR récurrent", value: Math.round(mrr).toLocaleString("fr-FR") + " FCFA", delta: `ARR : ${Math.round(arr).toLocaleString("fr-FR")} FCFA`, color: "#8e44ad", bg: "#f5eefb", icon: ic.abonnement, emoji: "🔄" },
                     ].map((k, i) => (
-                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "12px" : "16px 18px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", display: "flex", flexDirection: "column", gap: 4 }}>
-                        <div style={{ width: 34, height: 34, borderRadius: 9, background: k.color + "18", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 4 }}>
-                          <Icon d={k.icon} size={16} stroke={k.color} />
+                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 14, padding: isMobile ? "12px" : "16px 18px", boxShadow: "0 1px 4px rgba(0,30,80,.07)", borderTop: `3px solid ${k.color}`, display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <div style={{ width: 34, height: 34, borderRadius: 9, background: k.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{k.emoji}</div>
                         </div>
-                        <div style={{ fontSize: isMobile ? 13 : 16, fontWeight: 800, color: "#1e3a57", lineHeight: 1.2 }}>{k.value}</div>
-                        <div style={{ fontSize: 11, color: "#6b8aaa" }}>{k.label}</div>
+                        <div style={{ fontSize: isMobile ? 14 : 18, fontWeight: 800, color: k.color, lineHeight: 1.2 }}>{k.value}</div>
+                        <div style={{ fontSize: 11, color: "#6b8aaa", fontWeight: 600 }}>{k.label}</div>
+                        <div style={{ fontSize: 10, color: "#8da4c0" }}>{k.delta}</div>
                       </div>
                     ))}
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                    {/* Dépenses par mois */}
-                    <div className="card-hover" style={S.card}>
-                      <div style={S.cardHeader}><Icon d={ic.rapports} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Dépenses par mois ({annee})</span></div>
-                      {depenses.length === 0 ? <div style={S.empty}>Aucune dépense enregistrée</div> : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {depMois.map((val, i) => (
-                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <div style={{ width: 32, fontSize: 11, color: "#6b8aaa", flexShrink: 0 }}>{moisNoms[i]}</div>
-                              <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
-                                <div style={{ width: `${(val/maxDep)*100}%`, height: "100%", background: "linear-gradient(90deg,#c0392b,#e74c3c)", borderRadius: 4, transition: "width 0.5s ease" }} />
+                  {/* ── GRAPHIQUE CA vs DÉPENSES ── */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Icon d={ic.rapports} size={16} stroke="#1a5c9e" />
+                        <span style={S.cardTitle}>CA encaissé vs Dépenses — {annee}</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 12, fontSize: 11 }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: "#1a7a4a", display: "inline-block" }} />CA encaissé</span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: "#c0392b", display: "inline-block" }} />Dépenses</span>
+                      </div>
+                    </div>
+                    {(totalCA === 0 && totalDep === 0) ? <div style={S.empty}>Aucune donnée pour cette année</div> : (
+                      <div style={{ display: "flex", alignItems: "flex-end", gap: isMobile ? 2 : 4, height: 140, padding: "0 4px" }}>
+                        {caMois.map((ca, i) => {
+                          const dep = depMois[i];
+                          const hCA = maxCombi > 0 ? Math.max((ca / maxCombi) * 120, ca > 0 ? 4 : 0) : 0;
+                          const hDep = maxCombi > 0 ? Math.max((dep / maxCombi) * 120, dep > 0 ? 4 : 0) : 0;
+                          const isNow = i === now.getMonth();
+                          return (
+                            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                              <div style={{ width: "100%", display: "flex", alignItems: "flex-end", gap: 1, height: 120 }}>
+                                <div title={`CA: ${ca.toLocaleString("fr-FR")} FCFA`} style={{ flex: 1, height: hCA, background: isNow ? "#1a7a4a" : "#a8d5b8", borderRadius: "2px 2px 0 0", transition: "height 0.5s ease", minHeight: 0 }} />
+                                <div title={`Dép: ${dep.toLocaleString("fr-FR")} FCFA`} style={{ flex: 1, height: hDep, background: isNow ? "#c0392b" : "#f0b8b8", borderRadius: "2px 2px 0 0", transition: "height 0.5s ease", minHeight: 0 }} />
                               </div>
-                              <div style={{ width: 110, fontSize: 11, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{val.toLocaleString("fr-FR")} FCFA</div>
+                              <span style={{ fontSize: 9, color: isNow ? "#1a5c9e" : "#8da4c0", fontWeight: isNow ? 700 : 400 }}>{moisNoms[i]}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── ROW : Compte de résultat + Dépenses par catégorie ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+
+                    {/* Compte de résultat simplifié */}
+                    <div className="card-hover" style={S.card}>
+                      <div style={S.cardHeader}>
+                        <span style={{ fontSize: 16 }}>📊</span>
+                        <span style={S.cardTitle}>Compte de résultat simplifié</span>
+                        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, background: "#e8f0fb", color: "#1a5c9e", padding: "3px 8px", borderRadius: 6 }}>{annee}</span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                        {/* Produits */}
+                        <div style={{ padding: "8px 12px", background: "#f5f8fc", borderRadius: 8, marginBottom: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Produits</div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+                            <span style={{ color: "#4a6d8c" }}>CA devis encaissés</span>
+                            <span style={{ fontWeight: 700, color: "#1a7a4a" }}>+{totalCA.toLocaleString("fr-FR")} FCFA</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+                            <span style={{ color: "#4a6d8c" }}>Revenus abonnements (MRR×12)</span>
+                            <span style={{ fontWeight: 700, color: "#8e44ad" }}>+{Math.round(arr).toLocaleString("fr-FR")} FCFA</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
+                            <span style={{ color: "#4a6d8c" }}>Devis en cours (pipeline)</span>
+                            <span style={{ fontWeight: 600, color: "#c17f2a" }}>{montantEnCours.toLocaleString("fr-FR")} FCFA</span>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, borderTop: "1px solid #e2eaf4", paddingTop: 6, marginTop: 4 }}>
+                            <span style={{ fontWeight: 700, color: "#1e3a57" }}>Total produits</span>
+                            <span style={{ fontWeight: 800, color: "#1a7a4a" }}>+{(totalCA + Math.round(arr)).toLocaleString("fr-FR")} FCFA</span>
+                          </div>
+                        </div>
+                        {/* Charges */}
+                        <div style={{ padding: "8px 12px", background: "#fff9f9", borderRadius: 8, marginBottom: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Charges</div>
+                          {Object.entries(cats).sort((a,b) => b[1]-a[1]).map(([cat, montant]) => (
+                            <div key={cat} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                              <span style={{ color: "#4a6d8c" }}>{cat}</span>
+                              <span style={{ fontWeight: 600, color: "#c0392b" }}>-{montant.toLocaleString("fr-FR")} FCFA</span>
                             </div>
                           ))}
+                          {Object.keys(cats).length === 0 && <div style={{ fontSize: 12, color: "#8da4c0" }}>Aucune dépense enregistrée</div>}
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, borderTop: "1px solid #fde8e8", paddingTop: 6, marginTop: 4 }}>
+                            <span style={{ fontWeight: 700, color: "#1e3a57" }}>Total charges</span>
+                            <span style={{ fontWeight: 800, color: "#c0392b" }}>-{totalDep.toLocaleString("fr-FR")} FCFA</span>
+                          </div>
                         </div>
-                      )}
+                        {/* Résultat */}
+                        <div style={{ padding: "12px 16px", borderRadius: 10, background: resultatNet >= 0 ? "linear-gradient(135deg,#e8f5ee,#f0faf4)" : "linear-gradient(135deg,#fff0f0,#fff5f5)", border: `2px solid ${resultatNet >= 0 ? "#1a7a4a" : "#c0392b"}` }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", letterSpacing: 0.5 }}>Résultat net</div>
+                              <div style={{ fontSize: 11, color: "#8da4c0", marginTop: 2 }}>Marge nette : {margeRate}%</div>
+                            </div>
+                            <div style={{ fontSize: 22, fontWeight: 900, color: resultatNet >= 0 ? "#1a7a4a" : "#c0392b" }}>
+                              {resultatNet >= 0 ? "+" : ""}{resultatNet.toLocaleString("fr-FR")} FCFA
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Dépenses par catégorie */}
-                    <div className="card-hover" style={S.card}>
-                      <div style={S.cardHeader}><Icon d={ic.trend} size={16} stroke="#c17f2a" /><span style={S.cardTitle}>Répartition par catégorie</span></div>
-                      {Object.keys(cats).length === 0 ? <div style={S.empty}>Aucune dépense cette année</div> : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          {Object.entries(cats).sort((a,b) => b[1]-a[1]).map(([cat, montant]) => (
-                            <div key={cat} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <div style={{ width: 90, fontSize: 11, color: "#4a6d8c", flexShrink: 0 }}>{cat}</div>
-                              <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
-                                <div style={{ width: `${totalAnnee ? (montant/totalAnnee*100) : 0}%`, height: "100%", background: catColors[cat] || "#888", borderRadius: 4 }} />
+                    {/* Dépenses par catégorie + KPIs devis */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                      <div className="card-hover" style={S.card}>
+                        <div style={S.cardHeader}><Icon d={ic.trend} size={16} stroke="#c17f2a" /><span style={S.cardTitle}>Dépenses par catégorie</span></div>
+                        {Object.keys(cats).length === 0 ? <div style={S.empty}>Aucune dépense cette année</div> : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            {Object.entries(cats).sort((a,b) => b[1]-a[1]).map(([cat, montant]) => (
+                              <div key={cat} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <div style={{ width: 8, height: 8, borderRadius: "50%", background: catColors[cat] || "#888", flexShrink: 0 }} />
+                                <div style={{ width: 90, fontSize: 11, color: "#4a6d8c", flexShrink: 0 }}>{cat}</div>
+                                <div style={{ flex: 1, height: 7, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
+                                  <div style={{ width: `${totalDep ? (montant/totalDep*100) : 0}%`, height: "100%", background: catColors[cat] || "#888", borderRadius: 4 }} />
+                                </div>
+                                <div style={{ width: 40, fontSize: 10, color: "#8da4c0", textAlign: "right" }}>{totalDep ? Math.round(montant/totalDep*100) : 0}%</div>
+                                <div style={{ width: 100, fontSize: 11, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{montant.toLocaleString("fr-FR")} FCFA</div>
                               </div>
-                              <div style={{ width: 110, fontSize: 11, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{montant.toLocaleString("fr-FR")} FCFA</div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* KPIs devis */}
+                      <div className="card-hover" style={S.card}>
+                        <div style={S.cardHeader}><Icon d={ic.devis} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Performance commerciale</span></div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                          {[
+                            { label: "Taux de conversion", value: tauxConv + "%", color: tauxConv >= 50 ? "#1a7a4a" : "#c17f2a", bg: tauxConv >= 50 ? "#e8f5ee" : "#fff8e6" },
+                            { label: "Panier moyen", value: panierMoyen > 0 ? (panierMoyen/1000).toFixed(0) + "k FCFA" : "—", color: "#1a5c9e", bg: "#e8f0fb" },
+                            { label: "Devis en cours", value: devisList.filter(d => ["Enregistré","Envoyé"].includes(d.statut)).length, color: "#c17f2a", bg: "#fff8e6" },
+                            { label: "Meilleur mois", value: meilleurMois?.net > 0 ? meilleurMois.mois : "—", color: "#1a7a4a", bg: "#e8f5ee" },
+                          ].map((item, i) => (
+                            <div key={i} style={{ padding: "10px 12px", borderRadius: 9, background: item.bg, display: "flex", flexDirection: "column", gap: 3 }}>
+                              <div style={{ fontSize: 16, fontWeight: 800, color: item.color }}>{item.value}</div>
+                              <div style={{ fontSize: 10, color: "#6b8aaa", fontWeight: 500 }}>{item.label}</div>
                             </div>
                           ))}
                         </div>
-                      )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Clients par secteur (dynamique) */}
-                  <div className="card-hover" style={S.card}>
-                    <div style={S.cardHeader}><Icon d={ic.clients} size={16} stroke="#1a7a4a" /><span style={S.cardTitle}>Clients par secteur</span></div>
-                    {clients.length === 0 ? <div style={S.empty}>Aucun client enregistré</div> : (() => {
-                      const secteurs = {};
-                      clients.forEach(c => { secteurs[c.secteur || "Autre"] = (secteurs[c.secteur || "Autre"] || 0) + 1; });
-                      const maxS = Math.max(...Object.values(secteurs), 1);
-                      const sColors = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22","#7f8c8d"];
-                      return (
+                  {/* ── ROW : Top clients + Clients par secteur ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+
+                    {/* Top clients par CA */}
+                    <div className="card-hover" style={S.card}>
+                      <div style={S.cardHeader}><Icon d={ic.clients} size={16} stroke="#8e44ad" /><span style={S.cardTitle}>Top clients par CA encaissé</span></div>
+                      {topClients.length === 0 ? <div style={S.empty}>Aucun devis payé pour l'instant</div> : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                          {topClients.map(([nom, ca], i) => (
+                            <div key={nom} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 24, height: 24, borderRadius: "50%", background: ["linear-gradient(135deg,#f6c90e,#e8a400)","#e8e8e8","#cd7f32","#e8f0fb","#f5eefb"][i] || "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: i === 0 ? "#7a5000" : "#6b8aaa", flexShrink: 0 }}>
+                                {i + 1}
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{nom}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a5c9e" }}>{ca.toLocaleString("fr-FR")} FCFA</span>
+                                </div>
+                                <div style={{ height: 5, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
+                                  <div style={{ width: `${(ca / maxClientCA) * 100}%`, height: "100%", background: i === 0 ? "linear-gradient(90deg,#f6c90e,#e8a400)" : "#c8ddf5", borderRadius: 3 }} />
+                                </div>
+                              </div>
+                              <div style={{ fontSize: 10, color: "#8da4c0", flexShrink: 0 }}>{totalCA > 0 ? Math.round(ca/totalCA*100) : 0}%</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Clients par secteur */}
+                    <div className="card-hover" style={S.card}>
+                      <div style={S.cardHeader}><Icon d={ic.clients} size={16} stroke="#1a7a4a" /><span style={S.cardTitle}>Clients par secteur</span></div>
+                      {clients.length === 0 ? <div style={S.empty}>Aucun client enregistré</div> : (
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                           {Object.entries(secteurs).sort((a,b) => b[1]-a[1]).map(([s, n], i) => (
                             <div key={s} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: sColors[i % sColors.length], flexShrink: 0 }} />
                               <div style={{ width: 90, fontSize: 12, color: "#4a6d8c", flexShrink: 0 }}>{s}</div>
-                              <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
+                              <div style={{ flex: 1, height: 7, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
                                 <div style={{ width: `${(n/maxS)*100}%`, height: "100%", background: sColors[i % sColors.length], borderRadius: 4 }} />
                               </div>
                               <div style={{ width: 24, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{n}</div>
                             </div>
                           ))}
                         </div>
-                      );
-                    })()}
+                      )}
+                    </div>
                   </div>
+
+                  {/* ── ANALYSE TRIMESTRIELLE ── */}
+                  {(() => {
+                    const trimestres = ["T1 (Jan-Mar)", "T2 (Avr-Jun)", "T3 (Jul-Sep)", "T4 (Oct-Déc)"];
+                    const trimData = trimestres.map((label, t) => {
+                      const moisStart = t * 3;
+                      const ca = caMois.slice(moisStart, moisStart + 3).reduce((s, v) => s + v, 0);
+                      const dep = depMois.slice(moisStart, moisStart + 3).reduce((s, v) => s + v, 0);
+                      const net = ca - dep;
+                      const marge = ca > 0 ? Math.round((net / ca) * 100) : 0;
+                      const isCurrent = now.getMonth() >= moisStart && now.getMonth() < moisStart + 3;
+                      return { label, ca, dep, net, marge, isCurrent };
+                    });
+                    const maxTrimCA = Math.max(...trimData.map(t => t.ca), 1);
+                    return (
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+                        {/* Graphique trimestriel */}
+                        <div className="card-hover" style={S.card}>
+                          <div style={S.cardHeader}>
+                            <span style={{ fontSize: 16 }}>📆</span>
+                            <span style={S.cardTitle}>Analyse trimestrielle — {annee}</span>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                            {trimData.map((t, i) => (
+                              <div key={i} style={{ padding: "12px 14px", borderRadius: 10, background: t.isCurrent ? "#f0f6ff" : "#f5f8fc", border: t.isCurrent ? "1px solid #1a5c9e30" : "1px solid transparent" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: t.isCurrent ? "#1a5c9e" : "#4a6d8c" }}>
+                                    {t.label} {t.isCurrent && <span style={{ fontSize: 9, background: "#1a5c9e", color: "#fff", padding: "1px 5px", borderRadius: 4, marginLeft: 4 }}>EN COURS</span>}
+                                  </span>
+                                  <span style={{ fontSize: 13, fontWeight: 800, color: t.net >= 0 ? "#1a7a4a" : "#c0392b" }}>
+                                    {t.net >= 0 ? "+" : ""}{t.net.toLocaleString("fr-FR")} FCFA
+                                  </span>
+                                </div>
+                                <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+                                  <div style={{ flex: 1, height: 6, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
+                                    <div style={{ width: `${maxTrimCA > 0 ? (t.ca / maxTrimCA) * 100 : 0}%`, height: "100%", background: "#1a7a4a", borderRadius: 3 }} />
+                                  </div>
+                                  <span style={{ fontSize: 10, color: "#1a7a4a", fontWeight: 600, whiteSpace: "nowrap" }}>{t.ca > 0 ? (t.ca/1000).toFixed(0)+"k" : "—"} CA</span>
+                                </div>
+                                <div style={{ display: "flex", gap: 8 }}>
+                                  <div style={{ flex: 1, height: 6, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
+                                    <div style={{ width: `${maxTrimCA > 0 ? (t.dep / maxTrimCA) * 100 : 0}%`, height: "100%", background: "#c0392b", borderRadius: 3 }} />
+                                  </div>
+                                  <span style={{ fontSize: 10, color: "#c0392b", fontWeight: 600, whiteSpace: "nowrap" }}>{t.dep > 0 ? (t.dep/1000).toFixed(0)+"k" : "—"} Dép</span>
+                                </div>
+                                {t.ca > 0 && (
+                                  <div style={{ marginTop: 6, fontSize: 10, color: "#8da4c0" }}>
+                                    Marge : <span style={{ fontWeight: 700, color: t.marge >= 50 ? "#1a7a4a" : t.marge >= 0 ? "#c17f2a" : "#c0392b" }}>{t.marge}%</span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Prévisionnel MRR */}
+                        <div className="card-hover" style={S.card}>
+                          <div style={S.cardHeader}>
+                            <span style={{ fontSize: 16 }}>🔮</span>
+                            <span style={S.cardTitle}>Prévisionnel revenus récurrents</span>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {/* MRR actuel */}
+                            <div style={{ padding: "14px 16px", borderRadius: 10, background: "linear-gradient(135deg,#f5eefb,#ede0fa)", border: "1px solid #d7b8f5" }}>
+                              <div style={{ fontSize: 11, color: "#8e44ad", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>MRR actuel</div>
+                              <div style={{ fontSize: 28, fontWeight: 900, color: "#8e44ad", marginTop: 4 }}>{Math.round(mrr).toLocaleString("fr-FR")} FCFA</div>
+                              <div style={{ fontSize: 11, color: "#8da4c0", marginTop: 2 }}>{abonnements.filter(a => a.statut === "Actif").length} abonnés actifs</div>
+                            </div>
+                            {/* Projections */}
+                            {[
+                              { label: "Projection 3 mois", mult: 3, color: "#1a5c9e", bg: "#e8f0fb" },
+                              { label: "Projection 6 mois", mult: 6, color: "#1a7a4a", bg: "#e8f5ee" },
+                              { label: "ARR (12 mois)", mult: 12, color: "#c17f2a", bg: "#fff8e6" },
+                            ].map((p, i) => (
+                              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 9, background: p.bg }}>
+                                <span style={{ fontSize: 12, color: "#4a6d8c", fontWeight: 500 }}>{p.label}</span>
+                                <span style={{ fontSize: 14, fontWeight: 800, color: p.color }}>{Math.round(mrr * p.mult).toLocaleString("fr-FR")} FCFA</span>
+                              </div>
+                            ))}
+                            {/* Répartition par fréquence */}
+                            {abonnements.filter(a => a.statut === "Actif").length > 0 && (
+                              <div style={{ marginTop: 4 }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", marginBottom: 8, letterSpacing: 0.5 }}>Répartition des abonnés</div>
+                                {["Mensuel","Trimestriel","Semestriel","Annuel"].map(freq => {
+                                  const items = abonnements.filter(a => a.statut === "Actif" && a.frequence === freq);
+                                  if (!items.length) return null;
+                                  const mrrFreq = items.reduce((s, a) => s + (a.montant||0) / (freqMult[freq]||1), 0);
+                                  return (
+                                    <div key={freq} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                                      <span style={{ fontSize: 11, color: "#4a6d8c", width: 90, flexShrink: 0 }}>{freq} ({items.length})</span>
+                                      <div style={{ flex: 1, height: 5, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
+                                        <div style={{ width: mrr > 0 ? (mrrFreq/mrr*100)+"%" : "0%", height: "100%", background: "linear-gradient(90deg,#8e44ad,#b44dcc)", borderRadius: 3 }} />
+                                      </div>
+                                      <span style={{ fontSize: 11, fontWeight: 700, color: "#8e44ad", whiteSpace: "nowrap" }}>{Math.round(mrrFreq).toLocaleString("fr-FR")} FCFA</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* ── RÉSULTATS MENSUELS ── */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={S.cardHeader}>
+                      <span style={{ fontSize: 16 }}>📅</span>
+                      <span style={S.cardTitle}>Résultats mensuels détaillés — {annee}</span>
+                      <button onClick={() => {
+                        const rows = resultatsMois.map(m => {
+                          const marge = m.ca > 0 ? Math.round((m.net / m.ca) * 100) : 0;
+                          return `${m.mois}\t${m.ca}\t${m.dep}\t${m.net}\t${marge}%`;
+                        });
+                        const csv = "Mois\tCA (FCFA)\tDépenses (FCFA)\tRésultat (FCFA)\tMarge\n" + rows.join("\n") + `\nTOTAL\t${totalCA}\t${totalDep}\t${resultatNet}\t${margeRate}%`;
+                        const blob = new Blob([csv], { type: "text/tab-separated-values" });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a"); a.href = url; a.download = `synthese_financiere_${annee}.tsv`; a.click();
+                        URL.revokeObjectURL(url);
+                      }} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, background: "#e8f0fb", color: "#1a5c9e", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+                        ⬇ Exporter
+                      </button>
+                    </div>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: "#f5f8fc" }}>
+                            {["Mois", "CA encaissé", "Dépenses", "Résultat", "Marge"].map(h => (
+                              <th key={h} style={{ padding: "8px 12px", textAlign: h === "Mois" ? "left" : "right", fontSize: 10, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", letterSpacing: 0.5, whiteSpace: "nowrap" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {resultatsMois.map((m, i) => {
+                            const marge = m.ca > 0 ? Math.round((m.net / m.ca) * 100) : 0;
+                            const isCurrent = i === now.getMonth();
+                            const hasData = m.ca > 0 || m.dep > 0;
+                            return (
+                              <tr key={i} style={{ background: isCurrent ? "#f0f6ff" : "transparent", borderBottom: "1px solid #f0f4fa" }}>
+                                <td style={{ padding: "9px 12px", fontWeight: isCurrent ? 700 : 500, color: isCurrent ? "#1a5c9e" : "#4a6d8c" }}>
+                                  {m.mois} {isCurrent && <span style={{ fontSize: 9, background: "#1a5c9e", color: "#fff", padding: "1px 5px", borderRadius: 4, marginLeft: 4 }}>EN COURS</span>}
+                                </td>
+                                <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: hasData ? "#1a7a4a" : "#c8d8e8" }}>{m.ca > 0 ? m.ca.toLocaleString("fr-FR") + " FCFA" : "—"}</td>
+                                <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 600, color: hasData ? "#c0392b" : "#c8d8e8" }}>{m.dep > 0 ? m.dep.toLocaleString("fr-FR") + " FCFA" : "—"}</td>
+                                <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 800, color: !hasData ? "#c8d8e8" : m.net >= 0 ? "#1a7a4a" : "#c0392b" }}>
+                                  {hasData ? (m.net >= 0 ? "+" : "") + m.net.toLocaleString("fr-FR") + " FCFA" : "—"}
+                                </td>
+                                <td style={{ padding: "9px 12px", textAlign: "right" }}>
+                                  {hasData && m.ca > 0 ? (
+                                    <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: marge >= 50 ? "#e8f5ee" : marge >= 0 ? "#fff8e6" : "#fff0f0", color: marge >= 50 ? "#1a7a4a" : marge >= 0 ? "#c17f2a" : "#c0392b" }}>
+                                      {marge}%
+                                    </span>
+                                  ) : <span style={{ color: "#c8d8e8" }}>—</span>}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                        <tfoot>
+                          <tr style={{ background: "#f0f4fa", borderTop: "2px solid #e2eaf4" }}>
+                            <td style={{ padding: "10px 12px", fontWeight: 800, color: "#1e3a57", fontSize: 13 }}>TOTAL</td>
+                            <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 800, color: "#1a7a4a", fontSize: 13 }}>{totalCA > 0 ? totalCA.toLocaleString("fr-FR") + " FCFA" : "—"}</td>
+                            <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 800, color: "#c0392b", fontSize: 13 }}>{totalDep > 0 ? totalDep.toLocaleString("fr-FR") + " FCFA" : "—"}</td>
+                            <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 900, color: resultatNet >= 0 ? "#1a7a4a" : "#c0392b", fontSize: 14 }}>
+                              {(resultatNet >= 0 ? "+" : "") + resultatNet.toLocaleString("fr-FR")} FCFA
+                            </td>
+                            <td style={{ padding: "10px 12px", textAlign: "right" }}>
+                              <span style={{ fontSize: 12, fontWeight: 800, padding: "3px 8px", borderRadius: 6, background: margeRate >= 50 ? "#e8f5ee" : margeRate >= 0 ? "#fff8e6" : "#fff0f0", color: margeRate >= 50 ? "#1a7a4a" : margeRate >= 0 ? "#c17f2a" : "#c0392b" }}>
+                                {margeRate}%
+                              </span>
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </div>
+
                 </div>
               );
             })()}
