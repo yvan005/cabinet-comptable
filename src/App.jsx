@@ -203,6 +203,28 @@ export default function App() {
   };
   const toggleAbonnementStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
   const deleteAbonnement = async (id) => { await db.delete("abonnements", id); loadAll(); };
+  const deleteAbo = async (id) => { await db.delete("abonnements", id); loadAll(); };
+  const toggleAboStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
+  const getMRR = () => abonnements.filter(a => a.statut === "Actif").reduce((s, a) => {
+    if (a.frequence === "Mensuel") return s + (a.montant || 0);
+    if (a.frequence === "Trimestriel") return s + (a.montant || 0) / 3;
+    if (a.frequence === "Semestriel") return s + (a.montant || 0) / 6;
+    if (a.frequence === "Annuel") return s + (a.montant || 0) / 12;
+    return s;
+  }, 0);
+  const getNextEcheance = (a) => {
+    if (a.prochaine_echeance) return new Date(a.prochaine_echeance);
+    const start = new Date(a.date_debut || Date.now());
+    const now = new Date();
+    const next = new Date(start);
+    while (next <= now) {
+      if (a.frequence === "Mensuel") next.setMonth(next.getMonth() + 1);
+      else if (a.frequence === "Trimestriel") next.setMonth(next.getMonth() + 3);
+      else if (a.frequence === "Semestriel") next.setMonth(next.getMonth() + 6);
+      else next.setFullYear(next.getFullYear() + 1);
+    }
+    return next;
+  };
   // DEVIS ACTIONS
   const dupliquerDevis = (d) => {
     setDevisClient(d.client);
