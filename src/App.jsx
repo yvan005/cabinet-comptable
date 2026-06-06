@@ -141,6 +141,11 @@ export default function App() {
   const [newService, setNewService] = useState({ nom: "", description: "", tarif: "", unite: "forfait", groupe: "Assistance Comptable", actif: true });
   const [showEditService, setShowEditService] = useState(false);
   const [editService, setEditService] = useState(null);
+  const [showAddAbonnement, setShowAddAbonnement] = useState(false);
+  const [showAddAbo, setShowAddAbo] = useState(false);
+  const [aboFilter, setAboFilter] = useState("Tous");
+  const [newAbo, setNewAbo] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
+  const [newAbonnement, setNewAbonnement] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" });
   const [serviceSearch, setServiceSearch] = useState("");
   const [abonnements, setAbonnements] = useState([]);
   const [devisClientSearch, setDevisClientSearch] = useState("");
