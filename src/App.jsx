@@ -143,19 +143,7 @@ export default function App() {
   const [editService, setEditService] = useState(null);
   const [serviceSearch, setServiceSearch] = useState("");
   const [abonnements, setAbonnements] = useState([]);
-  const [showAddAbo, setShowAddAbo] = useState(false);
-  const [newAbo, setNewAbo] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
-  const [aboFilter, setAboFilter] = useState("Tous");
-  const [abonnements, setAbonnements] = useState([]);
-  const [showAddAbonnement, setShowAddAbonnement] = useState(false);
-  const [newAbo, setNewAbo] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif" });
-  const [abonnements, setAbonnements] = useState([]);
-  const [showAddAbonnement, setShowAddAbonnement] = useState(false);
-  const [newAbonnement, setNewAbonnement] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
   const [devisClientSearch, setDevisClientSearch] = useState("");
-  const [abonnements, setAbonnements] = useState([]);
-  const [showAddAbonnement, setShowAddAbonnement] = useState(false);
-  const [newAbonnement, setNewAbonnement] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" });
   const [devisServiceSearch, setDevisServiceSearch] = useState("");
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [showServiceDropdown, setShowServiceDropdown] = useState(null);
@@ -215,70 +203,6 @@ export default function App() {
   };
   const toggleAbonnementStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
   const deleteAbonnement = async (id) => { await db.delete("abonnements", id); loadAll(); };
-  const prochainePaiement = (dateDebut, frequence) => {
-    const d = new Date(dateDebut);
-    const now = new Date();
-    while (d <= now) {
-      if (frequence === "Mensuel") d.setMonth(d.getMonth() + 1);
-      else if (frequence === "Trimestriel") d.setMonth(d.getMonth() + 3);
-      else if (frequence === "Semestriel") d.setMonth(d.getMonth() + 6);
-      else d.setFullYear(d.getFullYear() + 1);
-    }
-    return d;
-  };
-
-  // ABONNEMENTS
-  const addAbonnement = async () => {
-    if (!newAbo.client || !newAbo.service || !newAbo.montant) return;
-    await db.post("abonnements", { ...newAbo, montant: parseFloat(newAbo.montant) });
-    setNewAbo({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif" });
-    setShowAddAbonnement(false); loadAll();
-  };
-  const toggleAboStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
-  const deleteAbonnement = async (id) => { await db.delete("abonnements", id); loadAll(); };
-  const getMRR = () => abonnements.filter(a => a.statut === "Actif").reduce((s, a) => {
-    if (a.frequence === "Mensuel") return s + (a.montant || 0);
-    if (a.frequence === "Trimestriel") return s + (a.montant || 0) / 3;
-    if (a.frequence === "Annuel") return s + (a.montant || 0) / 12;
-    return s;
-  }, 0);
-  const getNextEcheance = (a) => {
-    const start = new Date(a.date_debut);
-    const now = new Date();
-    const next = new Date(start);
-    while (next <= now) {
-      if (a.frequence === "Mensuel") next.setMonth(next.getMonth() + 1);
-      else if (a.frequence === "Trimestriel") next.setMonth(next.getMonth() + 3);
-      else if (a.frequence === "Annuel") next.setFullYear(next.getFullYear() + 1);
-      else break;
-    }
-    return next;
-  };
-
-  // ABONNEMENTS
-  const addAbonnement = async () => {
-    if (!newAbo.client || !newAbo.service || !newAbo.montant) return;
-    const date_debut = newAbo.date_debut;
-    const freq = { Mensuel: 1, Trimestriel: 3, Semestriel: 6, Annuel: 12 }[newAbo.frequence] || 1;
-    const next = new Date(date_debut);
-    next.setMonth(next.getMonth() + freq);
-    await db.post("abonnements", { ...newAbo, montant: parseFloat(newAbo.montant), prochaine_echeance: next.toISOString().split("T")[0] });
-    setNewAbo({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
-    setShowAddAbo(false); loadAll();
-  };
-  const toggleAboStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
-  const deleteAbo = async (id) => { await db.delete("abonnements", id); loadAll(); };
-
-  // ABONNEMENTS
-  const addAbonnement = async () => {
-    if (!newAbonnement.client || !newAbonnement.service || !newAbonnement.montant) return;
-    await db.post("abonnements", { ...newAbonnement, montant: parseFloat(newAbonnement.montant) });
-    setNewAbonnement({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" });
-    setShowAddAbonnement(false); loadAll();
-  };
-  const toggleAbonnementStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
-  const deleteAbonnement = async (id) => { await db.delete("abonnements", id); loadAll(); };
-
   // DEVIS ACTIONS
   const dupliquerDevis = (d) => {
     setDevisClient(d.client);
@@ -1505,7 +1429,7 @@ export default function App() {
             })()}
 
 
-            {/* ── SERVICES ── */
+            {/* ── SERVICES ── */}
             {page === "services" && (() => {
               const GROUPES = ["Assistance Comptable", "Assistance Fiscale", "Assistance Sociale", "Assistance Juridique"];
               const groupColors = {
