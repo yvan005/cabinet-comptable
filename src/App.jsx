@@ -358,21 +358,20 @@ export default function App() {
   ];
 
   const navItems = [
-    { id: "dashboard", label: "Tableau de bord", icon: ic.dashboard },
-    { id: "clients",   label: "Clients",          icon: ic.clients },
-    { id: "echeances", label: "Échéances",        icon: ic.calendar },
-    { id: "devis",     label: "Devis",            icon: ic.devis },
-    { id: "rapports",  label: "Rapports",         icon: ic.rapports },
-    { id: "collab",    label: "Collaborateurs",   icon: ic.collab },
-    { id: "documents", label: "Documents",        icon: ic.docs },
-    { id: "abonnements", label: "Abonnements",    icon: ic.abonnement },
-    { id: "services",  label: "Services",         icon: ic.service },
-    { id: "abonnement", label: "Abonnements",      icon: ic.abonnement },
-    { id: "depenses",  label: "Dépenses",         icon: ic.depenses },
-    { id: "settings",  label: "Paramètres",       icon: ic.settings },
+    { id: "dashboard",    label: "Tableau de bord",  icon: ic.dashboard },
+    { id: "clients",      label: "Clients",           icon: ic.clients },
+    { id: "abonnements",  label: "Abonnements",       icon: ic.abonnement },
+    { id: "devis",        label: "Devis",             icon: ic.devis },
+    { id: "services",     label: "Services",          icon: ic.service },
+    { id: "depenses",     label: "Dépenses",          icon: ic.depenses },
+    { id: "rapports",     label: "Rapports",          icon: ic.rapports },
+    { id: "echeances",    label: "Échéances",         icon: ic.calendar },
+    { id: "collab",       label: "Collaborateurs",    icon: ic.collab },
+    { id: "documents",    label: "Documents",         icon: ic.docs },
+    { id: "settings",     label: "Paramètres",        icon: ic.settings },
   ];
 
-  const pageTitle = { dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", abonnement: "Abonnements", depenses: "Dépenses", settings: "Paramètres" }[page];
+  const pageTitle = { abonnement: "Abonnements", dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", abonnement: "Abonnements", depenses: "Dépenses", settings: "Paramètres" }[page];
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
