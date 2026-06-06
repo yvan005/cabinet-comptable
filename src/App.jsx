@@ -120,12 +120,10 @@ export default function App() {
   const [clientFilter, setClientFilter] = useState("Tous");
 
   const [clients, setClients] = useState([]);
-  const [echeances, setEcheances] = useState([]);
   const [devisList, setDevisList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [showAddClient, setShowAddClient] = useState(false);
-  const [showAddEcheance, setShowAddEcheance] = useState(false);
 
 
   const [devisLines, setDevisLines] = useState([{ nom: "", groupe: "", tarif: 0, unite: "forfait", qty: 1 }]);
@@ -157,15 +155,13 @@ export default function App() {
   const [editingDevisId, setEditingDevisId] = useState(null);
 
   const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
-  const [newEch, setNewEch] = useState({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [c, e, d, dep, srv, abo] = await Promise.all([
-      db.get("clients"), db.get("echeances"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"),
+    const [c, d, dep, srv, abo] = await Promise.all([
+      db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"),
     ]);
     setClients(Array.isArray(c) ? c : []);
-    setEcheances(Array.isArray(e) ? e : []);
     setDevisList(Array.isArray(d) ? d : []);
     setDepenses(Array.isArray(dep) ? dep : []);
     setServices(Array.isArray(srv) ? srv : []);
@@ -190,12 +186,12 @@ export default function App() {
   // ÉCHÉANCES
   const addEcheance = async () => {
     if (!newEch.label || !newEch.date) return;
-    await db.post("echeances", { ...newEch, fait: false });
+    await db.post({ ...newEch, fait: false });
     setNewEch({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
     setShowAddEcheance(false); loadAll();
   };
-  const toggleFait = async (e) => { await db.patch("echeances", e.id, { fait: !e.fait }); loadAll(); };
-  const deleteEch = async (id) => { await db.delete("echeances", id); loadAll(); };
+  const toggleFait = async (e) => { await db.patch(e.id, { fait: !e.fait }); loadAll(); };
+  const deleteEch = async (id) => { await db.delete(id); loadAll(); };
 
   // MESSAGES
 
@@ -344,7 +340,6 @@ export default function App() {
   const updateLine = (i, field, val) => setDevisLines(l => l.map((ln, idx) => idx === i ? (field === 'full' ? { ...ln, nom: val.nom, groupe: val.groupe, tarif: val.tarif || 0, unite: val.unite } : { ...ln, [field]: val }) : ln));
 
 
-  const urgentEch = echeances.filter(e => e.urgence === "haute" && !e.fait);
   const filteredClients = clients.filter(c => {
     const matchF = clientFilter === "Tous" || c.statut === clientFilter;
     const matchS = c.nom?.toLowerCase().includes(searchQuery.toLowerCase()) || c.secteur?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -353,7 +348,7 @@ export default function App() {
 
   const kpis = [
     { label: "Clients actifs", value: clients.filter(c => c.statut === "Actif").length, delta: `${clients.length} au total`, color: "#1a5c9e", icon: ic.clients },
-    { label: "Échéances", value: echeances.filter(e => !e.fait).length, delta: `${urgentEch.length} urgentes`, color: "#c17f2a", icon: ic.calendar },
+    { label: "Abonnements actifs", value: abonnements.filter(a => a.statut === "Actif").length, delta: abonnements.filter(a => a.statut === "Actif" && a.prochaine_echeance && new Date(a.prochaine_echeance) < new Date()).length + " en retard", color: "#c17f2a", icon: ic.abonnement },
     { label: "Devis", value: devisList.length, delta: `${devisList.filter(d => d.statut === "Envoyé").length} envoyés`, color: "#1a7a4a", icon: ic.devis },
   ];
 
@@ -365,13 +360,12 @@ export default function App() {
     { id: "services",     label: "Services",          icon: ic.service },
     { id: "depenses",     label: "Dépenses",          icon: ic.depenses },
     { id: "rapports",     label: "Rapports",          icon: ic.rapports },
-    { id: "echeances",    label: "Échéances",         icon: ic.calendar },
     { id: "collab",       label: "Collaborateurs",    icon: ic.collab },
     { id: "documents",    label: "Documents",         icon: ic.docs },
     { id: "settings",     label: "Paramètres",        icon: ic.settings },
   ];
 
-  const pageTitle = { abonnement: "Abonnements", dashboard: "Tableau de bord", clients: "Clients", echeances: "Échéances", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", abonnement: "Abonnements", depenses: "Dépenses", settings: "Paramètres" }[page];
+  const pageTitle = { abonnement: "Abonnements", dashboard: "Tableau de bord", clients: "Clients", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", abonnement: "Abonnements", depenses: "Dépenses", settings: "Paramètres" }[page];
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
@@ -457,33 +451,184 @@ export default function App() {
         <div style={{ padding: isMobile ? 14 : 24, overflowY: "auto", flex: 1 }}>
           {loading ? <Spinner /> : <>
 
-            {/* ── DASHBOARD ── */}
+                        {/* ── DASHBOARD ── */}
             {page === "dashboard" && (
               <div>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: isMobile ? 10 : 14, marginBottom: 16 }}>
-                  {kpis.map((k, i) => (
-                    <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "14px" : "18px 20px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", display: "flex", flexDirection: "column", gap: 4 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 9, background: k.color + "18", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 4 }}>
-                        <Icon d={k.icon} size={18} stroke={k.color} />
+                {/* KPIs principaux */}
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
+                  {[
+                    { label: "Clients actifs", value: clients.filter(c => c.statut === "Actif").length, delta: clients.length + " au total", color: "#1a5c9e", icon: ic.clients, page: "clients" },
+                    { label: "Abonnements actifs", value: abonnements.filter(a => a.statut === "Actif").length, delta: abonnements.filter(a => a.statut === "Actif" && a.prochaine_echeance && new Date(a.prochaine_echeance) < new Date()).length + " en retard", color: "#c17f2a", icon: ic.abonnement, page: "abonnements" },
+                    { label: "Devis enregistrés", value: devisList.filter(d => d.statut === "Enregistré").length, delta: devisList.filter(d => d.statut === "Payé").length + " payé(s)", color: "#1a7a4a", icon: ic.devis, page: "devis" },
+                    { label: "Dépenses ce mois", value: depenses.filter(d => { const dt = new Date(d.date); const now = new Date(); return dt.getFullYear() === now.getFullYear() && dt.getMonth() === now.getMonth(); }).reduce((s, d) => s + (d.montant || 0), 0).toLocaleString("fr-FR") + " FCFA", delta: depenses.length + " dépenses totales", color: "#c0392b", icon: ic.depenses, page: "depenses" },
+                  ].map((k, i) => (
+                    <div key={i} className="card-hover" onClick={() => setPage(k.page)} style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "12px" : "16px 18px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", display: "flex", flexDirection: "column", gap: 4, borderTop: "3px solid " + k.color, cursor: "pointer" }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 9, background: k.color + "18", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 4 }}>
+                        <Icon d={k.icon} size={16} stroke={k.color} />
                       </div>
-                      <div style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#1e3a57", lineHeight: 1.1 }}>{k.value}</div>
-                      <div style={{ fontSize: isMobile ? 11 : 12, color: "#6b8aaa", fontWeight: 500 }}>{k.label}</div>
+                      <div style={{ fontSize: isMobile ? 20 : 26, fontWeight: 800, color: "#1e3a57" }}>{k.value}</div>
+                      <div style={{ fontSize: 12, color: "#6b8aaa", fontWeight: 500 }}>{k.label}</div>
                       <div style={{ fontSize: 11, color: "#8da4c0" }}>{k.delta}</div>
                     </div>
                   ))}
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+
+                {/* Ligne 1 : Clients + Abonnements */}
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                  {/* Aperçu Clients */}
                   <div className="card-hover" style={S.card}>
-                    <div style={S.cardHeader}><Icon d={ic.alert} size={16} stroke="#c0392b" /><span style={S.cardTitle}>Échéances urgentes</span></div>
-                    {urgentEch.length === 0 && <div style={S.empty}>Aucune échéance urgente 🎉</div>}
-                    {urgentEch.slice(0, 4).map(e => (
-                      <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 0", borderBottom: "1px solid #f0f4fa", flexWrap: "wrap" }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: "#fff0f0", color: "#c0392b", flexShrink: 0 }}>{e.type}</div>
-                        <div style={{ flex: 1, minWidth: 100 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57" }}>{e.label}</div>
-                          <div style={{ fontSize: 11, color: "#8da4c0" }}>{e.client}</div>
+                    <div style={{ ...S.cardHeader, cursor: "pointer" }} onClick={() => setPage("clients")}>
+                      <Icon d={ic.clients} size={16} stroke="#1a5c9e" />
+                      <span style={S.cardTitle}>Clients récents</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>Voir tout →</span>
+                    </div>
+                    {clients.length === 0 && <div style={S.empty}>Aucun client enregistré</div>}
+                    {clients.slice(0, 4).map(c => (
+                      <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                        <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#2e7fcf,#1a5c9e)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>{c.nom?.charAt(0) || "?"}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.nom}</div>
+                          <div style={{ fontSize: 11, color: "#8da4c0" }}>{c.secteur}</div>
                         </div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "#4a6d8c" }}>{new Date(e.date).toLocaleDateString("fr-FR")}</div>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 20, background: c.statut === "Actif" ? "#e8f5ee" : "#f5f5f5", color: c.statut === "Actif" ? "#1a7a4a" : "#8a9aac" }}>{c.statut}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Aperçu Abonnements */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={{ ...S.cardHeader, cursor: "pointer" }} onClick={() => setPage("abonnements")}>
+                      <Icon d={ic.abonnement} size={16} stroke="#c17f2a" />
+                      <span style={S.cardTitle}>Abonnements en cours</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>Voir tout →</span>
+                    </div>
+                    {abonnements.length === 0 && <div style={S.empty}>Aucun abonnement</div>}
+                    {abonnements.filter(a => a.statut === "Actif").slice(0, 4).map(a => {
+                      const now = new Date();
+                      const daysLeft = a.prochaine_echeance ? Math.round((new Date(a.prochaine_echeance) - now) / 86400000) : null;
+                      const isLate = daysLeft !== null && daysLeft < 0;
+                      return (
+                        <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                          <div style={{ width: 30, height: 30, borderRadius: 8, background: isLate ? "#fff0f0" : "#fff8e6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <Icon d={ic.abonnement} size={14} stroke={isLate ? "#c0392b" : "#c17f2a"} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.client}</div>
+                            <div style={{ fontSize: 11, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.service}</div>
+                          </div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: isLate ? "#c0392b" : "#1a7a4a", flexShrink: 0 }}>
+                            {isLate ? "⚠️ " + Math.abs(daysLeft) + "j" : daysLeft !== null ? "J-" + daysLeft : a.frequence}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Ligne 2 : Devis + Rapports */}
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
+                  {/* Aperçu Devis */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={{ ...S.cardHeader, cursor: "pointer" }} onClick={() => setPage("devis")}>
+                      <Icon d={ic.devis} size={16} stroke="#1a7a4a" />
+                      <span style={S.cardTitle}>Derniers devis</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>Voir tout →</span>
+                    </div>
+                    {devisList.length === 0 && <div style={S.empty}>Aucun devis enregistré</div>}
+                    {devisList.slice(0, 4).map((d, idx) => (
+                      <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "#1a5c9e", background: "#e8f0fb", padding: "2px 7px", borderRadius: 5, flexShrink: 0 }}>
+                          {"DEV-" + String(devisList.length - idx).padStart(4, "0")}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.client}</div>
+                          <div style={{ fontSize: 11, color: "#8da4c0" }}>{(d.total_ttc || 0).toLocaleString("fr-FR")} FCFA TTC</div>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: d.statut === "Payé" ? "#1a7a4a" : d.statut === "Enregistré" ? "#e8f0fb" : "#f5f5f5", color: d.statut === "Payé" ? "#fff" : d.statut === "Enregistré" ? "#1a5c9e" : "#6b8aaa", flexShrink: 0 }}>{d.statut}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Aperçu Rapports */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={{ ...S.cardHeader, cursor: "pointer" }} onClick={() => setPage("rapports")}>
+                      <Icon d={ic.rapports} size={16} stroke="#8e44ad" />
+                      <span style={S.cardTitle}>Aperçu financier</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>Voir tout →</span>
+                    </div>
+                    {(() => {
+                      const now = new Date();
+                      const annee = now.getFullYear();
+                      const totalAnnee = depenses.filter(d => new Date(d.date).getFullYear() === annee).reduce((s, d) => s + (d.montant || 0), 0);
+                      const totalMois = depenses.filter(d => { const dt = new Date(d.date); return dt.getFullYear() === annee && dt.getMonth() === now.getMonth(); }).reduce((s, d) => s + (d.montant || 0), 0);
+                      const mrr = abonnements.filter(a => a.statut === "Actif").reduce((s, a) => {
+                        const mult = { Mensuel: 1, Trimestriel: 3, Semestriel: 6, Annuel: 12 }[a.frequence] || 1;
+                        return s + (a.montant || 0) / mult;
+                      }, 0);
+                      const devisPaies = devisList.filter(d => d.statut === "Payé").reduce((s, d) => s + (d.total_ttc || 0), 0);
+                      return [
+                        { label: "MRR abonnements", value: Math.round(mrr).toLocaleString("fr-FR") + " FCFA", color: "#1a5c9e" },
+                        { label: "Devis payés (total)", value: devisPaies.toLocaleString("fr-FR") + " FCFA", color: "#1a7a4a" },
+                        { label: "Dépenses ce mois", value: totalMois.toLocaleString("fr-FR") + " FCFA", color: "#c0392b" },
+                        { label: "Dépenses cette année", value: totalAnnee.toLocaleString("fr-FR") + " FCFA", color: "#c17f2a" },
+                      ].map((r, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                          <span style={{ fontSize: 12, color: "#6b8aaa" }}>{r.label}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: r.color }}>{r.value}</span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+
+                {/* Ligne 3 : Documents + Collaborateurs */}
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+                  {/* Aperçu Documents */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={{ ...S.cardHeader, cursor: "pointer" }} onClick={() => setPage("documents")}>
+                      <Icon d={ic.docs} size={16} stroke="#2980b9" />
+                      <span style={S.cardTitle}>Documents récents</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>Voir tout →</span>
+                    </div>
+                    {[
+                      { nom: "Bilan_2025.pdf", client: "SAS TechVision", type: "Bilan", date: "15/04/2026", color: "#c0392b" },
+                      { nom: "Liasse_Dupont_2025.pdf", client: "SARL Dupont", type: "Liasse", date: "10/04/2026", color: "#c0392b" },
+                      { nom: "Contrat_Atlasmed.docx", client: "SA Atlasmed", type: "Contrat", date: "02/04/2026", color: "#1a5c9e" },
+                      { nom: "Rapport_audit.xlsx", client: "SA Atlasmed", type: "Rapport", date: "20/03/2026", color: "#1a7a4a" },
+                    ].map((d, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 6, background: d.color + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon d={ic.docs} size={13} stroke={d.color} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nom}</div>
+                          <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.client}</div>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 5, background: "#f0f4fa", color: "#4a6d8c", flexShrink: 0 }}>{d.type}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Aperçu Collaborateurs */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={{ ...S.cardHeader, cursor: "pointer" }} onClick={() => setPage("collab")}>
+                      <Icon d={ic.collab} size={16} stroke="#8e44ad" />
+                      <span style={S.cardTitle}>Équipe du cabinet</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>Voir tout →</span>
+                    </div>
+                    {[
+                      { nom: "Pierre WILLA SOUMAI", role: "Expert-comptable", initials: "PW", color: "#1a5c9e", statut: "Associé" },
+                      { nom: "Sophie Morel", role: "Collaboratrice senior", initials: "SM", color: "#1a7a4a", statut: "CDI" },
+                      { nom: "Thomas Bernard", role: "Collaborateur", initials: "TB", color: "#c17f2a", statut: "CDI" },
+                      { nom: "Julie Martin", role: "Assistante comptable", initials: "JM", color: "#8e44ad", statut: "CDI" },
+                    ].map((c, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: c.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>{c.initials}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57" }}>{c.nom}</div>
+                          <div style={{ fontSize: 11, color: "#8da4c0" }}>{c.role}</div>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 20, background: c.statut === "Associé" ? "#e8f0fb" : "#e8f5ee", color: c.statut === "Associé" ? "#1a5c9e" : "#1a7a4a" }}>{c.statut}</span>
                       </div>
                     ))}
                   </div>
@@ -491,7 +636,7 @@ export default function App() {
               </div>
             )}
 
-            {/* ── CLIENTS ── */}
+{/* ── CLIENTS ── */}
             {page === "clients" && (
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
@@ -558,51 +703,6 @@ export default function App() {
                 )}
               </div>
             )}
-
-            {/* ── ÉCHÉANCES ── */}
-            {page === "echeances" && (
-              <div>
-                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-                  <button onClick={() => setShowAddEcheance(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouvelle</button>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 10, marginBottom: 16 }}>
-                  {[
-                    { label: "Haute priorité", count: echeances.filter(e => e.urgence === "haute" && !e.fait).length, color: "#c0392b", bg: "#fff0f0" },
-                    { label: "Priorité moyenne", count: echeances.filter(e => e.urgence === "moyenne" && !e.fait).length, color: "#c17f2a", bg: "#fff8e6" },
-                    { label: "Terminées", count: echeances.filter(e => e.fait).length, color: "#1a7a4a", bg: "#e8f5ee" },
-                  ].map((s, i) => (
-                    <div key={i} style={{ ...S.card, flexDirection: "row", alignItems: "center", gap: 14, padding: "14px 18px" }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: s.color, flexShrink: 0 }}>{s.count}</div>
-                      <span style={{ fontSize: 13, color: "#4a6d8c", fontWeight: 500 }}>{s.label}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="card-hover" style={S.card}>
-                  {echeances.length === 0 && <div style={S.empty}>Aucune échéance enregistrée</div>}
-                  {[...echeances].sort((a, b) => new Date(a.date) - new Date(b.date)).map(e => {
-                    const uc = { haute: { bg: "#fff0f0", dot: "#c0392b" }, moyenne: { bg: "#fff8e6", dot: "#c17f2a" }, normale: { bg: "#e8f5ee", dot: "#1a7a4a" } }[e.urgence] || { bg: "#f5f5f5", dot: "#888" };
-                    const daysLeft = Math.round((new Date(e.date) - new Date()) / 86400000);
-                    return (
-                      <div key={e.id} style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12, padding: "12px 0", borderBottom: "1px solid #f0f4fa", opacity: e.fait ? 0.5 : 1, flexWrap: isMobile ? "wrap" : "nowrap" }}>
-                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: uc.dot, flexShrink: 0 }} />
-                        <div style={{ flex: 1, minWidth: isMobile ? "60%" : "auto" }}>
-                          <div style={{ fontWeight: 600, fontSize: 13, color: "#1e3a57", textDecoration: e.fait ? "line-through" : "none" }}>{e.label}</div>
-                          <div style={{ fontSize: 11, color: "#6b8aaa" }}>{e.client}</div>
-                        </div>
-                        <div style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: uc.bg, color: uc.dot, flexShrink: 0 }}>{e.type}</div>
-                        <div style={{ textAlign: "right", minWidth: 80, flexShrink: 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{new Date(e.date).toLocaleDateString("fr-FR")}</div>
-                          <div style={{ fontSize: 11, color: daysLeft <= 5 ? "#c0392b" : "#6b8aaa" }}>{e.fait ? "✓ Fait" : daysLeft <= 0 ? "Dépassée" : `J-${daysLeft}`}</div>
-                        </div>
-                        <button onClick={() => toggleFait(e)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon d={ic.check} size={14} stroke="#1a7a4a" /></button>
-                        <button onClick={() => deleteEch(e.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
 
             {/* ── DEVIS ── */}
             {page === "devis" && (() => {
@@ -1607,6 +1707,27 @@ export default function App() {
       </main>
 
       {/* MODALS */}
+      {showAddClient && (
+        <Modal title="Nouveau client" onClose={() => setShowAddClient(false)}>
+          {[{ label: "Nom *", key: "nom", placeholder: "SARL Exemple" }, { label: "Secteur", key: "secteur", placeholder: "BTP, Informatique…" }, { label: "CA", key: "ca", placeholder: "500 000 €" }, { label: "Responsable", key: "responsable", placeholder: "M. Martin" }].map(f => (
+            <div key={f.key} style={S.formGroup}>
+              <label style={S.label}>{f.label}</label>
+              <input placeholder={f.placeholder} value={newClient[f.key]} onChange={e => setNewClient(p => ({ ...p, [f.key]: e.target.value }))} style={S.input} />
+            </div>
+          ))}
+          <div style={S.formGroup}>
+            <label style={S.label}>Statut</label>
+            <select value={newClient.statut} onChange={e => setNewClient(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+              {["Actif", "En attente", "Inactif"].map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={() => setShowAddClient(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={addClient} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
+      )}
+
       {showAddClient && (
         <Modal title="Nouveau client" onClose={() => setShowAddClient(false)}>
           {[{ label: "Nom *", key: "nom", placeholder: "SARL Exemple" }, { label: "Secteur", key: "secteur", placeholder: "BTP, Informatique…" }, { label: "CA", key: "ca", placeholder: "500 000 €" }, { label: "Responsable", key: "responsable", placeholder: "M. Martin" }].map(f => (
