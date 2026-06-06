@@ -443,22 +443,327 @@ export default function App() {
           {loading ? <Spinner /> : <>
 
             {/* ── DASHBOARD ── */}
-            {page === "dashboard" && (
-              <div>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: isMobile ? 10 : 14, marginBottom: 16 }}>
-                  {kpis.map((k, i) => (
-                    <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "14px" : "18px 20px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", display: "flex", flexDirection: "column", gap: 4 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 9, background: k.color + "18", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 4 }}>
-                        <Icon d={k.icon} size={18} stroke={k.color} />
+            {page === "dashboard" && (() => {
+              const now = new Date();
+              const annee = now.getFullYear();
+              const moisNoms = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+
+              // ── KPIs principaux ──
+              const clientsActifs = clients.filter(c => c.statut === "Actif").length;
+              const totalCA = devisList.filter(d => d.statut === "Payé").reduce((s, d) => s + (d.total_ttc || 0), 0);
+              const devisEnAttente = devisList.filter(d => d.statut === "Enregistré" || d.statut === "Envoyé").length;
+              const montantEnAttente = devisList.filter(d => d.statut === "Enregistré" || d.statut === "Envoyé").reduce((s, d) => s + (d.total_ttc || 0), 0);
+              const freqMult = { "Mensuel": 1, "Trimestriel": 3, "Semestriel": 6, "Annuel": 12 };
+              const mrr = abonnements.filter(a => a.statut === "Actif").reduce((s, a) => s + (a.montant || 0) / (freqMult[a.frequence] || 1), 0);
+              const depensesTotal = depenses.filter(d => new Date(d.date).getFullYear() === annee).reduce((s, d) => s + (d.montant || 0), 0);
+
+              // ── CA mensuel (12 derniers mois) ──
+              const caMois = Array(12).fill(0);
+              devisList.filter(d => d.statut === "Payé").forEach(d => {
+                const date = new Date(d.date || d.created_at);
+                if (date.getFullYear() === annee) caMois[date.getMonth()] += d.total_ttc || 0;
+              });
+              const maxCA = Math.max(...caMois, 1);
+
+              // ── Devis par statut ──
+              const statutsDevis = {
+                "Payé": devisList.filter(d => d.statut === "Payé").length,
+                "Enregistré": devisList.filter(d => d.statut === "Enregistré").length,
+                "Brouillon": devisList.filter(d => d.statut === "Brouillon").length,
+                "Annulé": devisList.filter(d => d.statut === "Annulé").length,
+              };
+              const totalDevis = devisList.length || 1;
+              const tauxConversion = devisList.length > 0 ? Math.round((statutsDevis["Payé"] / devisList.length) * 100) : 0;
+
+              // ── Dépenses ce mois ──
+              const depMois = depenses.filter(d => {
+                const dt = new Date(d.date);
+                return dt.getFullYear() === annee && dt.getMonth() === now.getMonth();
+              }).reduce((s, d) => s + (d.montant || 0), 0);
+
+              // ── Activité récente ──
+              const activiteRecente = [
+                ...devisList.slice(0, 3).map(d => ({ type: "devis", label: `Devis ${d.statut?.toLowerCase()} — ${d.client}`, montant: d.total_ttc, color: d.statut === "Payé" ? "#1a7a4a" : "#1a5c9e", emoji: d.statut === "Payé" ? "✅" : "📄", date: d.date || d.created_at })),
+                ...depenses.slice(0, 2).map(d => ({ type: "depense", label: `${d.libelle} (${d.categorie})`, montant: -d.montant, color: "#c0392b", emoji: "💸", date: d.date })),
+              ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+
+              // ── Abonnements à renouveler soon ──
+              const abosSoon = abonnements.filter(a => {
+                if (a.statut !== "Actif" || !a.prochaine_echeance) return false;
+                const days = Math.round((new Date(a.prochaine_echeance) - now) / 86400000);
+                return days >= 0 && days <= 30;
+              });
+
+              // ── Top clients (par CA devis payés) ──
+              const caParClient = {};
+              devisList.filter(d => d.statut === "Payé").forEach(d => {
+                caParClient[d.client] = (caParClient[d.client] || 0) + (d.total_ttc || 0);
+              });
+              const topClients = Object.entries(caParClient).sort((a, b) => b[1] - a[1]).slice(0, 4);
+              const maxTopCA = topClients[0]?.[1] || 1;
+
+              const kpiCards = [
+                { label: "Clients actifs", value: clientsActifs, delta: `${clients.length} au total`, color: "#1a5c9e", icon: ic.clients, bg: "#e8f0fb" },
+                { label: "CA encaissé", value: totalCA > 0 ? (totalCA / 1000).toFixed(0) + "k FCFA" : "0 FCFA", delta: `${statutsDevis["Payé"]} devis payés`, color: "#1a7a4a", icon: ic.trend, bg: "#e8f5ee" },
+                { label: "MRR", value: Math.round(mrr).toLocaleString("fr-FR") + " FCFA", delta: `${abonnements.filter(a => a.statut === "Actif").length} abonnés actifs`, color: "#8e44ad", icon: ic.abonnement, bg: "#f5eefb" },
+                { label: "En attente", value: montantEnAttente > 0 ? (montantEnAttente / 1000).toFixed(0) + "k FCFA" : "0 FCFA", delta: `${devisEnAttente} devis à encaisser`, color: "#c17f2a", icon: ic.alert, bg: "#fff8e6" },
+              ];
+
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+                  {/* ── KPI CARDS ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: isMobile ? 10 : 14 }}>
+                    {kpiCards.map((k, i) => (
+                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 14, padding: isMobile ? "14px" : "18px 20px", boxShadow: "0 1px 4px rgba(0,30,80,.07)", borderTop: `3px solid ${k.color}`, display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 9, background: k.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <Icon d={k.icon} size={18} stroke={k.color} />
+                          </div>
+                        </div>
+                        <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "#1e3a57", lineHeight: 1.1 }}>{k.value}</div>
+                        <div style={{ fontSize: isMobile ? 11 : 12, color: "#6b8aaa", fontWeight: 600 }}>{k.label}</div>
+                        <div style={{ fontSize: 11, color: "#8da4c0" }}>{k.delta}</div>
                       </div>
-                      <div style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "#1e3a57", lineHeight: 1.1 }}>{k.value}</div>
-                      <div style={{ fontSize: isMobile ? 11 : 12, color: "#6b8aaa", fontWeight: 500 }}>{k.label}</div>
-                      <div style={{ fontSize: 11, color: "#8da4c0" }}>{k.delta}</div>
+                    ))}
+                  </div>
+
+                  {/* ── ROW 2 : Graphiques ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+
+                    {/* Graphique CA mensuel (barres SVG) */}
+                    <div className="card-hover" style={S.card}>
+                      <div style={S.cardHeader}>
+                        <Icon d={ic.rapports} size={16} stroke="#1a5c9e" />
+                        <span style={S.cardTitle}>CA encaissé — {annee}</span>
+                        <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#e8f0fb", color: "#1a5c9e", padding: "3px 8px", borderRadius: 6 }}>
+                          {totalCA > 0 ? (totalCA / 1000).toFixed(0) + "k FCFA" : "—"}
+                        </span>
+                      </div>
+                      {devisList.filter(d => d.statut === "Payé").length === 0 ? (
+                        <div style={S.empty}>Aucun devis payé cette année</div>
+                      ) : (
+                        <div style={{ display: "flex", alignItems: "flex-end", gap: isMobile ? 3 : 5, height: 120, padding: "0 4px" }}>
+                          {caMois.map((val, i) => {
+                            const h = maxCA > 0 ? Math.max((val / maxCA) * 100, val > 0 ? 8 : 0) : 0;
+                            const isCurrentMonth = i === now.getMonth();
+                            return (
+                              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                                <div title={`${moisNoms[i]}: ${val.toLocaleString("fr-FR")} FCFA`} style={{
+                                  width: "100%", height: `${h}%`, minHeight: val > 0 ? 4 : 0,
+                                  background: isCurrentMonth ? "linear-gradient(180deg,#2e7fcf,#1a5c9e)" : val > 0 ? "#c8ddf5" : "#f0f4fa",
+                                  borderRadius: "3px 3px 0 0",
+                                  transition: "height 0.5s ease",
+                                  cursor: "pointer",
+                                  boxShadow: isCurrentMonth ? "0 2px 8px rgba(26,92,158,0.3)" : "none",
+                                }} />
+                                <span style={{ fontSize: 9, color: isCurrentMonth ? "#1a5c9e" : "#8da4c0", fontWeight: isCurrentMonth ? 700 : 400 }}>{moisNoms[i]}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  ))}
+
+                    {/* Donut devis par statut */}
+                    <div className="card-hover" style={S.card}>
+                      <div style={S.cardHeader}>
+                        <Icon d={ic.devis} size={16} stroke="#1a7a4a" />
+                        <span style={S.cardTitle}>Statut des devis</span>
+                        <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#e8f5ee", color: "#1a7a4a", padding: "3px 8px", borderRadius: 6 }}>
+                          {tauxConversion}% conversion
+                        </span>
+                      </div>
+                      {devisList.length === 0 ? (
+                        <div style={S.empty}>Aucun devis enregistré</div>
+                      ) : (
+                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                          {/* Donut SVG */}
+                          {(() => {
+                            const data = [
+                              { label: "Payé", value: statutsDevis["Payé"], color: "#1a7a4a" },
+                              { label: "Enregistré", value: statutsDevis["Enregistré"], color: "#1a5c9e" },
+                              { label: "Brouillon", value: statutsDevis["Brouillon"], color: "#c17f2a" },
+                              { label: "Annulé", value: statutsDevis["Annulé"], color: "#c0392b" },
+                            ].filter(d => d.value > 0);
+                            const total = data.reduce((s, d) => s + d.value, 0) || 1;
+                            const r = 36, cx = 44, cy = 44, stroke = 10;
+                            let offset = -Math.PI / 2;
+                            const arcs = data.map(d => {
+                              const angle = (d.value / total) * 2 * Math.PI;
+                              const x1 = cx + r * Math.cos(offset);
+                              const y1 = cy + r * Math.sin(offset);
+                              offset += angle;
+                              const x2 = cx + r * Math.cos(offset);
+                              const y2 = cy + r * Math.sin(offset);
+                              const large = angle > Math.PI ? 1 : 0;
+                              return { ...d, path: `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`, angle };
+                            });
+                            return (
+                              <svg width={88} height={88} style={{ flexShrink: 0 }}>
+                                <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f0f4fa" strokeWidth={stroke} />
+                                {arcs.map((arc, i) => (
+                                  <path key={i} d={arc.path} fill="none" stroke={arc.color} strokeWidth={stroke} strokeLinecap="butt" />
+                                ))}
+                                <text x={cx} y={cy - 4} textAnchor="middle" fontSize="14" fontWeight="800" fill="#1e3a57">{total}</text>
+                                <text x={cx} y={cy + 10} textAnchor="middle" fontSize="9" fill="#8da4c0">devis</text>
+                              </svg>
+                            );
+                          })()}
+                          {/* Légende */}
+                          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                            {[
+                              { label: "Payé", count: statutsDevis["Payé"], color: "#1a7a4a" },
+                              { label: "Enregistré", count: statutsDevis["Enregistré"], color: "#1a5c9e" },
+                              { label: "Brouillon", count: statutsDevis["Brouillon"], color: "#c17f2a" },
+                              { label: "Annulé", count: statutsDevis["Annulé"], color: "#c0392b" },
+                            ].map((item, i) => (
+                              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 10, height: 10, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
+                                <span style={{ fontSize: 12, color: "#4a6d8c", flex: 1 }}>{item.label}</span>
+                                <span style={{ fontSize: 12, fontWeight: 700, color: "#1e3a57" }}>{item.count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── ROW 3 : Top clients + Activité récente ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+
+                    {/* Top clients */}
+                    <div className="card-hover" style={S.card}>
+                      <div style={S.cardHeader}>
+                        <Icon d={ic.clients} size={16} stroke="#8e44ad" />
+                        <span style={S.cardTitle}>Top clients (CA)</span>
+                      </div>
+                      {topClients.length === 0 ? (
+                        <div style={S.empty}>Aucun devis payé pour l'instant</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                          {topClients.map(([nom, ca], i) => (
+                            <div key={nom} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 24, height: 24, borderRadius: "50%", background: ["linear-gradient(135deg,#f6c90e,#e8a400)","#e8e8e8","#cd7f32","#e8f0fb"][i] || "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: i === 0 ? "#7a5000" : "#6b8aaa", flexShrink: 0 }}>
+                                {i + 1}
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{nom}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a5c9e" }}>{ca.toLocaleString("fr-FR")} FCFA</span>
+                                </div>
+                                <div style={{ height: 5, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
+                                  <div style={{ width: `${(ca / maxTopCA) * 100}%`, height: "100%", background: i === 0 ? "linear-gradient(90deg,#f6c90e,#e8a400)" : "#c8ddf5", borderRadius: 3 }} />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Activité récente */}
+                    <div className="card-hover" style={S.card}>
+                      <div style={S.cardHeader}>
+                        <Icon d={ic.bell} size={16} stroke="#c17f2a" />
+                        <span style={S.cardTitle}>Activité récente</span>
+                      </div>
+                      {activiteRecente.length === 0 ? (
+                        <div style={S.empty}>Aucune activité récente</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                          {activiteRecente.map((item, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < activiteRecente.length - 1 ? "1px solid #f0f4fa" : "none" }}>
+                              <div style={{ width: 30, height: 30, borderRadius: 8, background: item.color + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{item.emoji}</div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12, fontWeight: 500, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</div>
+                                <div style={{ fontSize: 10, color: "#8da4c0" }}>{item.date ? new Date(item.date).toLocaleDateString("fr-FR") : "—"}</div>
+                              </div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: item.montant > 0 ? "#1a7a4a" : "#c0392b", flexShrink: 0 }}>
+                                {item.montant > 0 ? "+" : ""}{Math.abs(item.montant || 0).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── ROW 4 : Alertes + Dépenses vs MRR ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+
+                    {/* Alertes abonnements */}
+                    <div className="card-hover" style={S.card}>
+                      <div style={S.cardHeader}>
+                        <Icon d={ic.alert} size={16} stroke="#c0392b" />
+                        <span style={S.cardTitle}>Abonnements à renouveler</span>
+                        {abosSoon.length > 0 && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#fff0f0", color: "#c0392b", padding: "3px 8px", borderRadius: 6 }}>{abosSoon.length} dans 30j</span>}
+                      </div>
+                      {abosSoon.length === 0 ? (
+                        <div style={S.empty}>✅ Aucune échéance dans les 30 prochains jours</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                          {abosSoon.map((a, i) => {
+                            const days = Math.round((new Date(a.prochaine_echeance) - now) / 86400000);
+                            return (
+                              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < abosSoon.length - 1 ? "1px solid #f0f4fa" : "none" }}>
+                                <div style={{ width: 30, height: 30, borderRadius: 8, background: days <= 7 ? "#fff0f0" : "#fff8e6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
+                                  {days <= 7 ? "🔴" : "🟡"}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{a.client}</div>
+                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{a.service}</div>
+                                </div>
+                                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: days <= 7 ? "#c0392b" : "#c17f2a" }}>J-{days}</div>
+                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{(a.montant || 0).toLocaleString("fr-FR")} FCFA</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Revenus vs Dépenses */}
+                    <div className="card-hover" style={S.card}>
+                      <div style={S.cardHeader}>
+                        <Icon d={ic.trend} size={16} stroke="#1a5c9e" />
+                        <span style={S.cardTitle}>Synthèse financière {annee}</span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {[
+                          { label: "CA encaissé", value: totalCA, color: "#1a7a4a", bg: "#e8f5ee", icon: "📈" },
+                          { label: "MRR (revenu mensuel)", value: Math.round(mrr), color: "#8e44ad", bg: "#f5eefb", icon: "🔄" },
+                          { label: "Dépenses ce mois", value: depMois, color: "#c0392b", bg: "#fff0f0", icon: "📉" },
+                          { label: "Dépenses cette année", value: depensesTotal, color: "#c17f2a", bg: "#fff8e6", icon: "💸" },
+                        ].map((item, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 9, background: item.bg }}>
+                            <span style={{ fontSize: 16 }}>{item.icon}</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: 11, color: "#6b8aaa", fontWeight: 500 }}>{item.label}</div>
+                              <div style={{ fontSize: 15, fontWeight: 800, color: item.color }}>
+                                {item.value.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {totalCA > 0 && depensesTotal > 0 && (
+                          <div style={{ padding: "10px 12px", borderRadius: 9, background: totalCA > depensesTotal ? "#e8f5ee" : "#fff0f0", border: `1px solid ${totalCA > depensesTotal ? "#1a7a4a" : "#c0392b"}22` }}>
+                            <div style={{ fontSize: 11, color: "#6b8aaa" }}>Résultat net estimé</div>
+                            <div style={{ fontSize: 16, fontWeight: 800, color: totalCA > depensesTotal ? "#1a7a4a" : "#c0392b" }}>
+                              {totalCA > depensesTotal ? "+" : ""}{(totalCA - depensesTotal).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* ── CLIENTS ── */}
             {page === "clients" && (
