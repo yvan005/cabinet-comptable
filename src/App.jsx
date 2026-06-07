@@ -37,6 +37,111 @@ const db = {
   }
 };
 
+// ── AUTH ─────────────────────────────────────────────────────────────────────
+const auth = {
+  async login(email, password) {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    return res.json();
+  },
+  async logout(token) {
+    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
+    });
+  },
+  getSession() {
+    try { return JSON.parse(localStorage.getItem("sb_session") || "null"); } catch { return null; }
+  },
+  saveSession(session) { localStorage.setItem("sb_session", JSON.stringify(session)); },
+  clearSession() { localStorage.removeItem("sb_session"); }
+};
+
+// ── LOGIN SCREEN ──────────────────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showPass, setShowPass] = useState(false);
+
+  const handleLogin = async () => {
+    if (!email || !password) { setError("Veuillez remplir tous les champs."); return; }
+    setLoading(true); setError("");
+    const data = await auth.login(email, password);
+    if (data.access_token) {
+      auth.saveSession(data);
+      onLogin(data);
+    } else {
+      setError(data.error_description || data.msg || "Email ou mot de passe incorrect.");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg,#0f2744 0%,#1a4a7a 50%,#0f2744 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ width: "100%", maxWidth: 420 }}>
+        {/* Logo / titre */}
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg,#2e7fcf,#1a5c9e)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: "0 8px 24px rgba(26,92,158,0.4)" }}>
+            <svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8" />
+            </svg>
+          </div>
+          <h1 style={{ color: "#fff", fontSize: 24, fontWeight: 800, margin: 0 }}>Cabinet Comptable</h1>
+          <p style={{ color: "#7eb3e8", fontSize: 14, margin: "6px 0 0" }}>Connectez-vous pour accéder à votre espace</p>
+        </div>
+
+        {/* Carte login */}
+        <div style={{ background: "#fff", borderRadius: 20, padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "#4a6d8c", display: "block", marginBottom: 6 }}>Adresse email</label>
+            <input
+              type="email" value={email} onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleLogin()}
+              placeholder="votre@email.com"
+              style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #87CEEB", fontSize: 14, color: "#1e3a57", outline: "none", boxSizing: "border-box", background: "#f8fbff" }}
+            />
+          </div>
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "#4a6d8c", display: "block", marginBottom: 6 }}>Mot de passe</label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleLogin()}
+                placeholder="••••••••"
+                style={{ width: "100%", padding: "11px 40px 11px 14px", borderRadius: 10, border: "1.5px solid #87CEEB", fontSize: 14, color: "#1e3a57", outline: "none", boxSizing: "border-box", background: "#f8fbff" }}
+              />
+              <button onClick={() => setShowPass(!showPass)}
+                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#8da4c0", fontSize: 13 }}>
+                {showPass ? "🙈" : "👁️"}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div style={{ padding: "10px 14px", borderRadius: 9, background: "#fff0f0", border: "1px solid #fcc", color: "#c0392b", fontSize: 13, marginBottom: 16 }}>
+              ⚠️ {error}
+            </div>
+          )}
+
+          <button onClick={handleLogin} disabled={loading}
+            style={{ width: "100%", padding: "13px", borderRadius: 11, background: loading ? "#93b8d8" : "linear-gradient(135deg,#2e7fcf,#1a5c9e)", color: "#fff", border: "none", fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 14px rgba(26,92,158,0.35)", transition: "all 0.2s" }}>
+            {loading ? "Connexion en cours..." : "Se connecter →"}
+          </button>
+
+          <p style={{ textAlign: "center", fontSize: 12, color: "#8da4c0", marginTop: 20, marginBottom: 0 }}>
+            Accès réservé aux membres du cabinet
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── ICONS ────────────────────────────────────────────────────────────────────
 const Icon = ({ d, size = 18, stroke = "currentColor" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -114,6 +219,7 @@ const Modal = ({ title, onClose, children }) => (
 // ── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const isMobile = useIsMobile();
+  const [session, setSession] = useState(() => auth.getSession());
   const [page, setPage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -162,6 +268,13 @@ export default function App() {
   const [editCollab, setEditCollab] = useState(null);
   const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
   const [collabSaving, setCollabSaving] = useState(false);
+  const [showAccesCollab, setShowAccesCollab] = useState(false);
+  const [accesCollab, setAccesCollab] = useState(null);
+  const [accesEmail, setAccesEmail] = useState("");
+  const [accesPassword, setAccesPassword] = useState("");
+  const [accesShowPass, setAccesShowPass] = useState(false);
+  const [acesSaving, setAcesSaving] = useState(false);
+  const [accesMsg, setAccesMsg] = useState(null);
 
   const [documents, setDocuments] = useState([]);
   const [showAddDoc, setShowAddDoc] = useState(false);
@@ -378,6 +491,8 @@ export default function App() {
 
   const pageTitle = { abonnements: "Abonnements", dashboard: "Tableau de bord", clients: "Clients", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", depenses: "Dépenses", settings: "Paramètres" }[page] || "";
 
+  if (!session) return <LoginScreen onLogin={(s) => setSession(s)} />;
+
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
       <style>{`
@@ -429,12 +544,23 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "20px 20px 0", borderTop: "1px solid #1a3558" }}>
-          <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#1a5c9e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13 }}>PW</div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#e2eaf4" }}>Pierre WILLA SOUMAI</div>
-            <div style={{ fontSize: 11, color: "#6b8aaa" }}>Expert-comptable</div>
+        <div style={{ padding: "16px 20px 0", borderTop: "1px solid #1a3558" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#1a5c9e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
+              {session?.user?.email?.[0]?.toUpperCase() || "U"}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#e2eaf4", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session?.user?.email || "Utilisateur"}</div>
+              <div style={{ fontSize: 10, color: "#6b8aaa" }}>Connecté</div>
+            </div>
           </div>
+          <button onClick={async () => { await auth.logout(session?.access_token); auth.clearSession(); setSession(null); }}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, background: "rgba(192,57,43,0.12)", border: "1px solid rgba(192,57,43,0.25)", color: "#e87c6e", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4 M16 17l5-5-5-5 M21 12H9" />
+            </svg>
+            Se déconnecter
+          </button>
         </div>
       </aside>
 
@@ -1653,6 +1779,30 @@ export default function App() {
                 loadAll();
               };
 
+              const createAcces = async () => {
+                if (!accesEmail || !accesPassword) { setAccesMsg({ type: "error", text: "Email et mot de passe requis." }); return; }
+                if (accesPassword.length < 6) { setAccesMsg({ type: "error", text: "Le mot de passe doit faire au moins 6 caractères." }); return; }
+                setAcesSaving(true); setAccesMsg(null);
+                try {
+                  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+                    method: "POST",
+                    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: accesEmail, password: accesPassword, email_confirm: true })
+                  });
+                  const data = await res.json();
+                  if (data.id) {
+                    setAccesMsg({ type: "success", text: `✅ Accès créé pour ${accesEmail}` });
+                    setTimeout(() => { setShowAccesCollab(false); setAccesEmail(""); setAccesPassword(""); setAccesMsg(null); }, 2000);
+                  } else {
+                    setAccesMsg({ type: "error", text: data.msg || data.error_description || "Erreur lors de la création." });
+                  }
+                } catch (err) {
+                  setAccesMsg({ type: "error", text: "Erreur réseau : " + err.message });
+                } finally {
+                  setAcesSaving(false);
+                }
+              };
+
               return (
                 <div>
                   {/* Modal ajout — même style que formulaire client */}
@@ -1782,6 +1932,10 @@ export default function App() {
                           <div key={c.id} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
                             {/* Actions */}
                             <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6 }}>
+                              <button onClick={() => { setAccesCollab(c); setAccesEmail(c.email || ""); setAccesPassword(""); setAccesMsg(null); setShowAccesCollab(true); }}
+                                title="Créer un accès" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
+                                🔑
+                              </button>
                               <button onClick={() => { setEditCollab({ ...c }); setShowEditCollab(true); }}
                                 style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <Icon d={ic.edit} size={12} stroke="#4a6d8c" />
