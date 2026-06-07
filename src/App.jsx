@@ -82,7 +82,7 @@ function LoginScreen({ onLogin }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg,#0f2744 0%,#1a4a7a 50%,#0f2744 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+    <div style={{ height: "100vh", width: "100vw", overflow: "hidden", background: "linear-gradient(135deg,#0f2744 0%,#1a4a7a 50%,#0f2744 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div style={{ width: "100%", maxWidth: 420 }}>
         {/* Logo / titre */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
