@@ -6,9 +6,11 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
 
 const db = {
   async get(table, params = "") {
+    if (!SUPABASE_URL || !SUPABASE_KEY) { console.error("Variables Supabase manquantes"); return []; }
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?order=created_at.desc${params}`, {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
     });
+    if (!res.ok) return [];
     return res.json();
   },
   async post(table, body) {
