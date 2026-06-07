@@ -300,6 +300,31 @@ export default function App() {
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  const createAcces = async () => {
+    if (!accesEmail || !accesPassword) { setAccesMsg({ type: "error", text: "Email et mot de passe requis." }); return; }
+    if (accesPassword.length < 6) { setAccesMsg({ type: "error", text: "Le mot de passe doit faire au moins 6 caractères." }); return; }
+    setAcesSaving(true); setAccesMsg(null);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+        method: "POST",
+        headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ email: accesEmail, password: accesPassword })
+      });
+      const data = await res.json();
+      if (data.id || data.user?.id) {
+        setAccesMsg({ type: "success", text: `✅ Accès créé pour ${accesEmail}` });
+        setTimeout(() => { setShowAccesCollab(false); setAccesEmail(""); setAccesPassword(""); setAccesMsg(null); }, 2000);
+      } else {
+        const msg = data.msg || data.error_description || data.message || "Erreur lors de la création.";
+        setAccesMsg({ type: "error", text: msg });
+      }
+    } catch (err) {
+      setAccesMsg({ type: "error", text: "Erreur réseau : " + err.message });
+    } finally {
+      setAcesSaving(false);
+    }
+  };
   useEffect(() => { if (clients.length > 0 && !devisClient) setDevisClient(clients[0]?.nom || ""); }, [clients]);
 
   const navigate = (p) => { setPage(p); setSidebarOpen(false); };
@@ -1742,6 +1767,57 @@ export default function App() {
             })()}
 
             {/* ── COLLABORATEURS ── */}
+            {/* Modal accès collaborateur — hors IIFE */}
+            {showAccesCollab && accesCollab && (
+              <div style={{ position: "fixed", inset: 0, background: "rgba(10,30,60,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+                <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 420, boxShadow: "0 8px 40px rgba(0,30,80,.18)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: "50%", background: "#1a5c9e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 14 }}>
+                      {accesCollab.nom?.[0]?.toUpperCase() || "?"}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "#1e3a57" }}>Créer un accès</div>
+                      <div style={{ fontSize: 12, color: "#6b8aaa" }}>{accesCollab.nom}</div>
+                    </div>
+                  </div>
+                  <div style={S.formGroup}>
+                    <label style={S.label}>Email de connexion *</label>
+                    <input type="email" value={accesEmail} onChange={e => setAccesEmail(e.target.value)}
+                      placeholder={accesCollab.email || "email@cabinet.fr"} style={S.input} />
+                  </div>
+                  <div style={S.formGroup}>
+                    <label style={S.label}>Mot de passe *</label>
+                    <div style={{ position: "relative" }}>
+                      <input type={accesShowPass ? "text" : "password"} value={accesPassword}
+                        onChange={e => setAccesPassword(e.target.value)}
+                        placeholder="6 caractères minimum"
+                        style={{ ...S.input, paddingRight: 40 }} />
+                      <button onClick={() => setAccesShowPass(!accesShowPass)}
+                        style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: 14 }}>
+                        {accesShowPass ? "🙈" : "👁️"}
+                      </button>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#8da4c0", marginTop: 4 }}>Minimum 6 caractères</div>
+                  </div>
+                  {accesMsg && (
+                    <div style={{ padding: "10px 14px", borderRadius: 9, background: accesMsg.type === "success" ? "#e8f5ee" : "#fff0f0", border: `1px solid ${accesMsg.type === "success" ? "#1a7a4a44" : "#fcc"}`, color: accesMsg.type === "success" ? "#1a7a4a" : "#c0392b", fontSize: 13, marginBottom: 14 }}>
+                      {accesMsg.text}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
+                    <button onClick={() => { setShowAccesCollab(false); setAccesEmail(""); setAccesPassword(""); setAccesMsg(null); }}
+                      style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>
+                      Annuler
+                    </button>
+                    <button onClick={createAcces} disabled={acesSaving}
+                      style={{ ...S.primaryBtn, opacity: acesSaving ? 0.7 : 1 }}>
+                      {acesSaving ? "Création..." : "🔑 Créer l'accès"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {page === "collab" && (() => {
               const statutColors = {
                 "Associé":  { bg: "#e8f0fb", color: "#1a5c9e" },
@@ -1779,30 +1855,6 @@ export default function App() {
                 loadAll();
               };
 
-              const createAcces = async () => {
-                if (!accesEmail || !accesPassword) { setAccesMsg({ type: "error", text: "Email et mot de passe requis." }); return; }
-                if (accesPassword.length < 6) { setAccesMsg({ type: "error", text: "Le mot de passe doit faire au moins 6 caractères." }); return; }
-                setAcesSaving(true); setAccesMsg(null);
-                try {
-                  const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-                    method: "POST",
-                    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: accesEmail, password: accesPassword })
-                  });
-                  const data = await res.json();
-                  if (data.id || data.user?.id) {
-                    setAccesMsg({ type: "success", text: `✅ Accès créé pour ${accesEmail}` });
-                    setTimeout(() => { setShowAccesCollab(false); setAccesEmail(""); setAccesPassword(""); setAccesMsg(null); }, 2000);
-                  } else {
-                    const msg = data.msg || data.error_description || data.message || "Erreur lors de la création.";
-                    setAccesMsg({ type: "error", text: msg });
-                  }
-                } catch (err) {
-                  setAccesMsg({ type: "error", text: "Erreur réseau : " + err.message });
-                } finally {
-                  setAcesSaving(false);
-                }
-              };
 
               return (
                 <div>
