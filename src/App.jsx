@@ -153,16 +153,24 @@ export default function App() {
 
   const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
 
+  const [collaborateurs, setCollaborateurs] = useState([]);
+  const [showAddCollab, setShowAddCollab] = useState(false);
+  const [showEditCollab, setShowEditCollab] = useState(false);
+  const [editCollab, setEditCollab] = useState(null);
+  const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
+  const [collabSaving, setCollabSaving] = useState(false);
+
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [c, d, dep, srv, abo] = await Promise.all([
-      db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"),
+    const [c, d, dep, srv, abo, col] = await Promise.all([
+      db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"), db.get("collaborateurs"),
     ]);
     setClients(Array.isArray(c) ? c : []);
     setDevisList(Array.isArray(d) ? d : []);
     setDepenses(Array.isArray(dep) ? dep : []);
     setServices(Array.isArray(srv) ? srv : []);
     setAbonnements(Array.isArray(abo) ? abo : []);
+    setCollaborateurs(Array.isArray(col) ? col : []);
     setLoading(false);
   }, []);
 
@@ -1580,37 +1588,176 @@ export default function App() {
             })()}
 
             {/* ── COLLABORATEURS ── */}
-            {page === "collab" && (
-              <div>
-                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-                  <button style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Ajouter</button>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 14 }}>
-                  {[
-                    { nom: "Pierre WILLA SOUMAI", role: "Expert-comptable", email: "p.willasoumai@cabinet.fr", dossiers: 24, statut: "Associé", initials: "PW", color: "#1a5c9e" },
-                    { nom: "Sophie Morel", role: "Collaboratrice senior", email: "s.morel@cabinet.fr", dossiers: 18, statut: "CDI", initials: "SM", color: "#1a7a4a" },
-                    { nom: "Thomas Bernard", role: "Collaborateur", email: "t.bernard@cabinet.fr", dossiers: 12, statut: "CDI", initials: "TB", color: "#c17f2a" },
-                    { nom: "Julie Martin", role: "Assistante comptable", email: "j.martin@cabinet.fr", dossiers: 8, statut: "CDI", initials: "JM", color: "#8e44ad" },
-                    { nom: "Lucas Petit", role: "Stagiaire", email: "l.petit@cabinet.fr", dossiers: 3, statut: "Stage", initials: "LP", color: "#c0392b" },
-                  ].map((c, i) => (
-                    <div key={i} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{ width: 46, height: 46, borderRadius: "50%", background: c.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15, flexShrink: 0 }}>{c.initials}</div>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>{c.nom}</div>
-                          <div style={{ fontSize: 12, color: "#6b8aaa" }}>{c.role}</div>
-                        </div>
+            {page === "collab" && (() => {
+              const statutColors = {
+                "Associé":  { bg: "#e8f0fb", color: "#1a5c9e" },
+                "CDI":      { bg: "#e8f5ee", color: "#1a7a4a" },
+                "CDD":      { bg: "#fff8e6", color: "#c17f2a" },
+                "Stage":    { bg: "#f5eefb", color: "#8e44ad" },
+                "Freelance":{ bg: "#fff0f0", color: "#c0392b" },
+              };
+              const avatarColors = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22"];
+              const getInitials = (nom) => nom.split(" ").map(w => w[0]).slice(0,2).join("").toUpperCase();
+
+              const saveCollab = async () => {
+                if (!newCollab.nom.trim()) return;
+                setCollabSaving(true);
+                await db.post("collaborateurs", newCollab);
+                setShowAddCollab(false);
+                setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
+                setCollabSaving(false);
+                loadAll();
+              };
+
+              const updateCollab = async () => {
+                if (!editCollab?.nom?.trim()) return;
+                setCollabSaving(true);
+                await db.patch("collaborateurs", editCollab.id, editCollab);
+                setShowEditCollab(false);
+                setEditCollab(null);
+                setCollabSaving(false);
+                loadAll();
+              };
+
+              const deleteCollab = async (id) => {
+                if (!window.confirm("Supprimer ce collaborateur ?")) return;
+                await db.delete("collaborateurs", id);
+                loadAll();
+              };
+
+              const CollabModal = ({ title, data, setData, onSave, onClose }) => (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(10,30,60,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+                  <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 460, boxShadow: "0 8px 40px rgba(0,30,80,.18)" }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#1e3a57", marginBottom: 20 }}>{title}</div>
+                    {[
+                      { label: "Nom complet *", key: "nom", type: "text", placeholder: "Ex: Jean Dupont" },
+                      { label: "Rôle / Poste", key: "role", type: "text", placeholder: "Ex: Expert-comptable" },
+                      { label: "Email", key: "email", type: "email", placeholder: "jean.dupont@cabinet.fr" },
+                      { label: "Téléphone", key: "telephone", type: "tel", placeholder: "+237 6XX XXX XXX" },
+                      { label: "Dossiers assignés", key: "dossiers", type: "number", placeholder: "0" },
+                    ].map(field => (
+                      <div key={field.key} style={{ marginBottom: 14 }}>
+                        <label style={{ fontSize: 11, fontWeight: 700, color: "#6b8aaa", display: "block", marginBottom: 5 }}>{field.label}</label>
+                        <input
+                          type={field.type}
+                          value={data[field.key] || ""}
+                          onChange={e => setData({ ...data, [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value })}
+                          placeholder={field.placeholder}
+                          style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2eaf4", fontSize: 13, color: "#1e3a57", boxSizing: "border-box", outline: "none" }}
+                        />
                       </div>
-                      <div style={{ fontSize: 12, color: "#8da4c0" }}>{c.email}</div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 12, color: "#4a6d8c" }}><b style={{ color: "#1e3a57" }}>{c.dossiers}</b> dossiers</span>
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: c.statut === "Associé" ? "#e8f0fb" : c.statut === "Stage" ? "#fff8e6" : "#e8f5ee", color: c.statut === "Associé" ? "#1a5c9e" : c.statut === "Stage" ? "#c17f2a" : "#1a7a4a" }}>{c.statut}</span>
-                      </div>
+                    ))}
+                    <div style={{ marginBottom: 14 }}>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: "#6b8aaa", display: "block", marginBottom: 5 }}>Statut</label>
+                      <select value={data.statut || "CDI"} onChange={e => setData({ ...data, statut: e.target.value })}
+                        style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2eaf4", fontSize: 13, color: "#1e3a57", background: "#fff" }}>
+                        {["Associé","CDI","CDD","Stage","Freelance"].map(s => <option key={s}>{s}</option>)}
+                      </select>
                     </div>
-                  ))}
+                    <div style={{ marginBottom: 18 }}>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: "#6b8aaa", display: "block", marginBottom: 5 }}>Note</label>
+                      <textarea value={data.note || ""} onChange={e => setData({ ...data, note: e.target.value })}
+                        placeholder="Informations complémentaires..." rows={2}
+                        style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2eaf4", fontSize: 13, color: "#1e3a57", resize: "vertical", boxSizing: "border-box", outline: "none" }} />
+                    </div>
+                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                      <button onClick={onClose} style={{ padding: "9px 18px", borderRadius: 9, border: "1px solid #e2eaf4", background: "#f5f8fc", color: "#4a6d8c", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Annuler</button>
+                      <button onClick={onSave} disabled={collabSaving} style={{ ...S.primaryBtn, opacity: collabSaving ? 0.7 : 1 }}>
+                        {collabSaving ? "Enregistrement..." : "Enregistrer"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+
+              return (
+                <div>
+                  {/* Modal ajout */}
+                  {showAddCollab && <CollabModal title="Nouveau collaborateur" data={newCollab} setData={setNewCollab} onSave={saveCollab} onClose={() => setShowAddCollab(false)} />}
+                  {/* Modal édition */}
+                  {showEditCollab && editCollab && <CollabModal title="Modifier le collaborateur" data={editCollab} setData={setEditCollab} onSave={updateCollab} onClose={() => { setShowEditCollab(false); setEditCollab(null); }} />}
+
+                  {/* KPIs */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
+                    {[
+                      { label: "Total", value: collaborateurs.length, color: "#1a5c9e", bg: "#e8f0fb", emoji: "👥" },
+                      { label: "CDI / Associés", value: collaborateurs.filter(c => ["CDI","Associé"].includes(c.statut)).length, color: "#1a7a4a", bg: "#e8f5ee", emoji: "📋" },
+                      { label: "Stagiaires", value: collaborateurs.filter(c => c.statut === "Stage").length, color: "#8e44ad", bg: "#f5eefb", emoji: "🎓" },
+                      { label: "Dossiers assignés", value: collaborateurs.reduce((s, c) => s + (Number(c.dossiers) || 0), 0), color: "#c17f2a", bg: "#fff8e6", emoji: "📁" },
+                    ].map((k, i) => (
+                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "12px" : "14px 16px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", borderTop: "3px solid " + k.color }}>
+                        <div style={{ fontSize: 22, marginBottom: 4 }}>{k.emoji}</div>
+                        <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: k.color }}>{k.value}</div>
+                        <div style={{ fontSize: 11, color: "#6b8aaa", fontWeight: 600 }}>{k.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Toolbar */}
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+                    <button onClick={() => { setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" }); setShowAddCollab(true); }} style={S.primaryBtn}>
+                      <Icon d={ic.plus} size={14} stroke="#fff" /> Ajouter un collaborateur
+                    </button>
+                  </div>
+
+                  {/* Grille collaborateurs */}
+                  {collaborateurs.length === 0 ? (
+                    <div className="card-hover" style={{ ...S.card, textAlign: "center", padding: 40 }}>
+                      <div style={{ fontSize: 40, marginBottom: 12 }}>👥</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#1e3a57", marginBottom: 6 }}>Aucun collaborateur enregistré</div>
+                      <div style={{ fontSize: 13, color: "#8da4c0", marginBottom: 16 }}>Ajoutez votre équipe pour commencer</div>
+                      <button onClick={() => setShowAddCollab(true)} style={S.primaryBtn}>+ Ajouter le premier</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 14 }}>
+                      {collaborateurs.map((c, i) => {
+                        const sc = statutColors[c.statut] || statutColors["CDI"];
+                        const avatarColor = avatarColors[i % avatarColors.length];
+                        return (
+                          <div key={c.id} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
+                            {/* Actions */}
+                            <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6 }}>
+                              <button onClick={() => { setEditCollab({ ...c }); setShowEditCollab(true); }}
+                                style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <Icon d={ic.edit} size={12} stroke="#4a6d8c" />
+                              </button>
+                              <button onClick={() => deleteCollab(c.id)}
+                                style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <Icon d={ic.trash} size={12} stroke="#c0392b" />
+                              </button>
+                            </div>
+                            {/* Avatar + infos */}
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <div style={{ width: 46, height: 46, borderRadius: "50%", background: avatarColor, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
+                                {getInitials(c.nom)}
+                              </div>
+                              <div style={{ paddingRight: 60 }}>
+                                <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>{c.nom}</div>
+                                <div style={{ fontSize: 12, color: "#6b8aaa" }}>{c.role || "—"}</div>
+                              </div>
+                            </div>
+                            {/* Contact */}
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                              {c.email && <div style={{ fontSize: 12, color: "#8da4c0", display: "flex", alignItems: "center", gap: 6 }}>📧 {c.email}</div>}
+                              {c.telephone && <div style={{ fontSize: 12, color: "#8da4c0", display: "flex", alignItems: "center", gap: 6 }}>📞 {c.telephone}</div>}
+                            </div>
+                            {/* Note */}
+                            {c.note && <div style={{ fontSize: 11, color: "#8da4c0", fontStyle: "italic", background: "#f5f8fc", borderRadius: 6, padding: "6px 10px" }}>{c.note}</div>}
+                            {/* Footer */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto" }}>
+                              <span style={{ fontSize: 12, color: "#4a6d8c" }}>
+                                <b style={{ color: "#1e3a57" }}>{c.dossiers || 0}</b> dossier{c.dossiers !== 1 ? "s" : ""}
+                              </span>
+                              <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: sc.bg, color: sc.color }}>{c.statut}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* ── DOCUMENTS ── */}
             {page === "documents" && (
