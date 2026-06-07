@@ -1784,17 +1784,18 @@ export default function App() {
                 if (accesPassword.length < 6) { setAccesMsg({ type: "error", text: "Le mot de passe doit faire au moins 6 caractères." }); return; }
                 setAcesSaving(true); setAccesMsg(null);
                 try {
-                  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+                  const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
                     method: "POST",
-                    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: accesEmail, password: accesPassword, email_confirm: true })
+                    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: accesEmail, password: accesPassword })
                   });
                   const data = await res.json();
-                  if (data.id) {
+                  if (data.id || data.user?.id) {
                     setAccesMsg({ type: "success", text: `✅ Accès créé pour ${accesEmail}` });
                     setTimeout(() => { setShowAccesCollab(false); setAccesEmail(""); setAccesPassword(""); setAccesMsg(null); }, 2000);
                   } else {
-                    setAccesMsg({ type: "error", text: data.msg || data.error_description || "Erreur lors de la création." });
+                    const msg = data.msg || data.error_description || data.message || "Erreur lors de la création.";
+                    setAccesMsg({ type: "error", text: msg });
                   }
                 } catch (err) {
                   setAccesMsg({ type: "error", text: "Erreur réseau : " + err.message });
