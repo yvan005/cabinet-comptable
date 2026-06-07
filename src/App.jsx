@@ -489,11 +489,14 @@ export default function App() {
                 return dt.getFullYear() === annee && dt.getMonth() === now.getMonth();
               }).reduce((s, d) => s + (d.montant || 0), 0);
 
-              // ── Activité récente ──
+              // ── Activité récente — toutes sources ──
               const activiteRecente = [
-                ...devisList.slice(0, 3).map(d => ({ type: "devis", label: `Devis ${d.statut?.toLowerCase()} — ${d.client}`, montant: d.total_ttc, color: d.statut === "Payé" ? "#1a7a4a" : "#1a5c9e", emoji: d.statut === "Payé" ? "✅" : "📄", date: d.date || d.created_at })),
-                ...depenses.slice(0, 2).map(d => ({ type: "depense", label: `${d.libelle} (${d.categorie})`, montant: -d.montant, color: "#c0392b", emoji: "💸", date: d.date })),
-              ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+                ...devisList.map(d => ({ label: `Devis ${d.statut?.toLowerCase()} — ${d.client}`, montant: d.total_ttc, color: d.statut === "Payé" ? "#1a7a4a" : "#1a5c9e", emoji: d.statut === "Payé" ? "✅" : d.statut === "Annulé" ? "❌" : "📄", date: d.date || d.created_at })),
+                ...depenses.map(d => ({ label: `${d.libelle} (${d.categorie})`, montant: -d.montant, color: "#c0392b", emoji: "💸", date: d.date || d.created_at })),
+                ...clients.map(c => ({ label: `Nouveau client — ${c.nom}`, montant: null, color: "#8e44ad", emoji: "🤝", date: c.created_at })),
+                ...abonnements.map(a => ({ label: `Abonnement ${a.statut?.toLowerCase()} — ${a.client}`, montant: a.statut === "Actif" ? a.montant : null, color: a.statut === "Actif" ? "#1a7a4a" : a.statut === "Suspendu" ? "#c17f2a" : "#c0392b", emoji: a.statut === "Actif" ? "🔄" : a.statut === "Suspendu" ? "⏸️" : "🚫", date: a.date_debut || a.created_at })),
+                ...collaborateurs.map(c => ({ label: `Collaborateur ajouté — ${c.nom}`, montant: null, color: "#2980b9", emoji: "👤", date: c.created_at })),
+              ].filter(a => a.date).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
 
               // ── Abonnements à renouveler soon ──
               const abosSoon = abonnements.filter(a => {
@@ -688,9 +691,11 @@ export default function App() {
                                 <div style={{ fontSize: 12, fontWeight: 500, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</div>
                                 <div style={{ fontSize: 10, color: "#8da4c0" }}>{item.date ? new Date(item.date).toLocaleDateString("fr-FR") : "—"}</div>
                               </div>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: item.montant > 0 ? "#1a7a4a" : "#c0392b", flexShrink: 0 }}>
-                                {item.montant > 0 ? "+" : ""}{Math.abs(item.montant || 0).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
-                              </div>
+                              {item.montant !== null && item.montant !== undefined ? (
+                                <div style={{ fontSize: 12, fontWeight: 700, color: item.montant > 0 ? "#1a7a4a" : "#c0392b", flexShrink: 0 }}>
+                                  {item.montant > 0 ? "+" : ""}{Math.abs(item.montant).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
+                                </div>
+                              ) : null}
                             </div>
                           ))}
                         </div>
