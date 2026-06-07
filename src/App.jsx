@@ -502,15 +502,24 @@ export default function App() {
               }).reduce((s, d) => s + (d.montant || 0), 0);
 
               // ── Activité récente — toutes sources ──
-              const toDate = (v) => v ? new Date(v) : new Date(0);
+              const bestDate = (...vals) => {
+                const dates = vals.map(v => v ? new Date(v) : null).filter(d => d && !isNaN(d));
+                return dates.length ? dates.sort((a,b) => b-a)[0].toISOString() : null;
+              };
               const activiteRecente = [
-                ...devisList.map(d => ({ label: `Devis ${d.statut?.toLowerCase()} — ${d.client}`, montant: d.total_ttc, color: d.statut === "Payé" ? "#1a7a4a" : "#1a5c9e", emoji: d.statut === "Payé" ? "✅" : d.statut === "Annulé" ? "❌" : "📄", date: d.date || d.created_at || null })),
-                ...depenses.map(d => ({ label: `${d.libelle || "Dépense"} (${d.categorie || "—"})`, montant: -(d.montant || 0), color: "#c0392b", emoji: "💸", date: d.date || d.created_at || null })),
-                ...clients.map(c => ({ label: `Nouveau client — ${c.nom}`, montant: null, color: "#8e44ad", emoji: "🤝", date: c.created_at || null })),
-                ...abonnements.map(a => ({ label: `Abonnement ${a.statut?.toLowerCase() || ""} — ${a.client}`, montant: a.statut === "Actif" ? (a.montant || null) : null, color: a.statut === "Actif" ? "#1a7a4a" : a.statut === "Suspendu" ? "#c17f2a" : "#c0392b", emoji: a.statut === "Actif" ? "🔄" : a.statut === "Suspendu" ? "⏸️" : "🚫", date: a.date_debut || a.created_at || null })),
-                ...collaborateurs.map(c => ({ label: `Collaborateur ajouté — ${c.nom}`, montant: null, color: "#2980b9", emoji: "👤", date: c.created_at || null })),
-                ...documents.map(d => ({ label: `Document déposé — ${d.nom}`, montant: null, color: "#c17f2a", emoji: "📎", date: d.created_at || null })),
-              ].filter(a => a.label).sort((a, b) => toDate(b.date) - toDate(a.date)).slice(0, 10);
+                ...devisList.map(d => ({ label: `Devis ${d.statut?.toLowerCase()} — ${d.client}`, montant: d.total_ttc, color: d.statut === "Payé" ? "#1a7a4a" : "#1a5c9e", emoji: d.statut === "Payé" ? "✅" : d.statut === "Annulé" ? "❌" : "📄", date: bestDate(d.updated_at, d.created_at, d.date) })),
+                ...depenses.map(d => ({ label: `${d.libelle || "Dépense"} (${d.categorie || "—"})`, montant: -(d.montant || 0), color: "#c0392b", emoji: "💸", date: bestDate(d.updated_at, d.date, d.created_at) })),
+                ...clients.map(c => ({ label: `Nouveau client — ${c.nom}`, montant: null, color: "#8e44ad", emoji: "🤝", date: bestDate(c.updated_at, c.created_at) })),
+                ...abonnements.map(a => ({ label: `Abonnement ${a.statut?.toLowerCase() || ""} — ${a.client}`, montant: a.statut === "Actif" ? (a.montant || null) : null, color: a.statut === "Actif" ? "#1a7a4a" : a.statut === "Suspendu" ? "#c17f2a" : "#c0392b", emoji: a.statut === "Actif" ? "🔄" : a.statut === "Suspendu" ? "⏸️" : "🚫", date: bestDate(a.updated_at, a.created_at, a.date_debut) })),
+                ...collaborateurs.map(c => ({ label: `Collaborateur ajouté — ${c.nom}`, montant: null, color: "#2980b9", emoji: "👤", date: bestDate(c.updated_at, c.created_at) })),
+                ...documents.map(d => ({ label: `Document déposé — ${d.nom}`, montant: null, color: "#c17f2a", emoji: "📎", date: bestDate(d.updated_at, d.created_at) })),
+              ].filter(a => a.label)
+               .sort((a, b) => {
+                 const da = a.date ? new Date(a.date) : new Date(0);
+                 const db2 = b.date ? new Date(b.date) : new Date(0);
+                 return db2 - da;
+               })
+               .slice(0, 10);
 
               // ── Abonnements à renouveler soon ──
               const abosSoon = abonnements.filter(a => {
