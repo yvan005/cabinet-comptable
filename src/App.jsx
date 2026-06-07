@@ -167,6 +167,7 @@ export default function App() {
   const [newDocClient, setNewDocClient] = useState("");
   const [newDocType, setNewDocType] = useState("Autre");
   const [docUploading, setDocUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -1827,8 +1828,7 @@ export default function App() {
                 return (bytes/(1024*1024)).toFixed(1) + " Mo";
               };
 
-              const uploadDoc = async (e) => {
-                const file = e.target.files[0];
+              const uploadDoc = async (file) => {
                 if (!file) return;
                 setDocUploading(true);
                 try {
@@ -1838,7 +1838,10 @@ export default function App() {
                     `${SUPABASE_URL}/storage/v1/object/documents/${fileName}`,
                     { method: "POST", headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": file.type }, body: file }
                   );
-                  if (!uploadRes.ok) throw new Error("Upload échoué");
+                  if (!uploadRes.ok) {
+                    const err = await uploadRes.json();
+                    throw new Error(err.message || "Upload échoué");
+                  }
                   // 2. URL publique
                   const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/documents/${fileName}`;
                   // 3. Sauvegarder la métadonnée en base
@@ -1851,6 +1854,7 @@ export default function App() {
                     storage_path: fileName,
                   });
                   setShowAddDoc(false);
+                  setSelectedFile(null);
                   setNewDocClient("");
                   setNewDocType("Autre");
                   loadAll();
@@ -1878,7 +1882,7 @@ export default function App() {
                 <div>
                   {/* Modal upload */}
                   {showAddDoc && (
-                    <Modal title="Déposer un document" onClose={() => setShowAddDoc(false)}>
+                    <Modal title="Déposer un document" onClose={() => { setShowAddDoc(false); setSelectedFile(null); }}>
                       <div style={S.formGroup}>
                         <label style={S.label}>Client / Dossier</label>
                         <select value={newDocClient} onChange={e => setNewDocClient(e.target.value)} style={S.select}>
@@ -1895,15 +1899,36 @@ export default function App() {
                       </div>
                       <div style={S.formGroup}>
                         <label style={S.label}>Fichier *</label>
-                        <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: "24px 16px", borderRadius: 10, border: "2px dashed #87CEEB", background: "#f0f8ff", cursor: "pointer", textAlign: "center" }}>
-                          <span style={{ fontSize: 28 }}>📂</span>
-                          <span style={{ fontSize: 13, color: "#1a5c9e", fontWeight: 600 }}>{docUploading ? "Upload en cours..." : "Cliquer pour choisir un fichier"}</span>
-                          <span style={{ fontSize: 11, color: "#8da4c0" }}>PDF, Word, Excel — max 10 Mo</span>
-                          <input type="file" accept=".pdf,.doc,.docx,.xlsx,.xls,.csv" onChange={uploadDoc} style={{ display: "none" }} disabled={docUploading} />
+                        <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: "24px 16px", borderRadius: 10, border: `2px dashed ${selectedFile ? "#1a7a4a" : "#87CEEB"}`, background: selectedFile ? "#f0faf4" : "#f0f8ff", cursor: "pointer", textAlign: "center", transition: "all 0.2s" }}>
+                          <span style={{ fontSize: 28 }}>{selectedFile ? "✅" : "📂"}</span>
+                          <span style={{ fontSize: 13, color: selectedFile ? "#1a7a4a" : "#1a5c9e", fontWeight: 700 }}>
+                            {selectedFile ? selectedFile.name : "Cliquer pour choisir un fichier"}
+                          </span>
+                          {selectedFile ? (
+                            <span style={{ fontSize: 11, color: "#1a7a4a" }}>{(selectedFile.size / 1024).toFixed(0)} Ko — prêt à déposer</span>
+                          ) : (
+                            <span style={{ fontSize: 11, color: "#8da4c0" }}>PDF, Word, Excel — max 10 Mo</span>
+                          )}
+                          <input type="file" accept=".pdf,.doc,.docx,.xlsx,.xls,.csv"
+                            onChange={e => setSelectedFile(e.target.files[0] || null)}
+                            style={{ display: "none" }} disabled={docUploading} />
                         </label>
+                        {selectedFile && (
+                          <button onClick={() => setSelectedFile(null)}
+                            style={{ marginTop: 6, fontSize: 11, color: "#c0392b", background: "none", border: "none", cursor: "pointer", textDecoration: "underline", alignSelf: "flex-start" }}>
+                            ✕ Retirer le fichier
+                          </button>
+                        )}
                       </div>
                       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
-                        <button onClick={() => setShowAddDoc(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+                        <button onClick={() => { setShowAddDoc(false); setSelectedFile(null); }}
+                          style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>
+                          Annuler
+                        </button>
+                        <button onClick={() => uploadDoc(selectedFile)} disabled={!selectedFile || docUploading}
+                          style={{ ...S.primaryBtn, opacity: (!selectedFile || docUploading) ? 0.5 : 1, cursor: (!selectedFile || docUploading) ? "not-allowed" : "pointer" }}>
+                          {docUploading ? "⏳ Dépôt en cours..." : "⬆ Valider le dépôt"}
+                        </button>
                       </div>
                     </Modal>
                   )}
