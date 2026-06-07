@@ -139,6 +139,8 @@ export default function App() {
   const [newService, setNewService] = useState({ nom: "", description: "", tarif: "", unite: "forfait", groupe: "Assistance Comptable", actif: true });
   const [showEditService, setShowEditService] = useState(false);
   const [showAddCollab, setShowAddCollab] = useState(false);
+  const [showAddEcheance, setShowAddEcheance] = useState(false);
+  const [newEch, setNewEch] = useState({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
   const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", statut: "CDI", initials: "", color: "#1a5c9e", dossiers: 0 });
   const [editService, setEditService] = useState(null);
   const [showAddAbonnement, setShowAddAbonnement] = useState(false);
@@ -188,12 +190,12 @@ export default function App() {
   // ÉCHÉANCES
   const addEcheance = async () => {
     if (!newEch.label || !newEch.date) return;
-    await db.post({ ...newEch, fait: false });
+    await db.post("echeances", { ...newEch, fait: false });
     setNewEch({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
     setShowAddEcheance(false); loadAll();
   };
-  const toggleFait = async (e) => { await db.patch(e.id, { fait: !e.fait }); loadAll(); };
-  const deleteEch = async (id) => { await db.delete(id); loadAll(); };
+  const toggleFait = async (e) => { await db.patch("echeances", e.id, { fait: !e.fait }); loadAll(); };
+  const deleteEch = async (id) => { await db.delete("echeances", id); loadAll(); };
 
   // MESSAGES
 
