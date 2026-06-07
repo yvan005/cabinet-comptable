@@ -1625,57 +1625,94 @@ export default function App() {
                 loadAll();
               };
 
-              const CollabModal = ({ title, data, setData, onSave, onClose }) => (
-                <div style={{ position: "fixed", inset: 0, background: "rgba(10,30,60,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-                  <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 460, boxShadow: "0 8px 40px rgba(0,30,80,.18)" }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#1e3a57", marginBottom: 20 }}>{title}</div>
-                    {[
-                      { label: "Nom complet *", key: "nom", type: "text", placeholder: "Ex: Jean Dupont" },
-                      { label: "Rôle / Poste", key: "role", type: "text", placeholder: "Ex: Expert-comptable" },
-                      { label: "Email", key: "email", type: "email", placeholder: "jean.dupont@cabinet.fr" },
-                      { label: "Téléphone", key: "telephone", type: "tel", placeholder: "+237 6XX XXX XXX" },
-                      { label: "Dossiers assignés", key: "dossiers", type: "number", placeholder: "0" },
-                    ].map(field => (
-                      <div key={field.key} style={{ marginBottom: 14 }}>
-                        <label style={{ fontSize: 11, fontWeight: 700, color: "#6b8aaa", display: "block", marginBottom: 5 }}>{field.label}</label>
-                        <input
-                          type={field.type}
-                          value={data[field.key] || ""}
-                          onChange={e => setData({ ...data, [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value })}
-                          placeholder={field.placeholder}
-                          style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2eaf4", fontSize: 13, color: "#1e3a57", boxSizing: "border-box", outline: "none" }}
-                        />
-                      </div>
-                    ))}
-                    <div style={{ marginBottom: 14 }}>
-                      <label style={{ fontSize: 11, fontWeight: 700, color: "#6b8aaa", display: "block", marginBottom: 5 }}>Statut</label>
-                      <select value={data.statut || "CDI"} onChange={e => setData({ ...data, statut: e.target.value })}
-                        style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2eaf4", fontSize: 13, color: "#1e3a57", background: "#fff" }}>
-                        {["Associé","CDI","CDD","Stage","Freelance"].map(s => <option key={s}>{s}</option>)}
-                      </select>
-                    </div>
-                    <div style={{ marginBottom: 18 }}>
-                      <label style={{ fontSize: 11, fontWeight: 700, color: "#6b8aaa", display: "block", marginBottom: 5 }}>Note</label>
-                      <textarea value={data.note || ""} onChange={e => setData({ ...data, note: e.target.value })}
-                        placeholder="Informations complémentaires..." rows={2}
-                        style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2eaf4", fontSize: 13, color: "#1e3a57", resize: "vertical", boxSizing: "border-box", outline: "none" }} />
-                    </div>
-                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                      <button onClick={onClose} style={{ padding: "9px 18px", borderRadius: 9, border: "1px solid #e2eaf4", background: "#f5f8fc", color: "#4a6d8c", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Annuler</button>
-                      <button onClick={onSave} disabled={collabSaving} style={{ ...S.primaryBtn, opacity: collabSaving ? 0.7 : 1 }}>
-                        {collabSaving ? "Enregistrement..." : "Enregistrer"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-
               return (
                 <div>
-                  {/* Modal ajout */}
-                  {showAddCollab && <CollabModal title="Nouveau collaborateur" data={newCollab} setData={setNewCollab} onSave={saveCollab} onClose={() => setShowAddCollab(false)} />}
-                  {/* Modal édition */}
-                  {showEditCollab && editCollab && <CollabModal title="Modifier le collaborateur" data={editCollab} setData={setEditCollab} onSave={updateCollab} onClose={() => { setShowEditCollab(false); setEditCollab(null); }} />}
+                  {/* Modal ajout — même style que formulaire client */}
+                  {showAddCollab && (
+                    <Modal title="Nouveau collaborateur" onClose={() => setShowAddCollab(false)}>
+                      {[
+                        { label: "Nom complet *", key: "nom", type: "text", placeholder: "Ex: Jean Dupont" },
+                        { label: "Rôle / Poste", key: "role", type: "text", placeholder: "Ex: Expert-comptable" },
+                        { label: "Email", key: "email", type: "email", placeholder: "jean.dupont@cabinet.fr" },
+                        { label: "Téléphone", key: "telephone", type: "tel", placeholder: "+237 6XX XXX XXX" },
+                        { label: "Dossiers assignés", key: "dossiers", type: "number", placeholder: "0" },
+                      ].map(field => (
+                        <div key={field.key} style={S.formGroup}>
+                          <label style={S.label}>{field.label}</label>
+                          <input
+                            type={field.type}
+                            value={newCollab[field.key] || ""}
+                            onChange={e => setNewCollab(p => ({ ...p, [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value }))}
+                            placeholder={field.placeholder}
+                            style={S.input}
+                          />
+                        </div>
+                      ))}
+                      <div style={S.formGroup}>
+                        <label style={S.label}>Statut</label>
+                        <select value={newCollab.statut || "CDI"} onChange={e => setNewCollab(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+                          {["Associé","CDI","CDD","Stage","Freelance"].map(s => <option key={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div style={S.formGroup}>
+                        <label style={S.label}>Note</label>
+                        <textarea
+                          value={newCollab.note || ""}
+                          onChange={e => setNewCollab(p => ({ ...p, note: e.target.value }))}
+                          placeholder="Informations complémentaires..."
+                          rows={2}
+                          style={{ ...S.input, resize: "vertical" }}
+                        />
+                      </div>
+                      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+                        <button onClick={() => setShowAddCollab(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+                        <button onClick={saveCollab} disabled={collabSaving} style={{ ...S.primaryBtn, opacity: collabSaving ? 0.7 : 1 }}>{collabSaving ? "Enregistrement..." : "Enregistrer"}</button>
+                      </div>
+                    </Modal>
+                  )}
+                  {/* Modal édition — même style que formulaire client */}
+                  {showEditCollab && editCollab && (
+                    <Modal title="Modifier le collaborateur" onClose={() => { setShowEditCollab(false); setEditCollab(null); }}>
+                      {[
+                        { label: "Nom complet *", key: "nom", type: "text", placeholder: "Ex: Jean Dupont" },
+                        { label: "Rôle / Poste", key: "role", type: "text", placeholder: "Ex: Expert-comptable" },
+                        { label: "Email", key: "email", type: "email", placeholder: "jean.dupont@cabinet.fr" },
+                        { label: "Téléphone", key: "telephone", type: "tel", placeholder: "+237 6XX XXX XXX" },
+                        { label: "Dossiers assignés", key: "dossiers", type: "number", placeholder: "0" },
+                      ].map(field => (
+                        <div key={field.key} style={S.formGroup}>
+                          <label style={S.label}>{field.label}</label>
+                          <input
+                            type={field.type}
+                            value={editCollab[field.key] || ""}
+                            onChange={e => setEditCollab(p => ({ ...p, [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value }))}
+                            placeholder={field.placeholder}
+                            style={S.input}
+                          />
+                        </div>
+                      ))}
+                      <div style={S.formGroup}>
+                        <label style={S.label}>Statut</label>
+                        <select value={editCollab.statut || "CDI"} onChange={e => setEditCollab(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+                          {["Associé","CDI","CDD","Stage","Freelance"].map(s => <option key={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div style={S.formGroup}>
+                        <label style={S.label}>Note</label>
+                        <textarea
+                          value={editCollab.note || ""}
+                          onChange={e => setEditCollab(p => ({ ...p, note: e.target.value }))}
+                          placeholder="Informations complémentaires..."
+                          rows={2}
+                          style={{ ...S.input, resize: "vertical" }}
+                        />
+                      </div>
+                      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+                        <button onClick={() => { setShowEditCollab(false); setEditCollab(null); }} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+                        <button onClick={updateCollab} disabled={collabSaving} style={{ ...S.primaryBtn, opacity: collabSaving ? 0.7 : 1 }}>{collabSaving ? "Enregistrement..." : "Enregistrer"}</button>
+                      </div>
+                    </Modal>
+                  )}
 
                   {/* KPIs */}
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
