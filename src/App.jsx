@@ -64,6 +64,9 @@ const ic = {
   depenses:  "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M12 6v6l4 2 M8 13h8 M8 17h8",
   service:   "M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12",
   eye:       "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 100 6 3 3 0 000-6z",
+  abonnement: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M12 6v6l4 2 M8 16h8",
+  abo:       "M12 2a10 10 0 100 20A10 10 0 0012 2z M12 6v6l4 2 M8 2h8 M12 22v-2",
+  abonnement:"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M12 6v6l4 2 M8 17h8 M8 13h4",
   abonnement: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M8 12h8 M12 8v8",
   settings:  "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z",
 };
@@ -135,6 +138,8 @@ export default function App() {
   const [showAddService, setShowAddService] = useState(false);
   const [newService, setNewService] = useState({ nom: "", description: "", tarif: "", unite: "forfait", groupe: "Assistance Comptable", actif: true });
   const [showEditService, setShowEditService] = useState(false);
+  const [showAddCollab, setShowAddCollab] = useState(false);
+  const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", statut: "CDI", initials: "", color: "#1a5c9e", dossiers: 0 });
   const [editService, setEditService] = useState(null);
   const [showAddAbonnement, setShowAddAbonnement] = useState(false);
   const [showAddAbo, setShowAddAbo] = useState(false);
@@ -153,24 +158,16 @@ export default function App() {
 
   const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
 
-  const [collaborateurs, setCollaborateurs] = useState([]);
-  const [showAddCollab, setShowAddCollab] = useState(false);
-  const [showEditCollab, setShowEditCollab] = useState(false);
-  const [editCollab, setEditCollab] = useState(null);
-  const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
-  const [collabSaving, setCollabSaving] = useState(false);
-
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [c, d, dep, srv, abo, col] = await Promise.all([
-      db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"), db.get("collaborateurs"),
+    const [c, d, dep, srv, abo] = await Promise.all([
+      db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"),
     ]);
     setClients(Array.isArray(c) ? c : []);
     setDevisList(Array.isArray(d) ? d : []);
     setDepenses(Array.isArray(dep) ? dep : []);
     setServices(Array.isArray(srv) ? srv : []);
     setAbonnements(Array.isArray(abo) ? abo : []);
-    setCollaborateurs(Array.isArray(col) ? col : []);
     setLoading(false);
   }, []);
 
@@ -188,10 +185,15 @@ export default function App() {
   };
   const deleteClient = async (id) => { await db.delete("clients", id); loadAll(); };
 
-  // ÉCHÉANCES (désactivé)
-  const addEcheance = async () => {};
-  const toggleFait = async () => {};
-  const deleteEch = async () => {};
+  // ÉCHÉANCES
+  const addEcheance = async () => {
+    if (!newEch.label || !newEch.date) return;
+    await db.post({ ...newEch, fait: false });
+    setNewEch({ label: "", date: "", type: "TVA", urgence: "normale", client: "" });
+    setShowAddEcheance(false); loadAll();
+  };
+  const toggleFait = async (e) => { await db.patch(e.id, { fait: !e.fait }); loadAll(); };
+  const deleteEch = async (id) => { await db.delete(id); loadAll(); };
 
   // MESSAGES
 
@@ -348,6 +350,7 @@ export default function App() {
 
   const kpis = [
     { label: "Clients actifs", value: clients.filter(c => c.statut === "Actif").length, delta: `${clients.length} au total`, color: "#1a5c9e", icon: ic.clients },
+    { label: "Abonnements actifs", value: abonnements.filter(a => a.statut === "Actif").length, delta: abonnements.filter(a => a.statut === "Actif" && a.prochaine_echeance && new Date(a.prochaine_echeance) < new Date()).length + " en retard", color: "#c17f2a", icon: ic.abonnement },
     { label: "Devis", value: devisList.length, delta: `${devisList.filter(d => d.statut === "Envoyé").length} envoyés`, color: "#1a7a4a", icon: ic.devis },
   ];
 
@@ -364,7 +367,7 @@ export default function App() {
     { id: "settings",     label: "Paramètres",        icon: ic.settings },
   ];
 
-  const pageTitle = { abonnements: "Abonnements", dashboard: "Tableau de bord", clients: "Clients", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", depenses: "Dépenses", settings: "Paramètres" }[page] || "";
+  const pageTitle = { abonnement: "Abonnements", dashboard: "Tableau de bord", clients: "Clients", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", abonnement: "Abonnements", depenses: "Dépenses", settings: "Paramètres" }[page];
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
@@ -450,330 +453,176 @@ export default function App() {
         <div style={{ padding: isMobile ? 14 : 24, overflowY: "auto", flex: 1 }}>
           {loading ? <Spinner /> : <>
 
-            {/* ── DASHBOARD ── */}
-            {page === "dashboard" && (() => {
-              const now = new Date();
-              const annee = now.getFullYear();
-              const moisNoms = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
+                        {/* ── DASHBOARD ── */}
+            {page === "dashboard" && (
+              <div>
+                {/* KPIs principaux */}
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 20 }}>
+                  {[
+                    { label: "Clients actifs", value: clients.filter(c => c.statut === "Actif").length, delta: clients.length + " au total", color: "#1a5c9e", icon: ic.clients, page: "clients" },
+                    { label: "Abonnements actifs", value: abonnements.filter(a => a.statut === "Actif").length, delta: abonnements.filter(a => a.statut === "Actif" && a.prochaine_echeance && new Date(a.prochaine_echeance) < new Date()).length + " en retard", color: "#c17f2a", icon: ic.abonnement, page: "abonnements" },
+                    { label: "Devis enregistrés", value: devisList.length, delta: devisList.filter(d => d.statut === "Payé").length + " payés", color: "#1a7a4a", icon: ic.devis, page: "devis" },
+                    { label: "Dépenses du mois", value: (() => { const now = new Date(); return depenses.filter(d => { const dt = new Date(d.date); return dt.getFullYear() === now.getFullYear() && dt.getMonth() === now.getMonth(); }).reduce((s,d) => s + (d.montant||0), 0).toLocaleString("fr-FR") + " FCFA"; })(), delta: "Ce mois", color: "#c0392b", icon: ic.depenses, page: "depenses" },
+                  ].map((k, i) => (
+                    <div key={i} className="card-hover" onClick={() => setPage(k.page)} style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "12px" : "16px 18px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", display: "flex", flexDirection: "column", gap: 4, borderTop: "3px solid " + k.color, cursor: "pointer" }}>
+                      <div style={{ width: 34, height: 34, borderRadius: 9, background: k.color + "18", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 4 }}>
+                        <Icon d={k.icon} size={16} stroke={k.color} />
+                      </div>
+                      <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "#1e3a57" }}>{k.value}</div>
+                      <div style={{ fontSize: 11, color: "#6b8aaa", fontWeight: 500 }}>{k.label}</div>
+                      <div style={{ fontSize: 10, color: "#8da4c0" }}>{k.delta}</div>
+                    </div>
+                  ))}
+                </div>
 
-              // ── KPIs principaux ──
-              const clientsActifs = clients.filter(c => c.statut === "Actif").length;
-              const totalCA = devisList.filter(d => d.statut === "Payé").reduce((s, d) => s + (d.total_ttc || 0), 0);
-              const devisEnAttente = devisList.filter(d => d.statut === "Enregistré" || d.statut === "Envoyé").length;
-              const montantEnAttente = devisList.filter(d => d.statut === "Enregistré" || d.statut === "Envoyé").reduce((s, d) => s + (d.total_ttc || 0), 0);
-              const freqMult = { "Mensuel": 1, "Trimestriel": 3, "Semestriel": 6, "Annuel": 12 };
-              const mrr = abonnements.filter(a => a.statut === "Actif").reduce((s, a) => s + (a.montant || 0) / (freqMult[a.frequence] || 1), 0);
-              const depensesTotal = depenses.filter(d => new Date(d.date).getFullYear() === annee).reduce((s, d) => s + (d.montant || 0), 0);
+                {/* Aperçus des menus */}
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
 
-              // ── CA mensuel (12 derniers mois) ──
-              const caMois = Array(12).fill(0);
-              devisList.filter(d => d.statut === "Payé").forEach(d => {
-                const date = new Date(d.date || d.created_at);
-                if (date.getFullYear() === annee) caMois[date.getMonth()] += d.total_ttc || 0;
-              });
-              const maxCA = Math.max(...caMois, 1);
-
-              // ── Devis par statut ──
-              const statutsDevis = {
-                "Payé": devisList.filter(d => d.statut === "Payé").length,
-                "Enregistré": devisList.filter(d => d.statut === "Enregistré").length,
-                "Brouillon": devisList.filter(d => d.statut === "Brouillon").length,
-                "Annulé": devisList.filter(d => d.statut === "Annulé").length,
-              };
-              const totalDevis = devisList.length || 1;
-              const tauxConversion = devisList.length > 0 ? Math.round((statutsDevis["Payé"] / devisList.length) * 100) : 0;
-
-              // ── Dépenses ce mois ──
-              const depMois = depenses.filter(d => {
-                const dt = new Date(d.date);
-                return dt.getFullYear() === annee && dt.getMonth() === now.getMonth();
-              }).reduce((s, d) => s + (d.montant || 0), 0);
-
-              // ── Activité récente ──
-              const activiteRecente = [
-                ...devisList.slice(0, 3).map(d => ({ type: "devis", label: `Devis ${d.statut?.toLowerCase()} — ${d.client}`, montant: d.total_ttc, color: d.statut === "Payé" ? "#1a7a4a" : "#1a5c9e", emoji: d.statut === "Payé" ? "✅" : "📄", date: d.date || d.created_at })),
-                ...depenses.slice(0, 2).map(d => ({ type: "depense", label: `${d.libelle} (${d.categorie})`, montant: -d.montant, color: "#c0392b", emoji: "💸", date: d.date })),
-              ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
-
-              // ── Abonnements à renouveler soon ──
-              const abosSoon = abonnements.filter(a => {
-                if (a.statut !== "Actif" || !a.prochaine_echeance) return false;
-                const days = Math.round((new Date(a.prochaine_echeance) - now) / 86400000);
-                return days >= 0 && days <= 30;
-              });
-
-              // ── Top clients (par CA devis payés) ──
-              const caParClient = {};
-              devisList.filter(d => d.statut === "Payé").forEach(d => {
-                caParClient[d.client] = (caParClient[d.client] || 0) + (d.total_ttc || 0);
-              });
-              const topClients = Object.entries(caParClient).sort((a, b) => b[1] - a[1]).slice(0, 4);
-              const maxTopCA = topClients[0]?.[1] || 1;
-
-              const kpiCards = [
-                { label: "Clients actifs", value: clientsActifs, delta: `${clients.length} au total`, color: "#1a5c9e", icon: ic.clients, bg: "#e8f0fb" },
-                { label: "CA encaissé", value: totalCA > 0 ? (totalCA / 1000).toFixed(0) + "k FCFA" : "0 FCFA", delta: `${statutsDevis["Payé"]} devis payés`, color: "#1a7a4a", icon: ic.trend, bg: "#e8f5ee" },
-                { label: "MRR", value: Math.round(mrr).toLocaleString("fr-FR") + " FCFA", delta: `${abonnements.filter(a => a.statut === "Actif").length} abonnés actifs`, color: "#8e44ad", icon: ic.abonnement, bg: "#f5eefb" },
-                { label: "En attente", value: montantEnAttente > 0 ? (montantEnAttente / 1000).toFixed(0) + "k FCFA" : "0 FCFA", delta: `${devisEnAttente} devis à encaisser`, color: "#c17f2a", icon: ic.alert, bg: "#fff8e6" },
-              ];
-
-              return (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-                  {/* ── KPI CARDS ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: isMobile ? 10 : 14 }}>
-                    {kpiCards.map((k, i) => (
-                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 14, padding: isMobile ? "14px" : "18px 20px", boxShadow: "0 1px 4px rgba(0,30,80,.07)", borderTop: `3px solid ${k.color}`, display: "flex", flexDirection: "column", gap: 4 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: 9, background: k.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <Icon d={k.icon} size={18} stroke={k.color} />
-                          </div>
+                  {/* Aperçu Clients */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={{ ...S.cardHeader, cursor: "pointer" }} onClick={() => setPage("clients")}>
+                      <Icon d={ic.clients} size={16} stroke="#1a5c9e" />
+                      <span style={S.cardTitle}>Clients récents</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>Voir tout →</span>
+                    </div>
+                    {clients.length === 0 && <div style={S.empty}>Aucun client</div>}
+                    {clients.slice(0, 3).map(c => (
+                      <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                        <div style={{ width: 30, height: 30, borderRadius: 8, background: "linear-gradient(135deg,#2e7fcf,#1a5c9e)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>{c.nom?.charAt(0)}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{c.nom}</div>
+                          <div style={{ fontSize: 11, color: "#8da4c0" }}>{c.secteur}</div>
                         </div>
-                        <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "#1e3a57", lineHeight: 1.1 }}>{k.value}</div>
-                        <div style={{ fontSize: isMobile ? 11 : 12, color: "#6b8aaa", fontWeight: 600 }}>{k.label}</div>
-                        <div style={{ fontSize: 11, color: "#8da4c0" }}>{k.delta}</div>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 20, background: c.statut === "Actif" ? "#e8f5ee" : "#f5f5f5", color: c.statut === "Actif" ? "#1a7a4a" : "#8a9aac" }}>{c.statut}</span>
                       </div>
                     ))}
                   </div>
 
-                  {/* ── ROW 2 : Graphiques ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
-
-                    {/* Graphique CA mensuel (barres SVG) */}
-                    <div className="card-hover" style={S.card}>
-                      <div style={S.cardHeader}>
-                        <Icon d={ic.rapports} size={16} stroke="#1a5c9e" />
-                        <span style={S.cardTitle}>CA encaissé — {annee}</span>
-                        <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#e8f0fb", color: "#1a5c9e", padding: "3px 8px", borderRadius: 6 }}>
-                          {totalCA > 0 ? (totalCA / 1000).toFixed(0) + "k FCFA" : "—"}
-                        </span>
-                      </div>
-                      {devisList.filter(d => d.statut === "Payé").length === 0 ? (
-                        <div style={S.empty}>Aucun devis payé cette année</div>
-                      ) : (
-                        <div style={{ display: "flex", alignItems: "flex-end", gap: isMobile ? 3 : 5, height: 120, padding: "0 4px" }}>
-                          {caMois.map((val, i) => {
-                            const h = maxCA > 0 ? Math.max((val / maxCA) * 100, val > 0 ? 8 : 0) : 0;
-                            const isCurrentMonth = i === now.getMonth();
-                            return (
-                              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                                <div title={`${moisNoms[i]}: ${val.toLocaleString("fr-FR")} FCFA`} style={{
-                                  width: "100%", height: `${h}%`, minHeight: val > 0 ? 4 : 0,
-                                  background: isCurrentMonth ? "linear-gradient(180deg,#2e7fcf,#1a5c9e)" : val > 0 ? "#c8ddf5" : "#f0f4fa",
-                                  borderRadius: "3px 3px 0 0",
-                                  transition: "height 0.5s ease",
-                                  cursor: "pointer",
-                                  boxShadow: isCurrentMonth ? "0 2px 8px rgba(26,92,158,0.3)" : "none",
-                                }} />
-                                <span style={{ fontSize: 9, color: isCurrentMonth ? "#1a5c9e" : "#8da4c0", fontWeight: isCurrentMonth ? 700 : 400 }}>{moisNoms[i]}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                  {/* Aperçu Abonnements */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={{ ...S.cardHeader, cursor: "pointer" }} onClick={() => setPage("abonnements")}>
+                      <Icon d={ic.abonnement} size={16} stroke="#c17f2a" />
+                      <span style={S.cardTitle}>Abonnements en cours</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>Voir tout →</span>
                     </div>
-
-                    {/* Donut devis par statut */}
-                    <div className="card-hover" style={S.card}>
-                      <div style={S.cardHeader}>
-                        <Icon d={ic.devis} size={16} stroke="#1a7a4a" />
-                        <span style={S.cardTitle}>Statut des devis</span>
-                        <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#e8f5ee", color: "#1a7a4a", padding: "3px 8px", borderRadius: 6 }}>
-                          {tauxConversion}% conversion
-                        </span>
-                      </div>
-                      {devisList.length === 0 ? (
-                        <div style={S.empty}>Aucun devis enregistré</div>
-                      ) : (
-                        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                          {/* Donut SVG */}
-                          {(() => {
-                            const data = [
-                              { label: "Payé", value: statutsDevis["Payé"], color: "#1a7a4a" },
-                              { label: "Enregistré", value: statutsDevis["Enregistré"], color: "#1a5c9e" },
-                              { label: "Brouillon", value: statutsDevis["Brouillon"], color: "#c17f2a" },
-                              { label: "Annulé", value: statutsDevis["Annulé"], color: "#c0392b" },
-                            ].filter(d => d.value > 0);
-                            const total = data.reduce((s, d) => s + d.value, 0) || 1;
-                            const r = 36, cx = 44, cy = 44, stroke = 10;
-                            let offset = -Math.PI / 2;
-                            const arcs = data.map(d => {
-                              const angle = (d.value / total) * 2 * Math.PI;
-                              const x1 = cx + r * Math.cos(offset);
-                              const y1 = cy + r * Math.sin(offset);
-                              offset += angle;
-                              const x2 = cx + r * Math.cos(offset);
-                              const y2 = cy + r * Math.sin(offset);
-                              const large = angle > Math.PI ? 1 : 0;
-                              return { ...d, path: `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`, angle };
-                            });
-                            return (
-                              <svg width={88} height={88} style={{ flexShrink: 0 }}>
-                                <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f0f4fa" strokeWidth={stroke} />
-                                {arcs.map((arc, i) => (
-                                  <path key={i} d={arc.path} fill="none" stroke={arc.color} strokeWidth={stroke} strokeLinecap="butt" />
-                                ))}
-                                <text x={cx} y={cy - 4} textAnchor="middle" fontSize="14" fontWeight="800" fill="#1e3a57">{total}</text>
-                                <text x={cx} y={cy + 10} textAnchor="middle" fontSize="9" fill="#8da4c0">devis</text>
-                              </svg>
-                            );
-                          })()}
-                          {/* Légende */}
-                          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-                            {[
-                              { label: "Payé", count: statutsDevis["Payé"], color: "#1a7a4a" },
-                              { label: "Enregistré", count: statutsDevis["Enregistré"], color: "#1a5c9e" },
-                              { label: "Brouillon", count: statutsDevis["Brouillon"], color: "#c17f2a" },
-                              { label: "Annulé", count: statutsDevis["Annulé"], color: "#c0392b" },
-                            ].map((item, i) => (
-                              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <div style={{ width: 10, height: 10, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
-                                <span style={{ fontSize: 12, color: "#4a6d8c", flex: 1 }}>{item.label}</span>
-                                <span style={{ fontSize: 12, fontWeight: 700, color: "#1e3a57" }}>{item.count}</span>
-                              </div>
-                            ))}
+                    {abonnements.length === 0 && <div style={S.empty}>Aucun abonnement</div>}
+                    {abonnements.filter(a => a.statut === "Actif").slice(0, 3).map(a => {
+                      const now = new Date();
+                      const daysLeft = a.prochaine_echeance ? Math.round((new Date(a.prochaine_echeance) - now) / 86400000) : null;
+                      return (
+                        <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{a.client}</div>
+                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{a.service}</div>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a5c9e" }}>{(a.montant||0).toLocaleString("fr-FR")} FCFA</div>
+                            {daysLeft !== null && <div style={{ fontSize: 10, color: daysLeft < 0 ? "#c0392b" : "#8da4c0" }}>{daysLeft < 0 ? "⚠️ Retard" : "J-" + daysLeft}</div>}
                           </div>
                         </div>
-                      )}
-                    </div>
+                      );
+                    })}
                   </div>
 
-                  {/* ── ROW 3 : Top clients + Activité récente ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
-
-                    {/* Top clients */}
-                    <div className="card-hover" style={S.card}>
-                      <div style={S.cardHeader}>
-                        <Icon d={ic.clients} size={16} stroke="#8e44ad" />
-                        <span style={S.cardTitle}>Top clients (CA)</span>
-                      </div>
-                      {topClients.length === 0 ? (
-                        <div style={S.empty}>Aucun devis payé pour l'instant</div>
-                      ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          {topClients.map(([nom, ca], i) => (
-                            <div key={nom} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <div style={{ width: 24, height: 24, borderRadius: "50%", background: ["linear-gradient(135deg,#f6c90e,#e8a400)","#e8e8e8","#cd7f32","#e8f0fb"][i] || "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: i === 0 ? "#7a5000" : "#6b8aaa", flexShrink: 0 }}>
-                                {i + 1}
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{nom}</span>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a5c9e" }}>{ca.toLocaleString("fr-FR")} FCFA</span>
-                                </div>
-                                <div style={{ height: 5, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
-                                  <div style={{ width: `${(ca / maxTopCA) * 100}%`, height: "100%", background: i === 0 ? "linear-gradient(90deg,#f6c90e,#e8a400)" : "#c8ddf5", borderRadius: 3 }} />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                  {/* Aperçu Devis */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={{ ...S.cardHeader, cursor: "pointer" }} onClick={() => setPage("devis")}>
+                      <Icon d={ic.devis} size={16} stroke="#1a7a4a" />
+                      <span style={S.cardTitle}>Derniers devis</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>Voir tout →</span>
                     </div>
-
-                    {/* Activité récente */}
-                    <div className="card-hover" style={S.card}>
-                      <div style={S.cardHeader}>
-                        <Icon d={ic.bell} size={16} stroke="#c17f2a" />
-                        <span style={S.cardTitle}>Activité récente</span>
-                      </div>
-                      {activiteRecente.length === 0 ? (
-                        <div style={S.empty}>Aucune activité récente</div>
-                      ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                          {activiteRecente.map((item, i) => (
-                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < activiteRecente.length - 1 ? "1px solid #f0f4fa" : "none" }}>
-                              <div style={{ width: 30, height: 30, borderRadius: 8, background: item.color + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{item.emoji}</div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 12, fontWeight: 500, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</div>
-                                <div style={{ fontSize: 10, color: "#8da4c0" }}>{item.date ? new Date(item.date).toLocaleDateString("fr-FR") : "—"}</div>
-                              </div>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: item.montant > 0 ? "#1a7a4a" : "#c0392b", flexShrink: 0 }}>
-                                {item.montant > 0 ? "+" : ""}{Math.abs(item.montant || 0).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
-                              </div>
-                            </div>
-                          ))}
+                    {devisList.length === 0 && <div style={S.empty}>Aucun devis</div>}
+                    {devisList.slice(0, 3).map((d, idx) => (
+                      <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "#1a5c9e", background: "#e8f0fb", padding: "2px 6px", borderRadius: 5, flexShrink: 0 }}>{"DEV-" + String(devisList.length - idx).padStart(4,"0")}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{d.client}</div>
                         </div>
-                      )}
-                    </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "#1a5c9e" }}>{(d.total_ttc||0).toLocaleString("fr-FR", {maximumFractionDigits:0})} FCFA</div>
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 6px", borderRadius: 10, background: d.statut === "Payé" ? "#1a7a4a" : d.statut === "Enregistré" ? "#e8f0fb" : "#f5f5f5", color: d.statut === "Payé" ? "#fff" : d.statut === "Enregistré" ? "#1a5c9e" : "#8a9aac" }}>{d.statut}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
-                  {/* ── ROW 4 : Alertes + Dépenses vs MRR ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
-
-                    {/* Alertes abonnements */}
-                    <div className="card-hover" style={S.card}>
-                      <div style={S.cardHeader}>
-                        <Icon d={ic.alert} size={16} stroke="#c0392b" />
-                        <span style={S.cardTitle}>Abonnements à renouveler</span>
-                        {abosSoon.length > 0 && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#fff0f0", color: "#c0392b", padding: "3px 8px", borderRadius: 6 }}>{abosSoon.length} dans 30j</span>}
-                      </div>
-                      {abosSoon.length === 0 ? (
-                        <div style={S.empty}>✅ Aucune échéance dans les 30 prochains jours</div>
-                      ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                          {abosSoon.map((a, i) => {
-                            const days = Math.round((new Date(a.prochaine_echeance) - now) / 86400000);
-                            return (
-                              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < abosSoon.length - 1 ? "1px solid #f0f4fa" : "none" }}>
-                                <div style={{ width: 30, height: 30, borderRadius: 8, background: days <= 7 ? "#fff0f0" : "#fff8e6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
-                                  {days <= 7 ? "🔴" : "🟡"}
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{a.client}</div>
-                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{a.service}</div>
-                                </div>
-                                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 700, color: days <= 7 ? "#c0392b" : "#c17f2a" }}>J-{days}</div>
-                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{(a.montant || 0).toLocaleString("fr-FR")} FCFA</div>
-                                </div>
-                              </div>
-                            );
-                          })}
+                  {/* Aperçu Rapport */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={{ ...S.cardHeader, cursor: "pointer" }} onClick={() => setPage("rapports")}>
+                      <Icon d={ic.rapports} size={16} stroke="#8e44ad" />
+                      <span style={S.cardTitle}>Rapports & Finances</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>Voir tout →</span>
+                    </div>
+                    {(() => {
+                      const now = new Date();
+                      const annee = now.getFullYear();
+                      const totalAnnee = depenses.filter(d => new Date(d.date).getFullYear() === annee).reduce((s,d) => s+(d.montant||0), 0);
+                      const totalMois = depenses.filter(d => { const dt = new Date(d.date); return dt.getFullYear()===annee && dt.getMonth()===now.getMonth(); }).reduce((s,d) => s+(d.montant||0), 0);
+                      const devisPaye = devisList.filter(d => d.statut === "Payé").reduce((s,d) => s+(d.total_ttc||0), 0);
+                      return [
+                        { label: "Dépenses annuelles", value: totalAnnee.toLocaleString("fr-FR") + " FCFA", color: "#c0392b" },
+                        { label: "Dépenses du mois", value: totalMois.toLocaleString("fr-FR") + " FCFA", color: "#c17f2a" },
+                        { label: "Devis encaissés", value: devisPaye.toLocaleString("fr-FR", {maximumFractionDigits:0}) + " FCFA", color: "#1a7a4a" },
+                      ].map((r, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                          <span style={{ fontSize: 12, color: "#6b8aaa" }}>{r.label}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: r.color }}>{r.value}</span>
                         </div>
-                      )}
-                    </div>
+                      ));
+                    })()}
+                  </div>
 
-                    {/* Revenus vs Dépenses */}
-                    <div className="card-hover" style={S.card}>
-                      <div style={S.cardHeader}>
-                        <Icon d={ic.trend} size={16} stroke="#1a5c9e" />
-                        <span style={S.cardTitle}>Synthèse financière {annee}</span>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        {[
-                          { label: "CA encaissé", value: totalCA, color: "#1a7a4a", bg: "#e8f5ee", icon: "📈" },
-                          { label: "MRR (revenu mensuel)", value: Math.round(mrr), color: "#8e44ad", bg: "#f5eefb", icon: "🔄" },
-                          { label: "Dépenses ce mois", value: depMois, color: "#c0392b", bg: "#fff0f0", icon: "📉" },
-                          { label: "Dépenses cette année", value: depensesTotal, color: "#c17f2a", bg: "#fff8e6", icon: "💸" },
-                        ].map((item, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 9, background: item.bg }}>
-                            <span style={{ fontSize: 16 }}>{item.icon}</span>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: 11, color: "#6b8aaa", fontWeight: 500 }}>{item.label}</div>
-                              <div style={{ fontSize: 15, fontWeight: 800, color: item.color }}>
-                                {item.value.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        {totalCA > 0 && depensesTotal > 0 && (
-                          <div style={{ padding: "10px 12px", borderRadius: 9, background: totalCA > depensesTotal ? "#e8f5ee" : "#fff0f0", border: `1px solid ${totalCA > depensesTotal ? "#1a7a4a" : "#c0392b"}22` }}>
-                            <div style={{ fontSize: 11, color: "#6b8aaa" }}>Résultat net estimé</div>
-                            <div style={{ fontSize: 16, fontWeight: 800, color: totalCA > depensesTotal ? "#1a7a4a" : "#c0392b" }}>
-                              {totalCA > depensesTotal ? "+" : ""}{(totalCA - depensesTotal).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                  {/* Aperçu Documents */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={{ ...S.cardHeader, cursor: "pointer" }} onClick={() => setPage("documents")}>
+                      <Icon d={ic.docs} size={16} stroke="#2980b9" />
+                      <span style={S.cardTitle}>Documents récents</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>Voir tout →</span>
                     </div>
+                    {[
+                      { nom: "Bilan annuel 2025", type: "Bilan", date: "15/04/2026", color: "#c0392b" },
+                      { nom: "Liasse fiscale Q1", type: "Fiscal", date: "10/04/2026", color: "#c17f2a" },
+                      { nom: "Contrat mission", type: "Contrat", date: "02/04/2026", color: "#1a5c9e" },
+                    ].map((d, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 7, background: d.color + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon d={ic.docs} size={13} stroke={d.color} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{d.nom}</div>
+                          <div style={{ fontSize: 10, color: "#8da4c0" }}>{d.date}</div>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 6, background: d.color + "18", color: d.color }}>{d.type}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Aperçu Collaborateurs */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={{ ...S.cardHeader, cursor: "pointer" }} onClick={() => setPage("collab")}>
+                      <Icon d={ic.collab} size={16} stroke="#1a7a4a" />
+                      <span style={S.cardTitle}>Équipe du cabinet</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#1a5c9e", fontWeight: 600 }}>Voir tout →</span>
+                    </div>
+                    {[
+                      { nom: "Pierre WILLA SOUMAI", role: "Expert-comptable", initials: "PW", color: "#1a5c9e", statut: "Associé" },
+                      { nom: "Sophie Morel", role: "Collaboratrice senior", initials: "SM", color: "#1a7a4a", statut: "CDI" },
+                      { nom: "Thomas Bernard", role: "Collaborateur", initials: "TB", color: "#c17f2a", statut: "CDI" },
+                    ].map((c, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #f0f4fa" }}>
+                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: c.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 11, flexShrink: 0 }}>{c.initials}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{c.nom}</div>
+                          <div style={{ fontSize: 11, color: "#8da4c0" }}>{c.role}</div>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 20, background: c.statut === "Associé" ? "#e8f0fb" : "#e8f5ee", color: c.statut === "Associé" ? "#1a5c9e" : "#1a7a4a" }}>{c.statut}</span>
+                      </div>
+                    ))}
                   </div>
 
                 </div>
-              );
-            })()}
-
-            {/* ── CLIENTS ── */}
+              </div>
+            )}
             {page === "clients" && (
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
@@ -841,7 +690,7 @@ export default function App() {
               </div>
             )}
 
-{/* ── DEVIS ── */}
+            {/* ── DEVIS ── */}
             {page === "devis" && (() => {
               // Build missions list from real services + defaults
               const DEFAULTS = [
@@ -1128,636 +977,148 @@ export default function App() {
             {page === "rapports" && (() => {
               const now = new Date();
               const annee = now.getFullYear();
-              const moisNoms = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
-              const catColors = { Fournitures: "#1a5c9e", Loyer: "#1a7a4a", Salaires: "#c17f2a", Transport: "#8e44ad", Informatique: "#c0392b", Communication: "#2980b9", Honoraires: "#e67e22", Autres: "#7f8c8d" };
-              const freqMult = { "Mensuel": 1, "Trimestriel": 3, "Semestriel": 6, "Annuel": 12 };
+              const moisNoms = ["Jan","Fév","Mar","Avr","Mai","Juin","Juil","Aoû","Sep","Oct","Nov","Déc"];
 
-              // ── Revenus (CA devis payés) ──
-              const caMois = Array(12).fill(0);
-              devisList.filter(d => d.statut === "Payé").forEach(d => {
-                const dt = new Date(d.date || d.created_at);
-                if (dt.getFullYear() === annee) caMois[dt.getMonth()] += d.total_ttc || 0;
-              });
-              const totalCA = caMois.reduce((s, v) => s + v, 0);
-              const caAnneePrec = devisList.filter(d => d.statut === "Payé" && new Date(d.date || d.created_at).getFullYear() === annee - 1).reduce((s, d) => s + (d.total_ttc || 0), 0);
-
-              // ── Dépenses ──
+              // Dépenses par mois (année courante)
               const depMois = Array(12).fill(0);
               depenses.forEach(d => {
-                const dt = new Date(d.date);
-                if (dt.getFullYear() === annee) depMois[dt.getMonth()] += d.montant || 0;
+                const date = new Date(d.date);
+                if (date.getFullYear() === annee) depMois[date.getMonth()] += d.montant || 0;
               });
-              const totalDep = depMois.reduce((s, v) => s + v, 0);
+              const maxDep = Math.max(...depMois, 1);
+
+              // Dépenses par catégorie (année courante)
               const cats = {};
               depenses.forEach(d => {
-                if (new Date(d.date).getFullYear() === annee) cats[d.categorie] = (cats[d.categorie] || 0) + (d.montant || 0);
+                if (new Date(d.date).getFullYear() === annee) {
+                  cats[d.categorie] = (cats[d.categorie] || 0) + (d.montant || 0);
+                }
               });
+              const catColors = { Fournitures: "#1a5c9e", Loyer: "#1a7a4a", Salaires: "#c17f2a", Transport: "#8e44ad", Informatique: "#c0392b", Communication: "#2980b9", Honoraires: "#e67e22", Autres: "#7f8c8d" };
 
-              // ── MRR / ARR ──
-              const mrr = abonnements.filter(a => a.statut === "Actif").reduce((s, a) => s + (a.montant || 0) / (freqMult[a.frequence] || 1), 0);
-              const arr = mrr * 12;
-
-              // ── Résultat net ──
-              const resultatNet = totalCA - totalDep;
-              const margeRate = totalCA > 0 ? Math.round((resultatNet / totalCA) * 100) : 0;
-
-              // ── Devis stats ──
-              const devisPaies = devisList.filter(d => d.statut === "Payé").length;
-              const devisTotal = devisList.length;
-              const tauxConv = devisTotal > 0 ? Math.round((devisPaies / devisTotal) * 100) : 0;
-              const panierMoyen = devisPaies > 0 ? Math.round(totalCA / devisPaies) : 0;
-              const montantEnCours = devisList.filter(d => ["Enregistré","Envoyé"].includes(d.statut)).reduce((s, d) => s + (d.total_ttc || 0), 0);
-
-              // ── Graphique combiné (CA vs Dépenses) ──
-              const maxCombi = Math.max(...caMois, ...depMois, 1);
-
-              // ── Mois le plus rentable ──
-              const resultatsMois = caMois.map((ca, i) => ({ mois: moisNoms[i], net: ca - depMois[i], ca, dep: depMois[i] }));
-              const meilleurMois = resultatsMois.reduce((best, m) => m.net > best.net ? m : best, resultatsMois[0]);
-
-              // ── Clients par secteur ──
-              const secteurs = {};
-              clients.forEach(c => { secteurs[c.secteur || "Autre"] = (secteurs[c.secteur || "Autre"] || 0) + 1; });
-              const maxS = Math.max(...Object.values(secteurs), 1);
-              const sColors = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22","#7f8c8d"];
-
-              // ── Top clients CA ──
-              const caParClient = {};
-              devisList.filter(d => d.statut === "Payé").forEach(d => {
-                caParClient[d.client] = (caParClient[d.client] || 0) + (d.total_ttc || 0);
-              });
-              const topClients = Object.entries(caParClient).sort((a, b) => b[1] - a[1]).slice(0, 5);
-              const maxClientCA = topClients[0]?.[1] || 1;
+              // KPIs
+              const totalAnnee = depenses.filter(d => new Date(d.date).getFullYear() === annee).reduce((s, d) => s + (d.montant || 0), 0);
+              const totalMois = depenses.filter(d => { const dt = new Date(d.date); return dt.getFullYear() === annee && dt.getMonth() === now.getMonth(); }).reduce((s, d) => s + (d.montant || 0), 0);
+              const totalJour = depenses.filter(d => new Date(d.date).toDateString() === now.toDateString()).reduce((s, d) => s + (d.montant || 0), 0);
+              const topCat = Object.entries(cats).sort((a, b) => b[1] - a[1])[0];
 
               return (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-                  {/* ── TITRE SECTION ── */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-                    <div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "#1e3a57" }}>Synthèse financière {annee}</div>
-                      <div style={{ fontSize: 12, color: "#8da4c0", marginTop: 2 }}>Données en temps réel depuis Supabase</div>
-                    </div>
-                    <div style={{ fontSize: 11, background: "#e8f0fb", color: "#1a5c9e", fontWeight: 700, padding: "6px 14px", borderRadius: 20 }}>
-                      Mis à jour : {now.toLocaleDateString("fr-FR")}
-                    </div>
-                  </div>
-
-                  {/* ── KPIs PRINCIPAUX ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12 }}>
+                <div>
+                  {/* KPIs */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
                     {[
-                      { label: "CA encaissé", value: totalCA.toLocaleString("fr-FR") + " FCFA", delta: caAnneePrec > 0 ? `vs ${(caAnneePrec/1000).toFixed(0)}k FCFA en ${annee-1}` : `${devisPaies} devis payés`, color: "#1a7a4a", bg: "#e8f5ee", icon: ic.trend, emoji: "📈" },
-                      { label: "Dépenses totales", value: totalDep.toLocaleString("fr-FR") + " FCFA", delta: `${Object.keys(cats).length} catégories`, color: "#c0392b", bg: "#fff0f0", icon: ic.depenses, emoji: "📉" },
-                      { label: "Résultat net", value: (resultatNet >= 0 ? "+" : "") + resultatNet.toLocaleString("fr-FR") + " FCFA", delta: `Marge : ${margeRate}%`, color: resultatNet >= 0 ? "#1a7a4a" : "#c0392b", bg: resultatNet >= 0 ? "#e8f5ee" : "#fff0f0", icon: ic.rapports, emoji: resultatNet >= 0 ? "✅" : "⚠️" },
-                      { label: "MRR récurrent", value: Math.round(mrr).toLocaleString("fr-FR") + " FCFA", delta: `ARR : ${Math.round(arr).toLocaleString("fr-FR")} FCFA`, color: "#8e44ad", bg: "#f5eefb", icon: ic.abonnement, emoji: "🔄" },
+                      { label: "Dépenses aujourd'hui", value: totalJour.toLocaleString("fr-FR") + " FCFA", color: "#c0392b", icon: ic.depenses },
+                      { label: "Dépenses ce mois", value: totalMois.toLocaleString("fr-FR") + " FCFA", color: "#c17f2a", icon: ic.depenses },
+                      { label: "Dépenses cette année", value: totalAnnee.toLocaleString("fr-FR") + " FCFA", color: "#1a5c9e", icon: ic.depenses },
+                      { label: "Catégorie principale", value: topCat ? topCat[0] : "—", color: "#1a7a4a", icon: ic.trend },
                     ].map((k, i) => (
-                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 14, padding: isMobile ? "12px" : "16px 18px", boxShadow: "0 1px 4px rgba(0,30,80,.07)", borderTop: `3px solid ${k.color}`, display: "flex", flexDirection: "column", gap: 4 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                          <div style={{ width: 34, height: 34, borderRadius: 9, background: k.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{k.emoji}</div>
+                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "12px" : "16px 18px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 9, background: k.color + "18", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 4 }}>
+                          <Icon d={k.icon} size={16} stroke={k.color} />
                         </div>
-                        <div style={{ fontSize: isMobile ? 14 : 18, fontWeight: 800, color: k.color, lineHeight: 1.2 }}>{k.value}</div>
-                        <div style={{ fontSize: 11, color: "#6b8aaa", fontWeight: 600 }}>{k.label}</div>
-                        <div style={{ fontSize: 10, color: "#8da4c0" }}>{k.delta}</div>
+                        <div style={{ fontSize: isMobile ? 13 : 16, fontWeight: 800, color: "#1e3a57", lineHeight: 1.2 }}>{k.value}</div>
+                        <div style={{ fontSize: 11, color: "#6b8aaa" }}>{k.label}</div>
                       </div>
                     ))}
                   </div>
 
-                  {/* ── GRAPHIQUE CA vs DÉPENSES ── */}
-                  <div className="card-hover" style={S.card}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <Icon d={ic.rapports} size={16} stroke="#1a5c9e" />
-                        <span style={S.cardTitle}>CA encaissé vs Dépenses — {annee}</span>
-                      </div>
-                      <div style={{ display: "flex", gap: 12, fontSize: 11 }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: "#1a7a4a", display: "inline-block" }} />CA encaissé</span>
-                        <span style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: "#c0392b", display: "inline-block" }} />Dépenses</span>
-                      </div>
-                    </div>
-                    {(totalCA === 0 && totalDep === 0) ? <div style={S.empty}>Aucune donnée pour cette année</div> : (
-                      <div style={{ display: "flex", alignItems: "flex-end", gap: isMobile ? 2 : 4, height: 140, padding: "0 4px" }}>
-                        {caMois.map((ca, i) => {
-                          const dep = depMois[i];
-                          const hCA = maxCombi > 0 ? Math.max((ca / maxCombi) * 120, ca > 0 ? 4 : 0) : 0;
-                          const hDep = maxCombi > 0 ? Math.max((dep / maxCombi) * 120, dep > 0 ? 4 : 0) : 0;
-                          const isNow = i === now.getMonth();
-                          return (
-                            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                              <div style={{ width: "100%", display: "flex", alignItems: "flex-end", gap: 1, height: 120 }}>
-                                <div title={`CA: ${ca.toLocaleString("fr-FR")} FCFA`} style={{ flex: 1, height: hCA, background: isNow ? "#1a7a4a" : "#a8d5b8", borderRadius: "2px 2px 0 0", transition: "height 0.5s ease", minHeight: 0 }} />
-                                <div title={`Dép: ${dep.toLocaleString("fr-FR")} FCFA`} style={{ flex: 1, height: hDep, background: isNow ? "#c0392b" : "#f0b8b8", borderRadius: "2px 2px 0 0", transition: "height 0.5s ease", minHeight: 0 }} />
-                              </div>
-                              <span style={{ fontSize: 9, color: isNow ? "#1a5c9e" : "#8da4c0", fontWeight: isNow ? 700 : 400 }}>{moisNoms[i]}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ── ROW : Compte de résultat + Dépenses par catégorie ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
-
-                    {/* Compte de résultat simplifié */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                    {/* Dépenses par mois */}
                     <div className="card-hover" style={S.card}>
-                      <div style={S.cardHeader}>
-                        <span style={{ fontSize: 16 }}>📊</span>
-                        <span style={S.cardTitle}>Compte de résultat simplifié</span>
-                        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, background: "#e8f0fb", color: "#1a5c9e", padding: "3px 8px", borderRadius: 6 }}>{annee}</span>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                        {/* Produits */}
-                        <div style={{ padding: "8px 12px", background: "#f5f8fc", borderRadius: 8, marginBottom: 8 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Produits</div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
-                            <span style={{ color: "#4a6d8c" }}>CA devis encaissés</span>
-                            <span style={{ fontWeight: 700, color: "#1a7a4a" }}>+{totalCA.toLocaleString("fr-FR")} FCFA</span>
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
-                            <span style={{ color: "#4a6d8c" }}>Revenus abonnements (MRR×12)</span>
-                            <span style={{ fontWeight: 700, color: "#8e44ad" }}>+{Math.round(arr).toLocaleString("fr-FR")} FCFA</span>
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
-                            <span style={{ color: "#4a6d8c" }}>Devis en cours (pipeline)</span>
-                            <span style={{ fontWeight: 600, color: "#c17f2a" }}>{montantEnCours.toLocaleString("fr-FR")} FCFA</span>
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, borderTop: "1px solid #e2eaf4", paddingTop: 6, marginTop: 4 }}>
-                            <span style={{ fontWeight: 700, color: "#1e3a57" }}>Total produits</span>
-                            <span style={{ fontWeight: 800, color: "#1a7a4a" }}>+{(totalCA + Math.round(arr)).toLocaleString("fr-FR")} FCFA</span>
-                          </div>
-                        </div>
-                        {/* Charges */}
-                        <div style={{ padding: "8px 12px", background: "#fff9f9", borderRadius: 8, marginBottom: 8 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Charges</div>
-                          {Object.entries(cats).sort((a,b) => b[1]-a[1]).map(([cat, montant]) => (
-                            <div key={cat} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
-                              <span style={{ color: "#4a6d8c" }}>{cat}</span>
-                              <span style={{ fontWeight: 600, color: "#c0392b" }}>-{montant.toLocaleString("fr-FR")} FCFA</span>
-                            </div>
-                          ))}
-                          {Object.keys(cats).length === 0 && <div style={{ fontSize: 12, color: "#8da4c0" }}>Aucune dépense enregistrée</div>}
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, borderTop: "1px solid #fde8e8", paddingTop: 6, marginTop: 4 }}>
-                            <span style={{ fontWeight: 700, color: "#1e3a57" }}>Total charges</span>
-                            <span style={{ fontWeight: 800, color: "#c0392b" }}>-{totalDep.toLocaleString("fr-FR")} FCFA</span>
-                          </div>
-                        </div>
-                        {/* Résultat */}
-                        <div style={{ padding: "12px 16px", borderRadius: 10, background: resultatNet >= 0 ? "linear-gradient(135deg,#e8f5ee,#f0faf4)" : "linear-gradient(135deg,#fff0f0,#fff5f5)", border: `2px solid ${resultatNet >= 0 ? "#1a7a4a" : "#c0392b"}` }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", letterSpacing: 0.5 }}>Résultat net</div>
-                              <div style={{ fontSize: 11, color: "#8da4c0", marginTop: 2 }}>Marge nette : {margeRate}%</div>
-                            </div>
-                            <div style={{ fontSize: 22, fontWeight: 900, color: resultatNet >= 0 ? "#1a7a4a" : "#c0392b" }}>
-                              {resultatNet >= 0 ? "+" : ""}{resultatNet.toLocaleString("fr-FR")} FCFA
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Dépenses par catégorie + KPIs devis */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                      <div className="card-hover" style={S.card}>
-                        <div style={S.cardHeader}><Icon d={ic.trend} size={16} stroke="#c17f2a" /><span style={S.cardTitle}>Dépenses par catégorie</span></div>
-                        {Object.keys(cats).length === 0 ? <div style={S.empty}>Aucune dépense cette année</div> : (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                            {Object.entries(cats).sort((a,b) => b[1]-a[1]).map(([cat, montant]) => (
-                              <div key={cat} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                <div style={{ width: 8, height: 8, borderRadius: "50%", background: catColors[cat] || "#888", flexShrink: 0 }} />
-                                <div style={{ width: 90, fontSize: 11, color: "#4a6d8c", flexShrink: 0 }}>{cat}</div>
-                                <div style={{ flex: 1, height: 7, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
-                                  <div style={{ width: `${totalDep ? (montant/totalDep*100) : 0}%`, height: "100%", background: catColors[cat] || "#888", borderRadius: 4 }} />
-                                </div>
-                                <div style={{ width: 40, fontSize: 10, color: "#8da4c0", textAlign: "right" }}>{totalDep ? Math.round(montant/totalDep*100) : 0}%</div>
-                                <div style={{ width: 100, fontSize: 11, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{montant.toLocaleString("fr-FR")} FCFA</div>
+                      <div style={S.cardHeader}><Icon d={ic.rapports} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Dépenses par mois ({annee})</span></div>
+                      {depenses.length === 0 ? <div style={S.empty}>Aucune dépense enregistrée</div> : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {depMois.map((val, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 32, fontSize: 11, color: "#6b8aaa", flexShrink: 0 }}>{moisNoms[i]}</div>
+                              <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
+                                <div style={{ width: `${(val/maxDep)*100}%`, height: "100%", background: "linear-gradient(90deg,#c0392b,#e74c3c)", borderRadius: 4, transition: "width 0.5s ease" }} />
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* KPIs devis */}
-                      <div className="card-hover" style={S.card}>
-                        <div style={S.cardHeader}><Icon d={ic.devis} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Performance commerciale</span></div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                          {[
-                            { label: "Taux de conversion", value: tauxConv + "%", color: tauxConv >= 50 ? "#1a7a4a" : "#c17f2a", bg: tauxConv >= 50 ? "#e8f5ee" : "#fff8e6" },
-                            { label: "Panier moyen", value: panierMoyen > 0 ? (panierMoyen/1000).toFixed(0) + "k FCFA" : "—", color: "#1a5c9e", bg: "#e8f0fb" },
-                            { label: "Devis en cours", value: devisList.filter(d => ["Enregistré","Envoyé"].includes(d.statut)).length, color: "#c17f2a", bg: "#fff8e6" },
-                            { label: "Meilleur mois", value: meilleurMois?.net > 0 ? meilleurMois.mois : "—", color: "#1a7a4a", bg: "#e8f5ee" },
-                          ].map((item, i) => (
-                            <div key={i} style={{ padding: "10px 12px", borderRadius: 9, background: item.bg, display: "flex", flexDirection: "column", gap: 3 }}>
-                              <div style={{ fontSize: 16, fontWeight: 800, color: item.color }}>{item.value}</div>
-                              <div style={{ fontSize: 10, color: "#6b8aaa", fontWeight: 500 }}>{item.label}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── ROW : Top clients + Clients par secteur ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
-
-                    {/* Top clients par CA */}
-                    <div className="card-hover" style={S.card}>
-                      <div style={S.cardHeader}><Icon d={ic.clients} size={16} stroke="#8e44ad" /><span style={S.cardTitle}>Top clients par CA encaissé</span></div>
-                      {topClients.length === 0 ? <div style={S.empty}>Aucun devis payé pour l'instant</div> : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          {topClients.map(([nom, ca], i) => (
-                            <div key={nom} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <div style={{ width: 24, height: 24, borderRadius: "50%", background: ["linear-gradient(135deg,#f6c90e,#e8a400)","#e8e8e8","#cd7f32","#e8f0fb","#f5eefb"][i] || "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: i === 0 ? "#7a5000" : "#6b8aaa", flexShrink: 0 }}>
-                                {i + 1}
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{nom}</span>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a5c9e" }}>{ca.toLocaleString("fr-FR")} FCFA</span>
-                                </div>
-                                <div style={{ height: 5, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
-                                  <div style={{ width: `${(ca / maxClientCA) * 100}%`, height: "100%", background: i === 0 ? "linear-gradient(90deg,#f6c90e,#e8a400)" : "#c8ddf5", borderRadius: 3 }} />
-                                </div>
-                              </div>
-                              <div style={{ fontSize: 10, color: "#8da4c0", flexShrink: 0 }}>{totalCA > 0 ? Math.round(ca/totalCA*100) : 0}%</div>
+                              <div style={{ width: 110, fontSize: 11, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{val.toLocaleString("fr-FR")} FCFA</div>
                             </div>
                           ))}
                         </div>
                       )}
                     </div>
 
-                    {/* Clients par secteur */}
+                    {/* Dépenses par catégorie */}
                     <div className="card-hover" style={S.card}>
-                      <div style={S.cardHeader}><Icon d={ic.clients} size={16} stroke="#1a7a4a" /><span style={S.cardTitle}>Clients par secteur</span></div>
-                      {clients.length === 0 ? <div style={S.empty}>Aucun client enregistré</div> : (
+                      <div style={S.cardHeader}><Icon d={ic.trend} size={16} stroke="#c17f2a" /><span style={S.cardTitle}>Répartition par catégorie</span></div>
+                      {Object.keys(cats).length === 0 ? <div style={S.empty}>Aucune dépense cette année</div> : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                          {Object.entries(cats).sort((a,b) => b[1]-a[1]).map(([cat, montant]) => (
+                            <div key={cat} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 90, fontSize: 11, color: "#4a6d8c", flexShrink: 0 }}>{cat}</div>
+                              <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
+                                <div style={{ width: `${totalAnnee ? (montant/totalAnnee*100) : 0}%`, height: "100%", background: catColors[cat] || "#888", borderRadius: 4 }} />
+                              </div>
+                              <div style={{ width: 110, fontSize: 11, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{montant.toLocaleString("fr-FR")} FCFA</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Clients par secteur (dynamique) */}
+                  <div className="card-hover" style={S.card}>
+                    <div style={S.cardHeader}><Icon d={ic.clients} size={16} stroke="#1a7a4a" /><span style={S.cardTitle}>Clients par secteur</span></div>
+                    {clients.length === 0 ? <div style={S.empty}>Aucun client enregistré</div> : (() => {
+                      const secteurs = {};
+                      clients.forEach(c => { secteurs[c.secteur || "Autre"] = (secteurs[c.secteur || "Autre"] || 0) + 1; });
+                      const maxS = Math.max(...Object.values(secteurs), 1);
+                      const sColors = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22","#7f8c8d"];
+                      return (
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                           {Object.entries(secteurs).sort((a,b) => b[1]-a[1]).map(([s, n], i) => (
                             <div key={s} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: sColors[i % sColors.length], flexShrink: 0 }} />
                               <div style={{ width: 90, fontSize: 12, color: "#4a6d8c", flexShrink: 0 }}>{s}</div>
-                              <div style={{ flex: 1, height: 7, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
+                              <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
                                 <div style={{ width: `${(n/maxS)*100}%`, height: "100%", background: sColors[i % sColors.length], borderRadius: 4 }} />
                               </div>
                               <div style={{ width: 24, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{n}</div>
                             </div>
                           ))}
                         </div>
-                      )}
-                    </div>
+                      );
+                    })()}
                   </div>
-
-                  {/* ── ANALYSE TRIMESTRIELLE ── */}
-                  {(() => {
-                    const trimestres = ["T1 (Jan-Mar)", "T2 (Avr-Jun)", "T3 (Jul-Sep)", "T4 (Oct-Déc)"];
-                    const trimData = trimestres.map((label, t) => {
-                      const moisStart = t * 3;
-                      const ca = caMois.slice(moisStart, moisStart + 3).reduce((s, v) => s + v, 0);
-                      const dep = depMois.slice(moisStart, moisStart + 3).reduce((s, v) => s + v, 0);
-                      const net = ca - dep;
-                      const marge = ca > 0 ? Math.round((net / ca) * 100) : 0;
-                      const isCurrent = now.getMonth() >= moisStart && now.getMonth() < moisStart + 3;
-                      return { label, ca, dep, net, marge, isCurrent };
-                    });
-                    const maxTrimCA = Math.max(...trimData.map(t => t.ca), 1);
-                    return (
-                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
-                        {/* Graphique trimestriel */}
-                        <div className="card-hover" style={S.card}>
-                          <div style={S.cardHeader}>
-                            <span style={{ fontSize: 16 }}>📆</span>
-                            <span style={S.cardTitle}>Analyse trimestrielle — {annee}</span>
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                            {trimData.map((t, i) => (
-                              <div key={i} style={{ padding: "12px 14px", borderRadius: 10, background: t.isCurrent ? "#f0f6ff" : "#f5f8fc", border: t.isCurrent ? "1px solid #1a5c9e30" : "1px solid transparent" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: t.isCurrent ? "#1a5c9e" : "#4a6d8c" }}>
-                                    {t.label} {t.isCurrent && <span style={{ fontSize: 9, background: "#1a5c9e", color: "#fff", padding: "1px 5px", borderRadius: 4, marginLeft: 4 }}>EN COURS</span>}
-                                  </span>
-                                  <span style={{ fontSize: 13, fontWeight: 800, color: t.net >= 0 ? "#1a7a4a" : "#c0392b" }}>
-                                    {t.net >= 0 ? "+" : ""}{t.net.toLocaleString("fr-FR")} FCFA
-                                  </span>
-                                </div>
-                                <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
-                                  <div style={{ flex: 1, height: 6, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
-                                    <div style={{ width: `${maxTrimCA > 0 ? (t.ca / maxTrimCA) * 100 : 0}%`, height: "100%", background: "#1a7a4a", borderRadius: 3 }} />
-                                  </div>
-                                  <span style={{ fontSize: 10, color: "#1a7a4a", fontWeight: 600, whiteSpace: "nowrap" }}>{t.ca > 0 ? (t.ca/1000).toFixed(0)+"k" : "—"} CA</span>
-                                </div>
-                                <div style={{ display: "flex", gap: 8 }}>
-                                  <div style={{ flex: 1, height: 6, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
-                                    <div style={{ width: `${maxTrimCA > 0 ? (t.dep / maxTrimCA) * 100 : 0}%`, height: "100%", background: "#c0392b", borderRadius: 3 }} />
-                                  </div>
-                                  <span style={{ fontSize: 10, color: "#c0392b", fontWeight: 600, whiteSpace: "nowrap" }}>{t.dep > 0 ? (t.dep/1000).toFixed(0)+"k" : "—"} Dép</span>
-                                </div>
-                                {t.ca > 0 && (
-                                  <div style={{ marginTop: 6, fontSize: 10, color: "#8da4c0" }}>
-                                    Marge : <span style={{ fontWeight: 700, color: t.marge >= 50 ? "#1a7a4a" : t.marge >= 0 ? "#c17f2a" : "#c0392b" }}>{t.marge}%</span>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Prévisionnel MRR */}
-                        <div className="card-hover" style={S.card}>
-                          <div style={S.cardHeader}>
-                            <span style={{ fontSize: 16 }}>🔮</span>
-                            <span style={S.cardTitle}>Prévisionnel revenus récurrents</span>
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                            {/* MRR actuel */}
-                            <div style={{ padding: "14px 16px", borderRadius: 10, background: "linear-gradient(135deg,#f5eefb,#ede0fa)", border: "1px solid #d7b8f5" }}>
-                              <div style={{ fontSize: 11, color: "#8e44ad", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>MRR actuel</div>
-                              <div style={{ fontSize: 28, fontWeight: 900, color: "#8e44ad", marginTop: 4 }}>{Math.round(mrr).toLocaleString("fr-FR")} FCFA</div>
-                              <div style={{ fontSize: 11, color: "#8da4c0", marginTop: 2 }}>{abonnements.filter(a => a.statut === "Actif").length} abonnés actifs</div>
-                            </div>
-                            {/* Projections */}
-                            {[
-                              { label: "Projection 3 mois", mult: 3, color: "#1a5c9e", bg: "#e8f0fb" },
-                              { label: "Projection 6 mois", mult: 6, color: "#1a7a4a", bg: "#e8f5ee" },
-                              { label: "ARR (12 mois)", mult: 12, color: "#c17f2a", bg: "#fff8e6" },
-                            ].map((p, i) => (
-                              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 9, background: p.bg }}>
-                                <span style={{ fontSize: 12, color: "#4a6d8c", fontWeight: 500 }}>{p.label}</span>
-                                <span style={{ fontSize: 14, fontWeight: 800, color: p.color }}>{Math.round(mrr * p.mult).toLocaleString("fr-FR")} FCFA</span>
-                              </div>
-                            ))}
-                            {/* Répartition par fréquence */}
-                            {abonnements.filter(a => a.statut === "Actif").length > 0 && (
-                              <div style={{ marginTop: 4 }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", marginBottom: 8, letterSpacing: 0.5 }}>Répartition des abonnés</div>
-                                {["Mensuel","Trimestriel","Semestriel","Annuel"].map(freq => {
-                                  const items = abonnements.filter(a => a.statut === "Actif" && a.frequence === freq);
-                                  if (!items.length) return null;
-                                  const mrrFreq = items.reduce((s, a) => s + (a.montant||0) / (freqMult[freq]||1), 0);
-                                  return (
-                                    <div key={freq} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                                      <span style={{ fontSize: 11, color: "#4a6d8c", width: 90, flexShrink: 0 }}>{freq} ({items.length})</span>
-                                      <div style={{ flex: 1, height: 5, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
-                                        <div style={{ width: mrr > 0 ? (mrrFreq/mrr*100)+"%" : "0%", height: "100%", background: "linear-gradient(90deg,#8e44ad,#b44dcc)", borderRadius: 3 }} />
-                                      </div>
-                                      <span style={{ fontSize: 11, fontWeight: 700, color: "#8e44ad", whiteSpace: "nowrap" }}>{Math.round(mrrFreq).toLocaleString("fr-FR")} FCFA</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* ── RÉSULTATS MENSUELS ── */}
-                  <div className="card-hover" style={S.card}>
-                    <div style={S.cardHeader}>
-                      <span style={{ fontSize: 16 }}>📅</span>
-                      <span style={S.cardTitle}>Résultats mensuels détaillés — {annee}</span>
-                      <button onClick={() => {
-                        const rows = resultatsMois.map(m => {
-                          const marge = m.ca > 0 ? Math.round((m.net / m.ca) * 100) : 0;
-                          return `${m.mois}\t${m.ca}\t${m.dep}\t${m.net}\t${marge}%`;
-                        });
-                        const csv = "Mois\tCA (FCFA)\tDépenses (FCFA)\tRésultat (FCFA)\tMarge\n" + rows.join("\n") + `\nTOTAL\t${totalCA}\t${totalDep}\t${resultatNet}\t${margeRate}%`;
-                        const blob = new Blob([csv], { type: "text/tab-separated-values" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a"); a.href = url; a.download = `synthese_financiere_${annee}.tsv`; a.click();
-                        URL.revokeObjectURL(url);
-                      }} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, background: "#e8f0fb", color: "#1a5c9e", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-                        ⬇ Exporter
-                      </button>
-                    </div>
-                    <div style={{ overflowX: "auto" }}>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                        <thead>
-                          <tr style={{ background: "#f5f8fc" }}>
-                            {["Mois", "CA encaissé", "Dépenses", "Résultat", "Marge"].map(h => (
-                              <th key={h} style={{ padding: "8px 12px", textAlign: h === "Mois" ? "left" : "right", fontSize: 10, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", letterSpacing: 0.5, whiteSpace: "nowrap" }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {resultatsMois.map((m, i) => {
-                            const marge = m.ca > 0 ? Math.round((m.net / m.ca) * 100) : 0;
-                            const isCurrent = i === now.getMonth();
-                            const hasData = m.ca > 0 || m.dep > 0;
-                            return (
-                              <tr key={i} style={{ background: isCurrent ? "#f0f6ff" : "transparent", borderBottom: "1px solid #f0f4fa" }}>
-                                <td style={{ padding: "9px 12px", fontWeight: isCurrent ? 700 : 500, color: isCurrent ? "#1a5c9e" : "#4a6d8c" }}>
-                                  {m.mois} {isCurrent && <span style={{ fontSize: 9, background: "#1a5c9e", color: "#fff", padding: "1px 5px", borderRadius: 4, marginLeft: 4 }}>EN COURS</span>}
-                                </td>
-                                <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 700, color: hasData ? "#1a7a4a" : "#c8d8e8" }}>{m.ca > 0 ? m.ca.toLocaleString("fr-FR") + " FCFA" : "—"}</td>
-                                <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 600, color: hasData ? "#c0392b" : "#c8d8e8" }}>{m.dep > 0 ? m.dep.toLocaleString("fr-FR") + " FCFA" : "—"}</td>
-                                <td style={{ padding: "9px 12px", textAlign: "right", fontWeight: 800, color: !hasData ? "#c8d8e8" : m.net >= 0 ? "#1a7a4a" : "#c0392b" }}>
-                                  {hasData ? (m.net >= 0 ? "+" : "") + m.net.toLocaleString("fr-FR") + " FCFA" : "—"}
-                                </td>
-                                <td style={{ padding: "9px 12px", textAlign: "right" }}>
-                                  {hasData && m.ca > 0 ? (
-                                    <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: marge >= 50 ? "#e8f5ee" : marge >= 0 ? "#fff8e6" : "#fff0f0", color: marge >= 50 ? "#1a7a4a" : marge >= 0 ? "#c17f2a" : "#c0392b" }}>
-                                      {marge}%
-                                    </span>
-                                  ) : <span style={{ color: "#c8d8e8" }}>—</span>}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                        <tfoot>
-                          <tr style={{ background: "#f0f4fa", borderTop: "2px solid #e2eaf4" }}>
-                            <td style={{ padding: "10px 12px", fontWeight: 800, color: "#1e3a57", fontSize: 13 }}>TOTAL</td>
-                            <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 800, color: "#1a7a4a", fontSize: 13 }}>{totalCA > 0 ? totalCA.toLocaleString("fr-FR") + " FCFA" : "—"}</td>
-                            <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 800, color: "#c0392b", fontSize: 13 }}>{totalDep > 0 ? totalDep.toLocaleString("fr-FR") + " FCFA" : "—"}</td>
-                            <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 900, color: resultatNet >= 0 ? "#1a7a4a" : "#c0392b", fontSize: 14 }}>
-                              {(resultatNet >= 0 ? "+" : "") + resultatNet.toLocaleString("fr-FR")} FCFA
-                            </td>
-                            <td style={{ padding: "10px 12px", textAlign: "right" }}>
-                              <span style={{ fontSize: 12, fontWeight: 800, padding: "3px 8px", borderRadius: 6, background: margeRate >= 50 ? "#e8f5ee" : margeRate >= 0 ? "#fff8e6" : "#fff0f0", color: margeRate >= 50 ? "#1a7a4a" : margeRate >= 0 ? "#c17f2a" : "#c0392b" }}>
-                                {margeRate}%
-                              </span>
-                            </td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  </div>
-
                 </div>
               );
             })()}
 
             {/* ── COLLABORATEURS ── */}
-            {page === "collab" && (() => {
-              const statutColors = {
-                "Associé":  { bg: "#e8f0fb", color: "#1a5c9e" },
-                "CDI":      { bg: "#e8f5ee", color: "#1a7a4a" },
-                "CDD":      { bg: "#fff8e6", color: "#c17f2a" },
-                "Stage":    { bg: "#f5eefb", color: "#8e44ad" },
-                "Freelance":{ bg: "#fff0f0", color: "#c0392b" },
-              };
-              const avatarColors = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22"];
-              const getInitials = (nom) => nom.split(" ").map(w => w[0]).slice(0,2).join("").toUpperCase();
-
-              const saveCollab = async () => {
-                if (!newCollab.nom.trim()) return;
-                setCollabSaving(true);
-                await db.post("collaborateurs", newCollab);
-                setShowAddCollab(false);
-                setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
-                setCollabSaving(false);
-                loadAll();
-              };
-
-              const updateCollab = async () => {
-                if (!editCollab?.nom?.trim()) return;
-                setCollabSaving(true);
-                await db.patch("collaborateurs", editCollab.id, editCollab);
-                setShowEditCollab(false);
-                setEditCollab(null);
-                setCollabSaving(false);
-                loadAll();
-              };
-
-              const deleteCollab = async (id) => {
-                if (!window.confirm("Supprimer ce collaborateur ?")) return;
-                await db.delete("collaborateurs", id);
-                loadAll();
-              };
-
-              const CollabModal = ({ title, data, setData, onSave, onClose }) => (
-                <div style={{ position: "fixed", inset: 0, background: "rgba(10,30,60,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-                  <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 460, boxShadow: "0 8px 40px rgba(0,30,80,.18)" }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#1e3a57", marginBottom: 20 }}>{title}</div>
-                    {[
-                      { label: "Nom complet *", key: "nom", type: "text", placeholder: "Ex: Jean Dupont" },
-                      { label: "Rôle / Poste", key: "role", type: "text", placeholder: "Ex: Expert-comptable" },
-                      { label: "Email", key: "email", type: "email", placeholder: "jean.dupont@cabinet.fr" },
-                      { label: "Téléphone", key: "telephone", type: "tel", placeholder: "+237 6XX XXX XXX" },
-                      { label: "Dossiers assignés", key: "dossiers", type: "number", placeholder: "0" },
-                    ].map(field => (
-                      <div key={field.key} style={{ marginBottom: 14 }}>
-                        <label style={{ fontSize: 11, fontWeight: 700, color: "#6b8aaa", display: "block", marginBottom: 5 }}>{field.label}</label>
-                        <input
-                          type={field.type}
-                          value={data[field.key] || ""}
-                          onChange={e => setData({ ...data, [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value })}
-                          placeholder={field.placeholder}
-                          style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2eaf4", fontSize: 13, color: "#1e3a57", boxSizing: "border-box", outline: "none" }}
-                        />
-                      </div>
-                    ))}
-                    <div style={{ marginBottom: 14 }}>
-                      <label style={{ fontSize: 11, fontWeight: 700, color: "#6b8aaa", display: "block", marginBottom: 5 }}>Statut</label>
-                      <select value={data.statut || "CDI"} onChange={e => setData({ ...data, statut: e.target.value })}
-                        style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2eaf4", fontSize: 13, color: "#1e3a57", background: "#fff" }}>
-                        {["Associé","CDI","CDD","Stage","Freelance"].map(s => <option key={s}>{s}</option>)}
-                      </select>
-                    </div>
-                    <div style={{ marginBottom: 18 }}>
-                      <label style={{ fontSize: 11, fontWeight: 700, color: "#6b8aaa", display: "block", marginBottom: 5 }}>Note</label>
-                      <textarea value={data.note || ""} onChange={e => setData({ ...data, note: e.target.value })}
-                        placeholder="Informations complémentaires..." rows={2}
-                        style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid #e2eaf4", fontSize: 13, color: "#1e3a57", resize: "vertical", boxSizing: "border-box", outline: "none" }} />
-                    </div>
-                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                      <button onClick={onClose} style={{ padding: "9px 18px", borderRadius: 9, border: "1px solid #e2eaf4", background: "#f5f8fc", color: "#4a6d8c", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>Annuler</button>
-                      <button onClick={onSave} disabled={collabSaving} style={{ ...S.primaryBtn, opacity: collabSaving ? 0.7 : 1 }}>
-                        {collabSaving ? "Enregistrement..." : "Enregistrer"}
-                      </button>
-                    </div>
-                  </div>
+            {page === "collab" && (
+              <div>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+                  <button onClick={() => setShowAddCollab(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Ajouter</button>
                 </div>
-              );
-
-              return (
-                <div>
-                  {/* Modal ajout */}
-                  {showAddCollab && <CollabModal title="Nouveau collaborateur" data={newCollab} setData={setNewCollab} onSave={saveCollab} onClose={() => setShowAddCollab(false)} />}
-                  {/* Modal édition */}
-                  {showEditCollab && editCollab && <CollabModal title="Modifier le collaborateur" data={editCollab} setData={setEditCollab} onSave={updateCollab} onClose={() => { setShowEditCollab(false); setEditCollab(null); }} />}
-
-                  {/* KPIs */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
-                    {[
-                      { label: "Total", value: collaborateurs.length, color: "#1a5c9e", bg: "#e8f0fb", emoji: "👥" },
-                      { label: "CDI / Associés", value: collaborateurs.filter(c => ["CDI","Associé"].includes(c.statut)).length, color: "#1a7a4a", bg: "#e8f5ee", emoji: "📋" },
-                      { label: "Stagiaires", value: collaborateurs.filter(c => c.statut === "Stage").length, color: "#8e44ad", bg: "#f5eefb", emoji: "🎓" },
-                      { label: "Dossiers assignés", value: collaborateurs.reduce((s, c) => s + (Number(c.dossiers) || 0), 0), color: "#c17f2a", bg: "#fff8e6", emoji: "📁" },
-                    ].map((k, i) => (
-                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "12px" : "14px 16px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", borderTop: "3px solid " + k.color }}>
-                        <div style={{ fontSize: 22, marginBottom: 4 }}>{k.emoji}</div>
-                        <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: k.color }}>{k.value}</div>
-                        <div style={{ fontSize: 11, color: "#6b8aaa", fontWeight: 600 }}>{k.label}</div>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 14 }}>
+                  {[
+                    { nom: "Pierre WILLA SOUMAI", role: "Expert-comptable", email: "p.willasoumai@cabinet.fr", dossiers: 24, statut: "Associé", initials: "PW", color: "#1a5c9e" },
+                    { nom: "Sophie Morel", role: "Collaboratrice senior", email: "s.morel@cabinet.fr", dossiers: 18, statut: "CDI", initials: "SM", color: "#1a7a4a" },
+                    { nom: "Thomas Bernard", role: "Collaborateur", email: "t.bernard@cabinet.fr", dossiers: 12, statut: "CDI", initials: "TB", color: "#c17f2a" },
+                    { nom: "Julie Martin", role: "Assistante comptable", email: "j.martin@cabinet.fr", dossiers: 8, statut: "CDI", initials: "JM", color: "#8e44ad" },
+                    { nom: "Lucas Petit", role: "Stagiaire", email: "l.petit@cabinet.fr", dossiers: 3, statut: "Stage", initials: "LP", color: "#c0392b" },
+                  ].map((c, i) => (
+                    <div key={i} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ width: 46, height: 46, borderRadius: "50%", background: c.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15, flexShrink: 0 }}>{c.initials}</div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>{c.nom}</div>
+                          <div style={{ fontSize: 12, color: "#6b8aaa" }}>{c.role}</div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Toolbar */}
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-                    <button onClick={() => { setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" }); setShowAddCollab(true); }} style={S.primaryBtn}>
-                      <Icon d={ic.plus} size={14} stroke="#fff" /> Ajouter un collaborateur
-                    </button>
-                  </div>
-
-                  {/* Grille collaborateurs */}
-                  {collaborateurs.length === 0 ? (
-                    <div className="card-hover" style={{ ...S.card, textAlign: "center", padding: 40 }}>
-                      <div style={{ fontSize: 40, marginBottom: 12 }}>👥</div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: "#1e3a57", marginBottom: 6 }}>Aucun collaborateur enregistré</div>
-                      <div style={{ fontSize: 13, color: "#8da4c0", marginBottom: 16 }}>Ajoutez votre équipe pour commencer</div>
-                      <button onClick={() => setShowAddCollab(true)} style={S.primaryBtn}>+ Ajouter le premier</button>
+                      <div style={{ fontSize: 12, color: "#8da4c0" }}>{c.email}</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 12, color: "#4a6d8c" }}><b style={{ color: "#1e3a57" }}>{c.dossiers}</b> dossiers</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: c.statut === "Associé" ? "#e8f0fb" : c.statut === "Stage" ? "#fff8e6" : "#e8f5ee", color: c.statut === "Associé" ? "#1a5c9e" : c.statut === "Stage" ? "#c17f2a" : "#1a7a4a" }}>{c.statut}</span>
+                      </div>
                     </div>
-                  ) : (
-                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3,1fr)", gap: 14 }}>
-                      {collaborateurs.map((c, i) => {
-                        const sc = statutColors[c.statut] || statutColors["CDI"];
-                        const avatarColor = avatarColors[i % avatarColors.length];
-                        return (
-                          <div key={c.id} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
-                            {/* Actions */}
-                            <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6 }}>
-                              <button onClick={() => { setEditCollab({ ...c }); setShowEditCollab(true); }}
-                                style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <Icon d={ic.edit} size={12} stroke="#4a6d8c" />
-                              </button>
-                              <button onClick={() => deleteCollab(c.id)}
-                                style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <Icon d={ic.trash} size={12} stroke="#c0392b" />
-                              </button>
-                            </div>
-                            {/* Avatar + infos */}
-                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                              <div style={{ width: 46, height: 46, borderRadius: "50%", background: avatarColor, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
-                                {getInitials(c.nom)}
-                              </div>
-                              <div style={{ paddingRight: 60 }}>
-                                <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>{c.nom}</div>
-                                <div style={{ fontSize: 12, color: "#6b8aaa" }}>{c.role || "—"}</div>
-                              </div>
-                            </div>
-                            {/* Contact */}
-                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                              {c.email && <div style={{ fontSize: 12, color: "#8da4c0", display: "flex", alignItems: "center", gap: 6 }}>📧 {c.email}</div>}
-                              {c.telephone && <div style={{ fontSize: 12, color: "#8da4c0", display: "flex", alignItems: "center", gap: 6 }}>📞 {c.telephone}</div>}
-                            </div>
-                            {/* Note */}
-                            {c.note && <div style={{ fontSize: 11, color: "#8da4c0", fontStyle: "italic", background: "#f5f8fc", borderRadius: 6, padding: "6px 10px" }}>{c.note}</div>}
-                            {/* Footer */}
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto" }}>
-                              <span style={{ fontSize: 12, color: "#4a6d8c" }}>
-                                <b style={{ color: "#1e3a57" }}>{c.dossiers || 0}</b> dossier{c.dossiers !== 1 ? "s" : ""}
-                              </span>
-                              <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: sc.bg, color: sc.color }}>{c.statut}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  ))}
                 </div>
-              );
-            })()}
+              </div>
+            )}
 
             {/* ── DOCUMENTS ── */}
             {page === "documents" && (
@@ -2073,7 +1434,7 @@ export default function App() {
                 {/* Période selector */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
                   <div style={{ display: "flex", gap: 8 }}>
-                    {[["jour", "Aujourd’hui"], ["semestre", "Ce semestre"], ["annee", "Cette année"], ["tout", "Tout"]].map(([val, label]) => (
+                    {[["jour", "Aujourd'hui"], ["semestre", "Ce semestre"], ["annee", "Cette année"], ["tout", "Tout"]].map(([val, label]) => (
                       <button key={val} onClick={() => setDepensePeriode(val)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: depensePeriode === val ? "#1a5c9e" : "#fff", color: depensePeriode === val ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12, fontWeight: 500 }}>{label}</button>
                     ))}
                   </div>
@@ -2134,7 +1495,7 @@ export default function App() {
 
                 {/* Liste des dépenses */}
                 <div className="card-hover" style={S.card}>
-                  <div style={S.cardHeader}><Icon d={ic.depenses} size={16} stroke="#c0392b" /><span style={S.cardTitle}>Liste des dépenses — {{"jour": "Aujourd’hui", "semestre": "Ce semestre", "annee": "Cette année", "tout": "Tout"}[depensePeriode]}</span></div>
+                  <div style={S.cardHeader}><Icon d={ic.depenses} size={16} stroke="#c0392b" /><span style={S.cardTitle}>Liste des dépenses — {{"jour": "Aujourd'hui", "semestre": "Ce semestre", "annee": "Cette année", "tout": "Tout"}[depensePeriode]}</span></div>
                   {filterDepenses(depensePeriode).length === 0 && <div style={S.empty}>Aucune dépense enregistrée pour cette période</div>}
                   {filterDepenses(depensePeriode).map((d, i) => {
                     const catColors = { Fournitures: "#1a5c9e", Loyer: "#1a7a4a", Salaires: "#c17f2a", Transport: "#8e44ad", Informatique: "#c0392b", Communication: "#2980b9", Honoraires: "#e67e22", Autres: "#7f8c8d" };
@@ -2270,8 +1631,8 @@ export default function App() {
                   </div>
                   {/* Archivage par année */}
                   <div style={{ marginTop: 8, padding: "14px 16px", borderRadius: 10, background: "#f0f6ff", border: "1px solid #b0c8e8" }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1a5c9e", marginBottom: 10 }}>📦 Archiver les devis d&apos;une année</div>
-                    <div style={{ fontSize: 11, color: "#6b8aaa", marginBottom: 12 }}>Supprime tous les devis non-Payés d&apos;une année sélectionnée. Les devis Payés sont conservés.</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1a5c9e", marginBottom: 10 }}>📦 Archiver les devis d'une année</div>
+                    <div style={{ fontSize: 11, color: "#6b8aaa", marginBottom: 12 }}>Supprime tous les devis non-Payés d'une année sélectionnée. Les devis Payés sont conservés.</div>
                     <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                       <select id="archiveYear" style={{ ...S.select, flex: 1, minWidth: 120 }}>
                         {[...new Set(devisList.map(d => new Date(d.created_at || d.date || Date.now()).getFullYear()))].sort((a,b) => b-a).map(y => (
@@ -2332,6 +1693,53 @@ export default function App() {
       </main>
 
       {/* MODALS */}
+      {showAddCollab && (
+        <Modal title="Nouveau collaborateur" onClose={() => setShowAddCollab(false)}>
+          <div style={S.formGroup}>
+            <label style={S.label}>Nom complet *</label>
+            <input placeholder="Ex: Jean Dupont" value={newCollab.nom} onChange={e => setNewCollab(p => ({ ...p, nom: e.target.value, initials: e.target.value.split(" ").map(w => w[0]).join("").toUpperCase().substring(0,2) }))} style={S.input} />
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Rôle *</label>
+            <input placeholder="Ex: Collaborateur senior" value={newCollab.role} onChange={e => setNewCollab(p => ({ ...p, role: e.target.value }))} style={S.input} />
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Email</label>
+            <input placeholder="prenom.nom@cabinet.fr" value={newCollab.email} onChange={e => setNewCollab(p => ({ ...p, email: e.target.value }))} style={S.input} />
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Statut</label>
+              <select value={newCollab.statut} onChange={e => setNewCollab(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+                {["Associé", "CDI", "CDD", "Stage", "Freelance"].map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Nb dossiers</label>
+              <input type="number" min={0} placeholder="0" value={newCollab.dossiers} onChange={e => setNewCollab(p => ({ ...p, dossiers: parseInt(e.target.value) || 0 }))} style={S.input} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Couleur avatar</label>
+              <select value={newCollab.color} onChange={e => setNewCollab(p => ({ ...p, color: e.target.value }))} style={S.select}>
+                {[["Bleu", "#1a5c9e"], ["Vert", "#1a7a4a"], ["Orange", "#c17f2a"], ["Violet", "#8e44ad"], ["Rouge", "#c0392b"], ["Cyan", "#2980b9"]].map(([label, val]) => <option key={val} value={val}>{label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "#f5f8fc", borderRadius: 10, marginBottom: 8 }}>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", background: newCollab.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15 }}>{newCollab.initials || "??"}</div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: "#1e3a57" }}>{newCollab.nom || "Nom du collaborateur"}</div>
+              <div style={{ fontSize: 11, color: "#6b8aaa" }}>{newCollab.role || "Rôle"}</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
+            <button onClick={() => setShowAddCollab(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={() => { if (!newCollab.nom) return; setShowAddCollab(false); alert("Collaborateur " + newCollab.nom + " ajouté !"); setNewCollab({ nom: "", role: "", email: "", statut: "CDI", initials: "", color: "#1a5c9e", dossiers: 0 }); }} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
+      )}
+
+
       {showAddClient && (
         <Modal title="Nouveau client" onClose={() => setShowAddClient(false)}>
           {[{ label: "Nom *", key: "nom", placeholder: "SARL Exemple" }, { label: "Secteur", key: "secteur", placeholder: "BTP, Informatique…" }, { label: "CA", key: "ca", placeholder: "500 000 €" }, { label: "Responsable", key: "responsable", placeholder: "M. Martin" }].map(f => (
@@ -2353,6 +1761,106 @@ export default function App() {
         </Modal>
       )}
 
+      {showAddCollab && (
+        <Modal title="Nouveau collaborateur" onClose={() => setShowAddCollab(false)}>
+          <div style={S.formGroup}>
+            <label style={S.label}>Nom complet *</label>
+            <input placeholder="Ex: Jean Dupont" value={newCollab.nom} onChange={e => setNewCollab(p => ({ ...p, nom: e.target.value, initials: e.target.value.split(" ").map(w => w[0]).join("").toUpperCase().substring(0,2) }))} style={S.input} />
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Rôle *</label>
+            <input placeholder="Ex: Collaborateur senior" value={newCollab.role} onChange={e => setNewCollab(p => ({ ...p, role: e.target.value }))} style={S.input} />
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Email</label>
+            <input placeholder="prenom.nom@cabinet.fr" value={newCollab.email} onChange={e => setNewCollab(p => ({ ...p, email: e.target.value }))} style={S.input} />
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Statut</label>
+              <select value={newCollab.statut} onChange={e => setNewCollab(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+                {["Associé", "CDI", "CDD", "Stage", "Freelance"].map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Nb dossiers</label>
+              <input type="number" min={0} placeholder="0" value={newCollab.dossiers} onChange={e => setNewCollab(p => ({ ...p, dossiers: parseInt(e.target.value) || 0 }))} style={S.input} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Couleur avatar</label>
+              <select value={newCollab.color} onChange={e => setNewCollab(p => ({ ...p, color: e.target.value }))} style={S.select}>
+                {[["Bleu", "#1a5c9e"], ["Vert", "#1a7a4a"], ["Orange", "#c17f2a"], ["Violet", "#8e44ad"], ["Rouge", "#c0392b"], ["Cyan", "#2980b9"]].map(([label, val]) => <option key={val} value={val}>{label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "#f5f8fc", borderRadius: 10, marginBottom: 8 }}>
+            <div style={{ width: 44, height: 44, borderRadius: "50%", background: newCollab.color, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15 }}>{newCollab.initials || "??"}</div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: "#1e3a57" }}>{newCollab.nom || "Nom du collaborateur"}</div>
+              <div style={{ fontSize: 11, color: "#6b8aaa" }}>{newCollab.role || "Rôle"}</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
+            <button onClick={() => setShowAddCollab(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={() => { if (!newCollab.nom) return; setShowAddCollab(false); alert("Collaborateur " + newCollab.nom + " ajouté !"); setNewCollab({ nom: "", role: "", email: "", statut: "CDI", initials: "", color: "#1a5c9e", dossiers: 0 }); }} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
+      )}
+
+
+      {showAddClient && (
+        <Modal title="Nouveau client" onClose={() => setShowAddClient(false)}>
+          {[{ label: "Nom *", key: "nom", placeholder: "SARL Exemple" }, { label: "Secteur", key: "secteur", placeholder: "BTP, Informatique…" }, { label: "CA", key: "ca", placeholder: "500 000 €" }, { label: "Responsable", key: "responsable", placeholder: "M. Martin" }].map(f => (
+            <div key={f.key} style={S.formGroup}>
+              <label style={S.label}>{f.label}</label>
+              <input placeholder={f.placeholder} value={newClient[f.key]} onChange={e => setNewClient(p => ({ ...p, [f.key]: e.target.value }))} style={S.input} />
+            </div>
+          ))}
+          <div style={S.formGroup}>
+            <label style={S.label}>Statut</label>
+            <select value={newClient.statut} onChange={e => setNewClient(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+              {["Actif", "En attente", "Inactif"].map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={() => setShowAddClient(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={addClient} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
+      )}
+
+      {showAddEcheance && (
+        <Modal title="Nouvelle échéance" onClose={() => setShowAddEcheance(false)}>
+          {[{ label: "Intitulé *", key: "label", placeholder: "TVA mensuelle — Client X" }, { label: "Client", key: "client", placeholder: "Nom du client" }].map(f => (
+            <div key={f.key} style={S.formGroup}>
+              <label style={S.label}>{f.label}</label>
+              <input placeholder={f.placeholder} value={newEch[f.key]} onChange={e => setNewEch(p => ({ ...p, [f.key]: e.target.value }))} style={S.input} />
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Date *</label>
+              <input type="date" value={newEch.date} onChange={e => setNewEch(p => ({ ...p, date: e.target.value }))} style={S.select} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Type</label>
+              <select value={newEch.type} onChange={e => setNewEch(p => ({ ...p, type: e.target.value }))} style={S.select}>
+                {["TVA", "Fiscal", "Bilan", "Social", "Révision"].map(t => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Urgence</label>
+              <select value={newEch.urgence} onChange={e => setNewEch(p => ({ ...p, urgence: e.target.value }))} style={S.select}>
+                {["haute", "moyenne", "normale"].map(u => <option key={u}>{u}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={() => setShowAddEcheance(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={addEcheance} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
+      )}
 
 
       {/* ── APERÇU DEVIS ── */}
@@ -2461,7 +1969,7 @@ export default function App() {
               {/* Pied de page */}
               <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid #e2eaf4", fontSize: 11, color: "#8da4c0", textAlign: "center" }}>
                 CGA-CDA — Centrale des Associés - Conseils & Expertise Comptable et Fiscale<br/>
-                Devis valable 30 jours à compter de la date d&apos;émission
+                Devis valable 30 jours à compter de la date d'émission
               </div>
             </div>
           </div>
@@ -2469,6 +1977,48 @@ export default function App() {
       )}
 
 
+      {showAddAbonnement && (
+        <Modal title="Nouvel abonnement" onClose={() => setShowAddAbonnement(false)}>
+          <div style={S.formGroup}>
+            <label style={S.label}>Client *</label>
+            <select value={newAbo.client} onChange={e => setNewAbo(p => ({ ...p, client: e.target.value }))} style={S.select}>
+              {clients.map(c => <option key={c.id}>{c.nom}</option>)}
+            </select>
+          </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Service souscrit *</label>
+            <input placeholder="Ex: Tenue comptable mensuelle..." value={newAbo.service} onChange={e => setNewAbo(p => ({ ...p, service: e.target.value }))} style={S.input} />
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Montant (FCFA) *</label>
+              <input type="number" placeholder="0" value={newAbo.montant} onChange={e => setNewAbo(p => ({ ...p, montant: e.target.value }))} style={S.input} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Fréquence</label>
+              <select value={newAbo.frequence} onChange={e => setNewAbo(p => ({ ...p, frequence: e.target.value }))} style={S.select}>
+                {["Mensuel", "Trimestriel", "Annuel"].map(f => <option key={f}>{f}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={S.formGroup}>
+              <label style={S.label}>Date de début</label>
+              <input type="date" value={newAbo.date_debut} onChange={e => setNewAbo(p => ({ ...p, date_debut: e.target.value }))} style={S.select} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Statut</label>
+              <select value={newAbo.statut} onChange={e => setNewAbo(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+                {["Actif", "Suspendu"].map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={() => setShowAddAbonnement(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+            <button onClick={addAbonnement} style={S.primaryBtn}>Enregistrer</button>
+          </div>
+        </Modal>
+      )}
 
 
       {showAddAbo && (
