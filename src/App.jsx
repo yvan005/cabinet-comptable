@@ -65,6 +65,7 @@ const ic = {
   service:   "M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12",
   eye:       "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 100 6 3 3 0 000-6z",
   abonnement: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M8 12h8 M12 8v8",
+  download:  "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3",
   settings:  "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z",
 };
 
@@ -160,10 +161,17 @@ export default function App() {
   const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
   const [collabSaving, setCollabSaving] = useState(false);
 
+  const [documents, setDocuments] = useState([]);
+  const [showAddDoc, setShowAddDoc] = useState(false);
+  const [docFilter, setDocFilter] = useState("Tous");
+  const [newDocClient, setNewDocClient] = useState("");
+  const [newDocType, setNewDocType] = useState("Autre");
+  const [docUploading, setDocUploading] = useState(false);
+
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [c, d, dep, srv, abo, col] = await Promise.all([
-      db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"), db.get("collaborateurs"),
+    const [c, d, dep, srv, abo, col, docs] = await Promise.all([
+      db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"), db.get("collaborateurs"), db.get("documents"),
     ]);
     setClients(Array.isArray(c) ? c : []);
     setDevisList(Array.isArray(d) ? d : []);
@@ -171,6 +179,7 @@ export default function App() {
     setServices(Array.isArray(srv) ? srv : []);
     setAbonnements(Array.isArray(abo) ? abo : []);
     setCollaborateurs(Array.isArray(col) ? col : []);
+    setDocuments(Array.isArray(docs) ? docs : []);
     setLoading(false);
   }, []);
 
@@ -1802,42 +1811,176 @@ export default function App() {
             })()}
 
             {/* ── DOCUMENTS ── */}
-            {page === "documents" && (
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {["Tous", "Bilans", "Contrats", "Liasses", "Courriers"].map(f => (
-                      <button key={f} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: f === "Tous" ? "#1a5c9e" : "#fff", color: f === "Tous" ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12 }}>{f}</button>
+            {page === "documents" && (() => {
+              const categories = ["Tous", "Bilan", "Contrat", "Liasse", "Courrier", "Rapport", "Autre"];
+              const extColor = (nom) => {
+                const ext = nom?.split(".").pop()?.toLowerCase();
+                if (ext === "pdf") return "#c0392b";
+                if (["xlsx","xls","csv"].includes(ext)) return "#1a7a4a";
+                if (["docx","doc"].includes(ext)) return "#1a5c9e";
+                return "#8e44ad";
+              };
+              const formatSize = (bytes) => {
+                if (!bytes) return "—";
+                if (bytes < 1024) return bytes + " o";
+                if (bytes < 1024*1024) return (bytes/1024).toFixed(0) + " Ko";
+                return (bytes/(1024*1024)).toFixed(1) + " Mo";
+              };
+
+              const uploadDoc = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                setDocUploading(true);
+                try {
+                  // 1. Upload dans Supabase Storage
+                  const fileName = `${Date.now()}_${file.name}`;
+                  const uploadRes = await fetch(
+                    `${SUPABASE_URL}/storage/v1/object/documents/${fileName}`,
+                    { method: "POST", headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": file.type }, body: file }
+                  );
+                  if (!uploadRes.ok) throw new Error("Upload échoué");
+                  // 2. URL publique
+                  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/documents/${fileName}`;
+                  // 3. Sauvegarder la métadonnée en base
+                  await db.post("documents", {
+                    nom: file.name,
+                    type: newDocType,
+                    client: newDocClient,
+                    taille: file.size,
+                    url: publicUrl,
+                    storage_path: fileName,
+                  });
+                  setShowAddDoc(false);
+                  setNewDocClient("");
+                  setNewDocType("Autre");
+                  loadAll();
+                } catch (err) {
+                  alert("Erreur lors de l'upload : " + err.message);
+                } finally {
+                  setDocUploading(false);
+                }
+              };
+
+              const deleteDoc = async (doc) => {
+                if (!window.confirm(`Supprimer "${doc.nom}" ?`)) return;
+                // Supprimer du storage
+                await fetch(`${SUPABASE_URL}/storage/v1/object/documents/${doc.storage_path}`, {
+                  method: "DELETE", headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+                });
+                // Supprimer la métadonnée
+                await db.delete("documents", doc.id);
+                loadAll();
+              };
+
+              const filtered = docFilter === "Tous" ? documents : documents.filter(d => d.type === docFilter);
+
+              return (
+                <div>
+                  {/* Modal upload */}
+                  {showAddDoc && (
+                    <Modal title="Déposer un document" onClose={() => setShowAddDoc(false)}>
+                      <div style={S.formGroup}>
+                        <label style={S.label}>Client / Dossier</label>
+                        <select value={newDocClient} onChange={e => setNewDocClient(e.target.value)} style={S.select}>
+                          <option value="">— Sélectionner —</option>
+                          <option value="Cabinet">Cabinet (interne)</option>
+                          {clients.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
+                        </select>
+                      </div>
+                      <div style={S.formGroup}>
+                        <label style={S.label}>Catégorie</label>
+                        <select value={newDocType} onChange={e => setNewDocType(e.target.value)} style={S.select}>
+                          {["Bilan","Contrat","Liasse","Courrier","Rapport","Autre"].map(t => <option key={t}>{t}</option>)}
+                        </select>
+                      </div>
+                      <div style={S.formGroup}>
+                        <label style={S.label}>Fichier *</label>
+                        <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: "24px 16px", borderRadius: 10, border: "2px dashed #87CEEB", background: "#f0f8ff", cursor: "pointer", textAlign: "center" }}>
+                          <span style={{ fontSize: 28 }}>📂</span>
+                          <span style={{ fontSize: 13, color: "#1a5c9e", fontWeight: 600 }}>{docUploading ? "Upload en cours..." : "Cliquer pour choisir un fichier"}</span>
+                          <span style={{ fontSize: 11, color: "#8da4c0" }}>PDF, Word, Excel — max 10 Mo</span>
+                          <input type="file" accept=".pdf,.doc,.docx,.xlsx,.xls,.csv" onChange={uploadDoc} style={{ display: "none" }} disabled={docUploading} />
+                        </label>
+                      </div>
+                      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
+                        <button onClick={() => setShowAddDoc(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+                      </div>
+                    </Modal>
+                  )}
+
+                  {/* KPIs */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
+                    {[
+                      { label: "Total documents", value: documents.length, color: "#1a5c9e", bg: "#e8f0fb", emoji: "📁" },
+                      { label: "Cette semaine", value: documents.filter(d => d.created_at && (new Date() - new Date(d.created_at)) < 7*86400000).length, color: "#1a7a4a", bg: "#e8f5ee", emoji: "🆕" },
+                      { label: "Clients couverts", value: new Set(documents.map(d => d.client).filter(Boolean)).size, color: "#8e44ad", bg: "#f5eefb", emoji: "🤝" },
+                      { label: "Taille totale", value: formatSize(documents.reduce((s, d) => s + (d.taille || 0), 0)), color: "#c17f2a", bg: "#fff8e6", emoji: "💾" },
+                    ].map((k, i) => (
+                      <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 12, padding: isMobile ? "12px" : "14px 16px", boxShadow: "0 1px 3px rgba(0,30,80,.06)", borderTop: "3px solid " + k.color }}>
+                        <div style={{ fontSize: 22, marginBottom: 4 }}>{k.emoji}</div>
+                        <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: k.color }}>{k.value}</div>
+                        <div style={{ fontSize: 11, color: "#6b8aaa", fontWeight: 600 }}>{k.label}</div>
+                      </div>
                     ))}
                   </div>
-                  <button style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Déposer</button>
-                </div>
-                <div className="card-hover" style={S.card}>
-                  {[
-                    { nom: "Bilan_TechVision_2025.pdf", client: "SAS TechVision", type: "Bilan", taille: "1.2 Mo", date: "15/04/2026", color: "#c0392b" },
-                    { nom: "Liasse_Dupont_2025.pdf", client: "SARL Dupont & Fils", type: "Liasse", taille: "856 Ko", date: "10/04/2026", color: "#c0392b" },
-                    { nom: "Contrat_mission_Atlasmed.docx", client: "SA Groupe Atlasmed", type: "Contrat", taille: "245 Ko", date: "02/04/2026", color: "#1a5c9e" },
-                    { nom: "Courrier_DGFiP_Boulangerie.pdf", client: "EURL Boulangerie Soleil", type: "Courrier", taille: "128 Ko", date: "28/03/2026", color: "#c0392b" },
-                    { nom: "Rapport_audit_Atlasmed.xlsx", client: "SA Groupe Atlasmed", type: "Rapport", taille: "3.4 Mo", date: "20/03/2026", color: "#1a7a4a" },
-                    { nom: "CGV_Cabinet_2026.docx", client: "Cabinet", type: "Contrat", taille: "98 Ko", date: "01/01/2026", color: "#1a5c9e" },
-                  ].map((d, i) => (
-                    <div key={i} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #f0f4fa", flexWrap: isMobile ? "wrap" : "nowrap", cursor: "pointer" }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 8, background: d.color + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <Icon d={ic.docs} size={16} stroke={d.color} />
-                      </div>
-                      <div style={{ flex: 2, minWidth: 120 }}>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: "#1e3a57" }}>{d.nom}</div>
-                        <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.client}</div>
-                      </div>
-                      <div style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "#f0f4fa", color: "#4a6d8c", flexShrink: 0 }}>{d.type}</div>
-                      <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0 }}>{d.taille}</div>
-                      <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0, minWidth: 80 }}>{d.date}</div>
-                      <button style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
+
+                  {/* Toolbar */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {categories.map(f => (
+                        <button key={f} onClick={() => setDocFilter(f)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: docFilter === f ? "#1a5c9e" : "#fff", color: docFilter === f ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12, fontWeight: docFilter === f ? 700 : 400 }}>
+                          {f} {f !== "Tous" ? `(${documents.filter(d => d.type === f).length})` : `(${documents.length})`}
+                        </button>
+                      ))}
                     </div>
-                  ))}
+                    <button onClick={() => setShowAddDoc(true)} style={S.primaryBtn}>
+                      <Icon d={ic.plus} size={14} stroke="#fff" /> Déposer
+                    </button>
+                  </div>
+
+                  {/* Liste */}
+                  <div className="card-hover" style={S.card}>
+                    {filtered.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: 40 }}>
+                        <div style={{ fontSize: 40, marginBottom: 12 }}>📂</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: "#1e3a57", marginBottom: 6 }}>Aucun document</div>
+                        <div style={{ fontSize: 13, color: "#8da4c0", marginBottom: 16 }}>Déposez votre premier fichier</div>
+                        <button onClick={() => setShowAddDoc(true)} style={S.primaryBtn}>+ Déposer un document</button>
+                      </div>
+                    ) : filtered.map((d, i) => {
+                      const color = extColor(d.nom);
+                      return (
+                        <div key={d.id} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: i < filtered.length - 1 ? "1px solid #f0f4fa" : "none", flexWrap: isMobile ? "wrap" : "nowrap" }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 8, background: color + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <Icon d={ic.docs} size={16} stroke={color} />
+                          </div>
+                          <div style={{ flex: 2, minWidth: 120 }}>
+                            <div style={{ fontWeight: 600, fontSize: 13, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nom}</div>
+                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.client || "—"}</div>
+                          </div>
+                          <div style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "#f0f4fa", color: "#4a6d8c", flexShrink: 0 }}>{d.type || "—"}</div>
+                          <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0 }}>{formatSize(d.taille)}</div>
+                          <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0, minWidth: 80 }}>{d.created_at ? new Date(d.created_at).toLocaleDateString("fr-FR") : "—"}</div>
+                          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                            {d.url && (
+                              <a href={d.url} target="_blank" rel="noreferrer"
+                                style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}
+                                title="Télécharger">
+                                <Icon d={ic.download} size={13} stroke="#1a5c9e" />
+                              </a>
+                            )}
+                            <button onClick={() => deleteDoc(d)}
+                              style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <Icon d={ic.trash} size={13} stroke="#c0392b" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
 
             {/* ── ABONNEMENTS ── */}
