@@ -258,7 +258,7 @@ export default function App() {
   const [showPreview, setShowPreview] = useState(false);
   const [editingDevisId, setEditingDevisId] = useState(null);
 
-  const [newClient, setNewClient] = useState({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
+  const [newClient, setNewClient] = useState({ nom: "", forme_juridique: "", rccm: "", nif: "", date_creation: "", secteur: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", regime_tva: "Assujetti", date_cloture: "31/12", banque: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", statut: "Actif", honoraires: "" });
 
   const [collaborateurs, setCollaborateurs] = useState([]);
   const [showAddCollab, setShowAddCollab] = useState(false);
@@ -2762,19 +2762,145 @@ export default function App() {
       {/* MODALS */}
       {showAddClient && (
         <Modal title="Nouveau client" onClose={() => setShowAddClient(false)}>
-          {[{ label: "Nom *", key: "nom", placeholder: "SARL Exemple" }, { label: "Secteur", key: "secteur", placeholder: "BTP, Informatique…" }, { label: "CA", key: "ca", placeholder: "500 000 €" }, { label: "Responsable", key: "responsable", placeholder: "M. Martin" }].map(f => (
-            <div key={f.key} style={S.formGroup}>
-              <label style={S.label}>{f.label}</label>
-              <input placeholder={f.placeholder} value={newClient[f.key]} onChange={e => setNewClient(p => ({ ...p, [f.key]: e.target.value }))} style={S.input} />
+          <div style={{ overflowY: "auto", maxHeight: "65vh", paddingRight: 4 }}>
+
+            {/* Section Identification */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Raison sociale *</label>
+              <input placeholder="Ex: SARL Dupont & Fils" value={newClient.nom} onChange={e => setNewClient(p => ({ ...p, nom: e.target.value }))} style={S.input} />
             </div>
-          ))}
-          <div style={S.formGroup}>
-            <label style={S.label}>Statut</label>
-            <select value={newClient.statut} onChange={e => setNewClient(p => ({ ...p, statut: e.target.value }))} style={S.select}>
-              {["Actif", "En attente", "Inactif"].map(s => <option key={s}>{s}</option>)}
-            </select>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={S.formGroup}>
+                <label style={S.label}>Forme juridique</label>
+                <select value={newClient.forme_juridique} onChange={e => setNewClient(p => ({ ...p, forme_juridique: e.target.value }))} style={S.select}>
+                  <option value="">— Choisir —</option>
+                  {["SARL","SA","SAS","EURL","GIE","Auto-entrepreneur","Association","Autre"].map(f => <option key={f}>{f}</option>)}
+                </select>
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>Secteur d'activité</label>
+                <input placeholder="BTP, Commerce..." value={newClient.secteur} onChange={e => setNewClient(p => ({ ...p, secteur: e.target.value }))} style={S.input} />
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={S.formGroup}>
+                <label style={S.label}>N° RCCM</label>
+                <input placeholder="RC/DLA/2024/..." value={newClient.rccm} onChange={e => setNewClient(p => ({ ...p, rccm: e.target.value }))} style={S.input} />
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>NIF / NIU</label>
+                <input placeholder="M123456789" value={newClient.nif} onChange={e => setNewClient(p => ({ ...p, nif: e.target.value }))} style={S.input} />
+              </div>
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Date de création</label>
+              <input type="date" value={newClient.date_creation} onChange={e => setNewClient(p => ({ ...p, date_creation: e.target.value }))} style={S.input} />
+            </div>
+
+            {/* Section Coordonnées */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a7a4a", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #e8f5ee" }}>📍 Coordonnées</div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Adresse du siège social</label>
+              <input placeholder="Rue, Quartier, Ville" value={newClient.adresse} onChange={e => setNewClient(p => ({ ...p, adresse: e.target.value }))} style={S.input} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={S.formGroup}>
+                <label style={S.label}>Téléphone</label>
+                <input placeholder="+237 6XX XXX XXX" value={newClient.telephone} onChange={e => setNewClient(p => ({ ...p, telephone: e.target.value }))} style={S.input} />
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>Email</label>
+                <input type="email" placeholder="contact@entreprise.com" value={newClient.email} onChange={e => setNewClient(p => ({ ...p, email: e.target.value }))} style={S.input} />
+              </div>
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Site web</label>
+              <input placeholder="www.entreprise.com" value={newClient.site_web} onChange={e => setNewClient(p => ({ ...p, site_web: e.target.value }))} style={S.input} />
+            </div>
+
+            {/* Section Représentant légal */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#8e44ad", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #f5eefb" }}>👤 Représentant légal</div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Nom du dirigeant</label>
+              <input placeholder="M. Jean Dupont" value={newClient.dirigeant} onChange={e => setNewClient(p => ({ ...p, dirigeant: e.target.value }))} style={S.input} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={S.formGroup}>
+                <label style={S.label}>Tél. dirigeant</label>
+                <input placeholder="+237 6XX XXX XXX" value={newClient.tel_dirigeant} onChange={e => setNewClient(p => ({ ...p, tel_dirigeant: e.target.value }))} style={S.input} />
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>Email dirigeant</label>
+                <input type="email" placeholder="dirigeant@email.com" value={newClient.email_dirigeant} onChange={e => setNewClient(p => ({ ...p, email_dirigeant: e.target.value }))} style={S.input} />
+              </div>
+            </div>
+
+            {/* Section Informations comptables */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📊 Informations comptables</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={S.formGroup}>
+                <label style={S.label}>Régime fiscal</label>
+                <select value={newClient.regime_fiscal} onChange={e => setNewClient(p => ({ ...p, regime_fiscal: e.target.value }))} style={S.select}>
+                  <option value="">— Choisir —</option>
+                  {["Réel simplifié","Réel normal","Forfait","Auto-entrepreneur","Exonéré"].map(r => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>Régime TVA</label>
+                <select value={newClient.regime_tva} onChange={e => setNewClient(p => ({ ...p, regime_tva: e.target.value }))} style={S.select}>
+                  {["Assujetti","Non assujetti","Exonéré","Partiellement assujetti"].map(r => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={S.formGroup}>
+                <label style={S.label}>Date de clôture</label>
+                <input placeholder="31/12" value={newClient.date_cloture} onChange={e => setNewClient(p => ({ ...p, date_cloture: e.target.value }))} style={S.input} />
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>Banque domiciliataire</label>
+                <input placeholder="BICEC, SCB..." value={newClient.banque} onChange={e => setNewClient(p => ({ ...p, banque: e.target.value }))} style={S.input} />
+              </div>
+            </div>
+
+            {/* Section Suivi cabinet */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>🏢 Suivi cabinet</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={S.formGroup}>
+                <label style={S.label}>Responsable dossier</label>
+                <select value={newClient.responsable} onChange={e => setNewClient(p => ({ ...p, responsable: e.target.value }))} style={S.select}>
+                  <option value="">— Choisir —</option>
+                  {collaborateurs.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
+                </select>
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>Type de mission</label>
+                <select value={newClient.type_mission} onChange={e => setNewClient(p => ({ ...p, type_mission: e.target.value }))} style={S.select}>
+                  <option value="">— Choisir —</option>
+                  {["Tenue comptable","Audit","Conseil fiscal","Paie","Déclarations fiscales","Création d'entreprise","Autre"].map(m => <option key={m}>{m}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={S.formGroup}>
+                <label style={S.label}>Statut</label>
+                <select value={newClient.statut} onChange={e => setNewClient(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+                  {["Actif","En attente","Inactif","Suspendu"].map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>Date d'entrée en relation</label>
+                <input type="date" value={newClient.date_entree} onChange={e => setNewClient(p => ({ ...p, date_entree: e.target.value }))} style={S.input} />
+              </div>
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Honoraires (FCFA/an)</label>
+              <input type="number" placeholder="500000" value={newClient.honoraires} onChange={e => setNewClient(p => ({ ...p, honoraires: e.target.value }))} style={S.input} />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20, paddingTop: 16, borderTop: "1px solid #f0f4fa" }}>
             <button onClick={() => setShowAddClient(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
             <button onClick={addClient} style={S.primaryBtn}>Enregistrer</button>
           </div>
