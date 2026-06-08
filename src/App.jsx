@@ -258,7 +258,7 @@ export default function App() {
   const [showPreview, setShowPreview] = useState(false);
   const [editingDevisId, setEditingDevisId] = useState(null);
 
-  const [newClient, setNewClient] = useState({ nom: "", forme_juridique: "", rccm: "", nif: "", date_creation: "", secteur: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", regime_tva: "Assujetti", date_cloture: "31/12", banque: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", statut: "Actif", honoraires: "" });
+  const [newClient, setNewClient] = useState({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA", statut: "Actif", honoraires: "" });
 
   const [collaborateurs, setCollaborateurs] = useState([]);
   const [showAddCollab, setShowAddCollab] = useState(false);
@@ -2764,7 +2764,7 @@ export default function App() {
         <Modal title="Nouveau client" onClose={() => setShowAddClient(false)}>
           <div style={{ overflowY: "auto", maxHeight: "65vh", paddingRight: 4 }}>
 
-            {/* Section Identification */}
+            {/* ── Identification ── */}
             <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
             <div style={S.formGroup}>
               <label style={S.label}>Raison sociale *</label>
@@ -2775,34 +2775,62 @@ export default function App() {
                 <label style={S.label}>Forme juridique</label>
                 <select value={newClient.forme_juridique} onChange={e => setNewClient(p => ({ ...p, forme_juridique: e.target.value }))} style={S.select}>
                   <option value="">— Choisir —</option>
-                  {["SARL","SA","SAS","EURL","GIE","Auto-entrepreneur","Association","Autre"].map(f => <option key={f}>{f}</option>)}
+                  {["SARL","SA","SAS","EURL","GIE","Entreprise individuelle","Association","ONG","Coopérative","Autre"].map(f => <option key={f}>{f}</option>)}
                 </select>
               </div>
               <div style={S.formGroup}>
                 <label style={S.label}>Secteur d'activité</label>
-                <input placeholder="BTP, Commerce..." value={newClient.secteur} onChange={e => setNewClient(p => ({ ...p, secteur: e.target.value }))} style={S.input} />
+                <select value={newClient.secteur} onChange={e => setNewClient(p => ({ ...p, secteur: e.target.value }))} style={S.select}>
+                  <option value="">— Choisir —</option>
+                  {["Agriculture / Élevage","Sylviculture / Exploitation forestière","Pêche / Aquaculture","Agro-industrie / Transformation alimentaire","Mines / Carrières","Hydrocarbures / Pétrole & Gaz","BTP / Génie civil","Immobilier / Promotion immobilière","Industrie manufacturière","Énergie / Électricité / Eau","Commerce général / Import-Export","Grande distribution / Supermarché","Commerce de véhicules / Pièces détachées","Pharmacie / Parapharmacie","Banque / Finance / Assurance","Informatique / Télécommunications","Transport / Logistique","Hôtellerie / Restauration / Tourisme","Santé / Clinique / Cabinet médical","Éducation / Formation / École","Conseil / Audit / Expertise","Médias / Communication / Publicité","Sécurité / Gardiennage","Nettoyage / Entretien","Événementiel / Prestations de services","Administration publique / OPE","ONG / Association / Fondation","Coopérative / Mutuelle","Autre"].map(s => <option key={s}>{s}</option>)}
+                </select>
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}>
                 <label style={S.label}>N° RCCM</label>
-                <input placeholder="RC/DLA/2024/..." value={newClient.rccm} onChange={e => setNewClient(p => ({ ...p, rccm: e.target.value }))} style={S.input} />
+                <input placeholder="RC/DLA/2024/B/XXX" value={newClient.rccm} onChange={e => setNewClient(p => ({ ...p, rccm: e.target.value }))} style={S.input} />
               </div>
               <div style={S.formGroup}>
-                <label style={S.label}>NIF / NIU</label>
-                <input placeholder="M123456789" value={newClient.nif} onChange={e => setNewClient(p => ({ ...p, nif: e.target.value }))} style={S.input} />
+                <label style={S.label}>NIU (N° Identifiant Unique)</label>
+                <input placeholder="M012345678901A" value={newClient.nif} onChange={e => setNewClient(p => ({ ...p, nif: e.target.value }))} style={S.input} />
               </div>
             </div>
-            <div style={S.formGroup}>
-              <label style={S.label}>Date de création</label>
-              <input type="date" value={newClient.date_creation} onChange={e => setNewClient(p => ({ ...p, date_creation: e.target.value }))} style={S.input} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={S.formGroup}>
+                <label style={S.label}>N° Contribuable</label>
+                <input placeholder="P012-XXX-XXX-XXX-X" value={newClient.numero_contribuable} onChange={e => setNewClient(p => ({ ...p, numero_contribuable: e.target.value }))} style={S.input} />
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>Date de création</label>
+                <input type="date" value={newClient.date_creation} onChange={e => setNewClient(p => ({ ...p, date_creation: e.target.value }))} style={S.input} />
+              </div>
             </div>
 
-            {/* Section Coordonnées */}
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a7a4a", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #e8f5ee" }}>📍 Coordonnées</div>
-            <div style={S.formGroup}>
-              <label style={S.label}>Adresse du siège social</label>
-              <input placeholder="Rue, Quartier, Ville" value={newClient.adresse} onChange={e => setNewClient(p => ({ ...p, adresse: e.target.value }))} style={S.input} />
+            {/* ── Localisation ── */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a7a4a", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #e8f5ee" }}>📍 Localisation & Coordonnées</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={S.formGroup}>
+                <label style={S.label}>Région</label>
+                <select value={newClient.region} onChange={e => setNewClient(p => ({ ...p, region: e.target.value }))} style={S.select}>
+                  <option value="">— Choisir —</option>
+                  {["Adamaoua","Centre","Est","Extrême-Nord","Littoral","Nord","Nord-Ouest","Ouest","Sud","Sud-Ouest"].map(r => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>Département</label>
+                <input placeholder="Ex: Mfoundi, Wouri..." value={newClient.departement} onChange={e => setNewClient(p => ({ ...p, departement: e.target.value }))} style={S.input} />
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={S.formGroup}>
+                <label style={S.label}>Arrondissement / Ville</label>
+                <input placeholder="Ex: Yaoundé 1er, Douala 3e..." value={newClient.arrondissement} onChange={e => setNewClient(p => ({ ...p, arrondissement: e.target.value }))} style={S.input} />
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>Adresse complète</label>
+                <input placeholder="Quartier, BP, Rue..." value={newClient.adresse} onChange={e => setNewClient(p => ({ ...p, adresse: e.target.value }))} style={S.input} />
+              </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}>
@@ -2811,19 +2839,19 @@ export default function App() {
               </div>
               <div style={S.formGroup}>
                 <label style={S.label}>Email</label>
-                <input type="email" placeholder="contact@entreprise.com" value={newClient.email} onChange={e => setNewClient(p => ({ ...p, email: e.target.value }))} style={S.input} />
+                <input type="email" placeholder="contact@entreprise.cm" value={newClient.email} onChange={e => setNewClient(p => ({ ...p, email: e.target.value }))} style={S.input} />
               </div>
             </div>
             <div style={S.formGroup}>
               <label style={S.label}>Site web</label>
-              <input placeholder="www.entreprise.com" value={newClient.site_web} onChange={e => setNewClient(p => ({ ...p, site_web: e.target.value }))} style={S.input} />
+              <input placeholder="www.entreprise.cm" value={newClient.site_web} onChange={e => setNewClient(p => ({ ...p, site_web: e.target.value }))} style={S.input} />
             </div>
 
-            {/* Section Représentant légal */}
+            {/* ── Représentant légal ── */}
             <div style={{ fontSize: 11, fontWeight: 800, color: "#8e44ad", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #f5eefb" }}>👤 Représentant légal</div>
             <div style={S.formGroup}>
-              <label style={S.label}>Nom du dirigeant</label>
-              <input placeholder="M. Jean Dupont" value={newClient.dirigeant} onChange={e => setNewClient(p => ({ ...p, dirigeant: e.target.value }))} style={S.input} />
+              <label style={S.label}>Nom du dirigeant / Gérant</label>
+              <input placeholder="M. Jean DUPONT" value={newClient.dirigeant} onChange={e => setNewClient(p => ({ ...p, dirigeant: e.target.value }))} style={S.input} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}>
@@ -2832,39 +2860,61 @@ export default function App() {
               </div>
               <div style={S.formGroup}>
                 <label style={S.label}>Email dirigeant</label>
-                <input type="email" placeholder="dirigeant@email.com" value={newClient.email_dirigeant} onChange={e => setNewClient(p => ({ ...p, email_dirigeant: e.target.value }))} style={S.input} />
+                <input type="email" placeholder="dirigeant@email.cm" value={newClient.email_dirigeant} onChange={e => setNewClient(p => ({ ...p, email_dirigeant: e.target.value }))} style={S.input} />
               </div>
             </div>
 
-            {/* Section Informations comptables */}
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📊 Informations comptables</div>
+            {/* ── Informations fiscales & comptables ── */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📊 Fiscalité & Comptabilité (OHADA)</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}>
                 <label style={S.label}>Régime fiscal</label>
                 <select value={newClient.regime_fiscal} onChange={e => setNewClient(p => ({ ...p, regime_fiscal: e.target.value }))} style={S.select}>
                   <option value="">— Choisir —</option>
-                  {["Réel simplifié","Réel normal","Forfait","Auto-entrepreneur","Exonéré"].map(r => <option key={r}>{r}</option>)}
+                  {["DGE (Grandes Entreprises)","DSF / DME (Moyennes Entreprises)","CDE (Centre des Entreprises)","RSI (Régime Simplifié)","Forfait de base","Exonéré"].map(r => <option key={r}>{r}</option>)}
                 </select>
               </div>
               <div style={S.formGroup}>
-                <label style={S.label}>Régime TVA</label>
-                <select value={newClient.regime_tva} onChange={e => setNewClient(p => ({ ...p, regime_tva: e.target.value }))} style={S.select}>
-                  {["Assujetti","Non assujetti","Exonéré","Partiellement assujetti"].map(r => <option key={r}>{r}</option>)}
+                <label style={S.label}>Centre des impôts</label>
+                <select value={newClient.centre_impots} onChange={e => setNewClient(p => ({ ...p, centre_impots: e.target.value }))} style={S.select}>
+                  <option value="">— Choisir —</option>
+                  {["DGE Yaoundé","DGE Douala","DSF Centre","DSF Littoral","DSF Nord","DSF Sud","CDE Yaoundé","CDE Douala","Autre"].map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}>
-                <label style={S.label}>Date de clôture</label>
+                <label style={S.label}>Régime TVA</label>
+                <select value={newClient.tva} onChange={e => setNewClient(p => ({ ...p, tva: e.target.value }))} style={S.select}>
+                  {["Assujetti 19,25%","Non assujetti","Exonéré","Suspension de TVA","Partiellement assujetti"].map(r => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>Référentiel comptable</label>
+                <select value={newClient.referentiel} onChange={e => setNewClient(p => ({ ...p, referentiel: e.target.value }))} style={S.select}>
+                  {["SYSCOHADA Révisé","SYSCOHADA","IFRS","Autre"].map(r => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={S.formGroup}>
+                <label style={S.label}>Date de clôture exercice</label>
                 <input placeholder="31/12" value={newClient.date_cloture} onChange={e => setNewClient(p => ({ ...p, date_cloture: e.target.value }))} style={S.input} />
               </div>
               <div style={S.formGroup}>
                 <label style={S.label}>Banque domiciliataire</label>
-                <input placeholder="BICEC, SCB..." value={newClient.banque} onChange={e => setNewClient(p => ({ ...p, banque: e.target.value }))} style={S.input} />
+                <select value={newClient.banque} onChange={e => setNewClient(p => ({ ...p, banque: e.target.value }))} style={S.select}>
+                  <option value="">— Choisir —</option>
+                  {["Afriland First Bank","BICEC","CCA Bank","Ecobank","Société Générale","SCB Cameroun","UBA","BGFI Bank","Atlantic Bank","NFC Bank","Autre"].map(b => <option key={b}>{b}</option>)}
+                </select>
               </div>
             </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>N° Patente</label>
+              <input placeholder="Ex: 1234567890" value={newClient.patente} onChange={e => setNewClient(p => ({ ...p, patente: e.target.value }))} style={S.input} />
+            </div>
 
-            {/* Section Suivi cabinet */}
+            {/* ── Suivi cabinet ── */}
             <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>🏢 Suivi cabinet</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}>
@@ -2878,7 +2928,7 @@ export default function App() {
                 <label style={S.label}>Type de mission</label>
                 <select value={newClient.type_mission} onChange={e => setNewClient(p => ({ ...p, type_mission: e.target.value }))} style={S.select}>
                   <option value="">— Choisir —</option>
-                  {["Tenue comptable","Audit","Conseil fiscal","Paie","Déclarations fiscales","Création d'entreprise","Autre"].map(m => <option key={m}>{m}</option>)}
+                  {["Tenue comptable SYSCOHADA","Audit légal / CAC","Audit contractuel","Conseil fiscal & juridique","Gestion de la paie","Déclarations fiscales (DSF, TVA...)","Création / Immatriculation","Assistance DGI / Contentieux","Autre"].map(m => <option key={m}>{m}</option>)}
                 </select>
               </div>
             </div>
@@ -2895,7 +2945,7 @@ export default function App() {
               </div>
             </div>
             <div style={S.formGroup}>
-              <label style={S.label}>Honoraires (FCFA/an)</label>
+              <label style={S.label}>Honoraires convenus (FCFA/an)</label>
               <input type="number" placeholder="500000" value={newClient.honoraires} onChange={e => setNewClient(p => ({ ...p, honoraires: e.target.value }))} style={S.input} />
             </div>
           </div>
