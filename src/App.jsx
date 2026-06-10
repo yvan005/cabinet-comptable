@@ -2592,61 +2592,45 @@ export default function App() {
             {page === "settings" && (
               <div style={{ maxWidth: 680 }}>
                 <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
-                  <div style={S.cardHeader}><Icon d={ic.collab} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Profil du cabinet</span></div>
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
-                    {[
-                      { label: "Nom du cabinet", placeholder: "Cabinet Legrand & Associés", val: "" },
-                      { label: "N° SIRET", placeholder: "123 456 789 00012", val: "" },
-                      { label: "Adresse", placeholder: "12 rue de la Paix, Paris", val: "" },
-                      { label: "Téléphone", placeholder: "+33 1 23 45 67 89", val: "" },
-                      { label: "Email de contact", placeholder: "contact@cabinet.fr", val: "" },
-                      { label: "Site web", placeholder: "www.cabinet.fr", val: "" },
-                    ].map(f => (
-                      <div key={f.label} style={S.formGroup}>
-                        <label style={S.label}>{f.label}</label>
-                        <input placeholder={f.placeholder} style={S.input} />
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                    <button style={S.primaryBtn}>Enregistrer</button>
-                  </div>
-                </div>
-                <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
-                  <div style={S.cardHeader}><Icon d={ic.bell} size={16} stroke="#c17f2a" /><span style={S.cardTitle}>Notifications</span></div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                    {[
-                      { label: "Alertes échéances fiscales", desc: "Recevoir une alerte 7 jours avant", active: true },
-                      { label: "Nouveaux messages clients", desc: "Notification immédiate", active: true },
-                      { label: "Rappels devis non signés", desc: "Relance automatique après 14 jours", active: false },
-                      { label: "Rapport hebdomadaire", desc: "Synthèse envoyée chaque lundi", active: false },
-                    ].map((n, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f0f4fa" }}>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57" }}>{n.label}</div>
-                          <div style={{ fontSize: 11, color: "#8da4c0" }}>{n.desc}</div>
-                        </div>
-                        <div style={{ width: 42, height: 24, borderRadius: 12, background: n.active ? "#1a5c9e" : "#e2eaf4", cursor: "pointer", position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
-                          <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: n.active ? 21 : 3, transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="card-hover" style={S.card}>
                   <div style={S.cardHeader}><Icon d={ic.settings} size={16} stroke="#6b8aaa" /><span style={S.cardTitle}>Préférences</span></div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={S.formGroup}>
                       <label style={S.label}>Devise</label>
-                      <select style={S.select}><option>Euro (FCFA)</option><option>Franc CFA (XAF)</option><option>Dollar ($)</option></select>
+                      <select style={S.select}>
+                        <option>Franc CFA (XAF)</option>
+                        <option>Dollar ($)</option>
+                        <option>Euro (€)</option>
+                      </select>
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Taux de TVA par défaut</label>
-                      <select style={S.select}><option>20%</option><option>10%</option><option>5.5%</option><option>0%</option></select>
+                      <select style={S.select}>
+                        <option>19,25% (TVA Cameroun)</option>
+                        <option>0% (Exonéré)</option>
+                        <option>Suspension de TVA</option>
+                      </select>
+                    </div>
+                    <div style={S.formGroup}>
+                      <label style={S.label}>Référentiel comptable</label>
+                      <select style={S.select}>
+                        <option>SYSCOHADA Révisé</option>
+                        <option>SYSCOHADA</option>
+                        <option>IFRS</option>
+                      </select>
+                    </div>
+                    <div style={S.formGroup}>
+                      <label style={S.label}>Exercice fiscal</label>
+                      <select style={S.select}>
+                        <option>Janvier — Décembre</option>
+                      </select>
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Langue</label>
-                      <select style={S.select}><option>Français</option><option>Anglais</option></select>
+                      <select style={S.select}>
+                        <option>Français</option>
+                        <option>Anglais</option>
+                        <option>Bilingue (FR / EN)</option>
+                      </select>
                     </div>
                   </div>
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
