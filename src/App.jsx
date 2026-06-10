@@ -567,7 +567,7 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div style={{ padding: "16px 20px 0", borderTop: "1px solid #1a3558" }}>
+        <div style={{ padding: "16px 20px 40px", borderTop: "1px solid #1a3558" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#1a5c9e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
               {session?.user?.email?.[0]?.toUpperCase() || "U"}
@@ -2731,7 +2731,7 @@ export default function App() {
 
         {/* BOTTOM NAV mobile */}
         {isMobile && (
-          <nav style={{ position: "fixed", bottom: 20, left: 12, right: 12, background: "#fff", borderTop: "1px solid #e2eaf4", borderRadius: 16, display: "flex", zIndex: 50, paddingBottom: "env(safe-area-inset-bottom)", boxShadow: "0 4px 20px rgba(0,30,80,0.12)" }}>
+          <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e2eaf4", display: "flex", zIndex: 50, paddingBottom: "env(safe-area-inset-bottom)" }}>
             {navItems.filter(item => ["dashboard", "clients", "services", "depenses", "devis", "rapports"].includes(item.id)).map(item => (
               <button key={item.id} onClick={() => navigate(item.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", background: "none", border: "none", cursor: "pointer", color: page === item.id ? "#1a5c9e" : "#8da4c0", position: "relative" }}>
                 <Icon d={item.icon} size={20} stroke={page === item.id ? "#1a5c9e" : "#8da4c0"} />
