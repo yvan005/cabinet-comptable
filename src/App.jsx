@@ -608,7 +608,7 @@ export default function App() {
         </header>
 
         {/* CONTENT */}
-        <div style={{ padding: isMobile ? 14 : 24, overflowY: "auto", flex: 1 }}>
+        <div style={{ padding: isMobile ? 14 : 24, paddingBottom: isMobile ? 100 : 24, overflowY: "auto", flex: 1 }}>
           {loading ? <Spinner /> : <>
 
             {/* ── DASHBOARD ── */}
@@ -2731,7 +2731,7 @@ export default function App() {
 
         {/* BOTTOM NAV mobile */}
         {isMobile && (
-          <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e2eaf4", display: "flex", zIndex: 50, paddingBottom: "env(safe-area-inset-bottom)" }}>
+          <nav style={{ position: "fixed", bottom: 20, left: 12, right: 12, background: "#fff", borderTop: "1px solid #e2eaf4", borderRadius: 16, display: "flex", zIndex: 50, paddingBottom: "env(safe-area-inset-bottom)", boxShadow: "0 4px 20px rgba(0,30,80,0.12)" }}>
             {navItems.filter(item => ["dashboard", "clients", "services", "depenses", "devis", "rapports"].includes(item.id)).map(item => (
               <button key={item.id} onClick={() => navigate(item.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", background: "none", border: "none", cursor: "pointer", color: page === item.id ? "#1a5c9e" : "#8da4c0", position: "relative" }}>
                 <Icon d={item.icon} size={20} stroke={page === item.id ? "#1a5c9e" : "#8da4c0"} />
