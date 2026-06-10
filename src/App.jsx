@@ -331,7 +331,7 @@ export default function App() {
   const addClient = async () => {
     if (!newClient.nom) return;
     await db.post("clients", newClient);
-    setNewClient({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
+    setNewClient({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA Révisé", statut: "Actif", honoraires: "" });
     setShowAddClient(false); loadAll();
   };
   const deleteClient = async (id) => { await db.delete("clients", id); loadAll(); };
