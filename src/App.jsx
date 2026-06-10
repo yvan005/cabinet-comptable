@@ -602,11 +602,7 @@ export default function App() {
             )}
             <div style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "#1e3a57" }}>{pageTitle}</div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            
-            <button onClick={loadAll} style={{ background: "#f5f8fc", border: "1px solid #e2eaf4", borderRadius: 8, padding: "7px 10px", cursor: "pointer", fontSize: 12, color: "#4a6d8c" }}>↻</button>
-            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#1a5c9e", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>PW</div>
-          </div>
+
         </header>
 
         {/* CONTENT */}
