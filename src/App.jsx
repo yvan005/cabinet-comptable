@@ -2769,7 +2769,7 @@ export default function App() {
       {/* MODAL VISUALISATION CLIENT */}
       {viewClient && (
         <Modal title="Fiche client" onClose={() => setViewClient(null)}>
-          <div style={{ overflowY: "auto", maxHeight: "70vh", paddingRight: 4 }}>
+          <div style={{ paddingRight: 4 }}>
 
             {/* Entête */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: "linear-gradient(135deg,#e8f0fb,#f0f6ff)", marginBottom: 16 }}>
@@ -2880,7 +2880,7 @@ export default function App() {
       {/* MODAL EDITION CLIENT */}
       {editClient && (
         <Modal title="Modifier le client" onClose={() => setEditClient(null)}>
-          <div style={{ overflowY: "auto", maxHeight: "65vh", paddingRight: 4 }}>
+          <div style={{ paddingRight: 4 }}>
 
             <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
             <div style={S.formGroup}><label style={S.label}>Raison sociale *</label><input value={editClient.nom || ""} onChange={e => setEditClient(p => ({ ...p, nom: e.target.value }))} style={S.input} /></div>
@@ -2954,7 +2954,7 @@ export default function App() {
 
       {showAddClient && (
         <Modal title="Nouveau client" onClose={() => setShowAddClient(false)}>
-          <div style={{ overflowY: "auto", maxHeight: "65vh", paddingRight: 4 }}>
+          <div style={{ paddingRight: 4 }}>
 
             {/* ── Identification ── */}
             <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
@@ -3491,8 +3491,8 @@ const S = {
   label: { fontSize: 12, fontWeight: 600, color: "#4a6d8c" },
   input: { padding: "9px 12px", borderRadius: 8, border: "1px solid #87CEEB", fontSize: 13, color: "#1e3a57", background: "#ffffff", outline: "none", fontFamily: "inherit" },
   select: { padding: "9px 12px", borderRadius: 8, border: "1px solid #87CEEB", fontSize: 13, color: "#1e3a57", background: "#ffffff", outline: "none" },
-  overlay: { position: "fixed", inset: 0, background: "rgba(15,39,68,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
-  modal: { background: "#fff", borderRadius: 16, padding: "24px 28px", width: "min(520px, 95vw)", maxWidth: "95vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)", maxHeight: "90vh", overflowY: "auto", overflowX: "hidden", boxSizing: "border-box" },
+  overlay: { position: "fixed", inset: 0, background: "rgba(15,39,68,.5)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, overflowY: "auto", padding: "20px 12px" },
+  modal: { background: "#fff", borderRadius: 16, padding: "24px 28px", width: "min(520px, 95vw)", maxWidth: "95vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)", overflowX: "hidden", boxSizing: "border-box", margin: "auto" },
   modalHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   modalTitle: { fontSize: 16, fontWeight: 700, color: "#1e3a57" },
 };
