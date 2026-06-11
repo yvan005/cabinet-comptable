@@ -171,7 +171,6 @@ const ic = {
   eye:       "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 100 6 3 3 0 000-6z",
   abonnement: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M8 12h8 M12 8v8",
   download:  "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3",
-  edit:      "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z",
   settings:  "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z",
 };
 
@@ -259,7 +258,7 @@ export default function App() {
   const [showPreview, setShowPreview] = useState(false);
   const [editingDevisId, setEditingDevisId] = useState(null);
 
-  const [newClient, setNewClient] = useState({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA", statut: "Actif", honoraires: "", ca: "" });
+  const [newClient, setNewClient] = useState({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA", statut: "Actif", honoraires: "" });
 
   const [collaborateurs, setCollaborateurs] = useState([]);
   const [showAddCollab, setShowAddCollab] = useState(false);
@@ -332,21 +331,12 @@ export default function App() {
   const addClient = async () => {
     if (!newClient.nom) return;
     await db.post("clients", newClient);
-    setNewClient({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA Révisé", statut: "Actif", honoraires: "", ca: "" });
+    setNewClient({ nom: "", secteur: "", statut: "Actif", responsable: "", ca: "" });
     setShowAddClient(false); loadAll();
   };
   const deleteClient = async (id) => { await db.delete("clients", id); loadAll(); };
-  const updateClient = async () => {
-    if (!editClient?.nom) return;
-    await db.patch("clients", editClient.id, editClient);
-    setEditClient(null);
-    loadAll();
-  };
 
   // ÉCHÉANCES (désactivé)
-  const [viewClient, setViewClient] = useState(null);
-  const [editClient, setEditClient] = useState(null);
-
   const addEcheance = async () => {};
   const toggleFait = async () => {};
   const deleteEch = async () => {};
@@ -562,12 +552,10 @@ export default function App() {
         ...(isMobile ? { position: "fixed", top: 0, left: 0, height: "100vh", zIndex: 100, transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease" } : {})
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 20px 28px" }}>
-          <div style={{ width: 42, height: 42, borderRadius: "50%", overflow: "hidden", flexShrink: 0, border: "2px solid rgba(255,255,255,0.15)" }}>
-            <img src="data:image/jpeg;base64,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" alt="CGA-CDA" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </div>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: "linear-gradient(135deg,#2e7fcf,#1a5c9e)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 14 }}>EC</div>
           <div>
-            <div style={{ color: "#ffffff", fontWeight: 800, fontSize: 15 }}>CGA-CDA</div>
-            <div style={{ color: "#ffffff", fontSize: 9, lineHeight: 1.3, opacity: 0.8 }}>Centrale des Associés -<br/>Conseils & Expertise<br/>Comptable et Fiscale</div>
+            <div style={{ color: "#e2eaf4", fontWeight: 800, fontSize: 15 }}>CGA-CDA</div>
+            <div style={{ color: "#4a6d8c", fontSize: 9, lineHeight: 1.3 }}>Centrale des Associés -<br/>Conseils & Expertise<br/>Comptable et Fiscale</div>
           </div>
         </div>
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 12px", flex: 1 }}>
@@ -579,7 +567,7 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div style={{ padding: "16px 20px 40px", borderTop: "1px solid #1a3558" }}>
+        <div style={{ padding: "16px 20px 0", borderTop: "1px solid #1a3558" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
             <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#1a5c9e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
               {session?.user?.email?.[0]?.toUpperCase() || "U"}
@@ -612,11 +600,15 @@ export default function App() {
             )}
             <div style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "#1e3a57" }}>{pageTitle}</div>
           </div>
-
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            
+            <button onClick={loadAll} style={{ background: "#f5f8fc", border: "1px solid #e2eaf4", borderRadius: 8, padding: "7px 10px", cursor: "pointer", fontSize: 12, color: "#4a6d8c" }}>↻</button>
+            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#1a5c9e", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>PW</div>
+          </div>
         </header>
 
         {/* CONTENT */}
-        <div style={{ padding: isMobile ? 14 : 24, paddingBottom: isMobile ? 100 : 24, overflowY: "auto", flex: 1 }}>
+        <div style={{ padding: isMobile ? 14 : 24, overflowY: "auto", flex: 1 }}>
           {loading ? <Spinner /> : <>
 
             {/* ── DASHBOARD ── */}
@@ -993,15 +985,7 @@ export default function App() {
                             <span style={{ fontSize: 12, color: "#8da4c0" }}>CA : </span>
                             <span style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57" }}>{c.ca}</span>
                           </div>
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <button onClick={() => setViewClient(c)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <Icon d={ic.eye} size={14} stroke="#1a5c9e" />
-                            </button>
-                            <button onClick={() => setEditClient({ ...c })} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <Icon d={ic.edit} size={14} stroke="#1a7a4a" />
-                            </button>
-                            <button onClick={() => deleteClient(c.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={14} stroke="#c0392b" /></button>
-                          </div>
+                          <button onClick={() => deleteClient(c.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={14} stroke="#c0392b" /></button>
                         </div>
                       </div>
                     ))}
@@ -1024,14 +1008,8 @@ export default function App() {
                         <div style={{ flex: 0.8, textAlign: "center" }}>
                           <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20, background: c.statut === "Actif" ? "#e8f5ee" : c.statut === "En attente" ? "#fff8e6" : "#f5f5f5", color: c.statut === "Actif" ? "#1a7a4a" : c.statut === "En attente" ? "#c17f2a" : "#8a9aac" }}>{c.statut}</span>
                         </div>
-                        <div style={{ flex: 0.5, textAlign: "center", display: "flex", gap: 6, justifyContent: "center" }}>
-                          <button onClick={() => setViewClient(c)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <Icon d={ic.eye} size={14} stroke="#1a5c9e" />
-                          </button>
-                          <button onClick={() => setEditClient({ ...c })} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <Icon d={ic.edit} size={14} stroke="#1a7a4a" />
-                          </button>
-                          <button onClick={() => deleteClient(c.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={14} stroke="#c0392b" /></button>
+                        <div style={{ flex: 0.5, textAlign: "center" }}>
+                          <button onClick={() => deleteClient(c.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}><Icon d={ic.trash} size={14} stroke="#c0392b" /></button>
                         </div>
                       </div>
                     ))}
@@ -2614,45 +2592,61 @@ export default function App() {
             {page === "settings" && (
               <div style={{ maxWidth: 680 }}>
                 <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
+                  <div style={S.cardHeader}><Icon d={ic.collab} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Profil du cabinet</span></div>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+                    {[
+                      { label: "Nom du cabinet", placeholder: "Cabinet Legrand & Associés", val: "" },
+                      { label: "N° SIRET", placeholder: "123 456 789 00012", val: "" },
+                      { label: "Adresse", placeholder: "12 rue de la Paix, Paris", val: "" },
+                      { label: "Téléphone", placeholder: "+33 1 23 45 67 89", val: "" },
+                      { label: "Email de contact", placeholder: "contact@cabinet.fr", val: "" },
+                      { label: "Site web", placeholder: "www.cabinet.fr", val: "" },
+                    ].map(f => (
+                      <div key={f.label} style={S.formGroup}>
+                        <label style={S.label}>{f.label}</label>
+                        <input placeholder={f.placeholder} style={S.input} />
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                    <button style={S.primaryBtn}>Enregistrer</button>
+                  </div>
+                </div>
+                <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
+                  <div style={S.cardHeader}><Icon d={ic.bell} size={16} stroke="#c17f2a" /><span style={S.cardTitle}>Notifications</span></div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {[
+                      { label: "Alertes échéances fiscales", desc: "Recevoir une alerte 7 jours avant", active: true },
+                      { label: "Nouveaux messages clients", desc: "Notification immédiate", active: true },
+                      { label: "Rappels devis non signés", desc: "Relance automatique après 14 jours", active: false },
+                      { label: "Rapport hebdomadaire", desc: "Synthèse envoyée chaque lundi", active: false },
+                    ].map((n, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f0f4fa" }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57" }}>{n.label}</div>
+                          <div style={{ fontSize: 11, color: "#8da4c0" }}>{n.desc}</div>
+                        </div>
+                        <div style={{ width: 42, height: 24, borderRadius: 12, background: n.active ? "#1a5c9e" : "#e2eaf4", cursor: "pointer", position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
+                          <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: n.active ? 21 : 3, transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="card-hover" style={S.card}>
                   <div style={S.cardHeader}><Icon d={ic.settings} size={16} stroke="#6b8aaa" /><span style={S.cardTitle}>Préférences</span></div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={S.formGroup}>
                       <label style={S.label}>Devise</label>
-                      <select style={S.select}>
-                        <option>Franc CFA (XAF)</option>
-                        <option>Dollar ($)</option>
-                        <option>Euro (€)</option>
-                      </select>
+                      <select style={S.select}><option>Euro (FCFA)</option><option>Franc CFA (XAF)</option><option>Dollar ($)</option></select>
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Taux de TVA par défaut</label>
-                      <select style={S.select}>
-                        <option>19,25% (TVA Cameroun)</option>
-                        <option>0% (Exonéré)</option>
-                        <option>Suspension de TVA</option>
-                      </select>
-                    </div>
-                    <div style={S.formGroup}>
-                      <label style={S.label}>Référentiel comptable</label>
-                      <select style={S.select}>
-                        <option>SYSCOHADA Révisé</option>
-                        <option>SYSCOHADA</option>
-                        <option>IFRS</option>
-                      </select>
-                    </div>
-                    <div style={S.formGroup}>
-                      <label style={S.label}>Exercice fiscal</label>
-                      <select style={S.select}>
-                        <option>Janvier — Décembre</option>
-                      </select>
+                      <select style={S.select}><option>20%</option><option>10%</option><option>5.5%</option><option>0%</option></select>
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Langue</label>
-                      <select style={S.select}>
-                        <option>Français</option>
-                        <option>Anglais</option>
-                        <option>Bilingue (FR / EN)</option>
-                      </select>
+                      <select style={S.select}><option>Français</option><option>Anglais</option></select>
                     </div>
                   </div>
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
@@ -2766,195 +2760,9 @@ export default function App() {
       </main>
 
       {/* MODALS */}
-      {/* MODAL VISUALISATION CLIENT */}
-      {viewClient && (
-        <Modal title="Fiche client" onClose={() => setViewClient(null)}>
-          <div style={{ paddingRight: 4 }}>
-
-            {/* Entête */}
-            <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: "linear-gradient(135deg,#e8f0fb,#f0f6ff)", marginBottom: 16 }}>
-              <div style={{ width: 52, height: 52, borderRadius: 13, background: "linear-gradient(135deg,#2e7fcf,#1a5c9e)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 20, flexShrink: 0 }}>{viewClient.nom?.charAt(0) || "?"}</div>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#1e3a57" }}>{viewClient.nom}</div>
-                <div style={{ fontSize: 12, color: "#6b8aaa" }}>{viewClient.forme_juridique} {viewClient.secteur ? "— " + viewClient.secteur : ""}</div>
-                <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: viewClient.statut === "Actif" ? "#e8f5ee" : viewClient.statut === "En attente" ? "#fff8e6" : "#f5f5f5", color: viewClient.statut === "Actif" ? "#1a7a4a" : viewClient.statut === "En attente" ? "#c17f2a" : "#8a9aac" }}>{viewClient.statut}</span>
-              </div>
-            </div>
-
-            {/* Identification */}
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-              {[
-                { label: "NIU", value: viewClient.nif },
-                { label: "N° Contribuable", value: viewClient.numero_contribuable },
-                { label: "N° RCCM", value: viewClient.rccm },
-                { label: "N° Patente", value: viewClient.patente },
-                { label: "Date de création", value: viewClient.date_creation ? new Date(viewClient.date_creation).toLocaleDateString("fr-FR") : null },
-                { label: "Date clôture", value: viewClient.date_cloture },
-              ].filter(f => f.value).map((f, i) => (
-                <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                  <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                  <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Localisation */}
-            {(viewClient.region || viewClient.adresse) && <>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#1a7a4a", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f5ee" }}>📍 Localisation</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-                {[
-                  { label: "Région", value: viewClient.region },
-                  { label: "Département", value: viewClient.departement },
-                  { label: "Arrondissement", value: viewClient.arrondissement },
-                  { label: "Adresse", value: viewClient.adresse },
-                  { label: "Téléphone", value: viewClient.telephone },
-                  { label: "Email", value: viewClient.email },
-                  { label: "Site web", value: viewClient.site_web },
-                ].filter(f => f.value).map((f, i) => (
-                  <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                    <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                    <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
-                  </div>
-                ))}
-              </div>
-            </>}
-
-            {/* Représentant légal */}
-            {viewClient.dirigeant && <>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#8e44ad", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #f5eefb" }}>👤 Représentant légal</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-                {[
-                  { label: "Dirigeant", value: viewClient.dirigeant },
-                  { label: "Téléphone", value: viewClient.tel_dirigeant },
-                  { label: "Email", value: viewClient.email_dirigeant },
-                ].filter(f => f.value).map((f, i) => (
-                  <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                    <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                    <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
-                  </div>
-                ))}
-              </div>
-            </>}
-
-            {/* Fiscalité */}
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📊 Fiscalité & Comptabilité</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-              {[
-                { label: "Régime fiscal", value: viewClient.regime_fiscal },
-                { label: "Centre des impôts", value: viewClient.centre_impots },
-                { label: "TVA", value: viewClient.tva },
-                { label: "Référentiel", value: viewClient.referentiel },
-                { label: "Banque", value: viewClient.banque },
-              ].filter(f => f.value).map((f, i) => (
-                <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                  <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                  <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Suivi cabinet */}
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>🏢 Suivi cabinet</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {[
-                { label: "Responsable", value: viewClient.responsable },
-                { label: "Type de mission", value: viewClient.type_mission },
-                { label: "Date d'entrée", value: viewClient.date_entree ? new Date(viewClient.date_entree).toLocaleDateString("fr-FR") : null },
-                { label: "Honoraires", value: viewClient.honoraires ? Number(viewClient.honoraires).toLocaleString("fr-FR") + " FCFA/an" : null },
-                { label: "CA estimé", value: viewClient.ca ? Number(viewClient.ca).toLocaleString("fr-FR") + " FCFA/an" : null },
-              ].filter(f => f.value).map((f, i) => (
-                <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                  <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                  <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-            <button onClick={() => setViewClient(null)} style={{ padding: "9px 20px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Fermer</button>
-          </div>
-        </Modal>
-      )}
-
-      {/* MODAL EDITION CLIENT */}
-      {editClient && (
-        <Modal title="Modifier le client" onClose={() => setEditClient(null)}>
-          <div style={{ paddingRight: 4 }}>
-
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
-            <div style={S.formGroup}><label style={S.label}>Raison sociale *</label><input value={editClient.nom || ""} onChange={e => setEditClient(p => ({ ...p, nom: e.target.value }))} style={S.input} /></div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>Forme juridique</label><select value={editClient.forme_juridique || ""} onChange={e => setEditClient(p => ({ ...p, forme_juridique: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["SARL","SA","SAS","EURL","GIE","Entreprise individuelle","Association","ONG","Coopérative","Autre"].map(f => <option key={f}>{f}</option>)}</select></div>
-              <div style={S.formGroup}><label style={S.label}>Secteur d'activité</label><input value={editClient.secteur || ""} onChange={e => setEditClient(p => ({ ...p, secteur: e.target.value }))} style={S.input} /></div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>N° RCCM</label><input value={editClient.rccm || ""} onChange={e => setEditClient(p => ({ ...p, rccm: e.target.value }))} style={S.input} /></div>
-              <div style={S.formGroup}><label style={S.label}>NIU</label><input value={editClient.nif || ""} onChange={e => setEditClient(p => ({ ...p, nif: e.target.value }))} style={S.input} /></div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>N° Contribuable</label><input value={editClient.numero_contribuable || ""} onChange={e => setEditClient(p => ({ ...p, numero_contribuable: e.target.value }))} style={S.input} /></div>
-              <div style={S.formGroup}><label style={S.label}>Date de création</label><input type="date" value={editClient.date_creation || ""} onChange={e => setEditClient(p => ({ ...p, date_creation: e.target.value }))} style={S.input} /></div>
-            </div>
-
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a7a4a", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #e8f5ee" }}>📍 Localisation & Coordonnées</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>Région</label><select value={editClient.region || ""} onChange={e => setEditClient(p => ({ ...p, region: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["Adamaoua","Centre","Est","Extrême-Nord","Littoral","Nord","Nord-Ouest","Ouest","Sud","Sud-Ouest"].map(r => <option key={r}>{r}</option>)}</select></div>
-              <div style={S.formGroup}><label style={S.label}>Département</label><input value={editClient.departement || ""} onChange={e => setEditClient(p => ({ ...p, departement: e.target.value }))} style={S.input} /></div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>Arrondissement / Ville</label><input value={editClient.arrondissement || ""} onChange={e => setEditClient(p => ({ ...p, arrondissement: e.target.value }))} style={S.input} /></div>
-              <div style={S.formGroup}><label style={S.label}>Adresse</label><input value={editClient.adresse || ""} onChange={e => setEditClient(p => ({ ...p, adresse: e.target.value }))} style={S.input} /></div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>Téléphone</label><input value={editClient.telephone || ""} onChange={e => setEditClient(p => ({ ...p, telephone: e.target.value }))} style={S.input} /></div>
-              <div style={S.formGroup}><label style={S.label}>Email</label><input type="email" value={editClient.email || ""} onChange={e => setEditClient(p => ({ ...p, email: e.target.value }))} style={S.input} /></div>
-            </div>
-            <div style={S.formGroup}><label style={S.label}>Site web</label><input value={editClient.site_web || ""} onChange={e => setEditClient(p => ({ ...p, site_web: e.target.value }))} style={S.input} /></div>
-
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#8e44ad", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #f5eefb" }}>👤 Représentant légal</div>
-            <div style={S.formGroup}><label style={S.label}>Nom du dirigeant</label><input value={editClient.dirigeant || ""} onChange={e => setEditClient(p => ({ ...p, dirigeant: e.target.value }))} style={S.input} /></div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>Tél. dirigeant</label><input value={editClient.tel_dirigeant || ""} onChange={e => setEditClient(p => ({ ...p, tel_dirigeant: e.target.value }))} style={S.input} /></div>
-              <div style={S.formGroup}><label style={S.label}>Email dirigeant</label><input type="email" value={editClient.email_dirigeant || ""} onChange={e => setEditClient(p => ({ ...p, email_dirigeant: e.target.value }))} style={S.input} /></div>
-            </div>
-
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📊 Fiscalité & Comptabilité</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>Régime fiscal</label><select value={editClient.regime_fiscal || ""} onChange={e => setEditClient(p => ({ ...p, regime_fiscal: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["Régime de l'Impôt Général Synthétique (IGS)","Régime Réel","Régime des Organisations à But Non Lucratif","Régime des Contribuables Non Professionnels"].map(r => <option key={r}>{r}</option>)}</select></div>
-              <div style={S.formGroup}><label style={S.label}>Centre des impôts</label><select value={editClient.centre_impots || ""} onChange={e => setEditClient(p => ({ ...p, centre_impots: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["DGE (Direction des Grandes Entreprises)","CIME (Centre des Impôts des Moyennes Entreprises)","CFLP (Centre de Fiscalité Locale et des Particuliers)","CSI (Centre Spécialisé des Impôts)"].map(c => <option key={c}>{c}</option>)}</select></div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>Régime TVA</label><select value={editClient.tva || ""} onChange={e => setEditClient(p => ({ ...p, tva: e.target.value }))} style={S.select}>{["Assujetti 19,25%","Non assujetti","Exonéré","Suspension de TVA","Partiellement assujetti"].map(r => <option key={r}>{r}</option>)}</select></div>
-              <div style={S.formGroup}><label style={S.label}>Référentiel comptable</label><select value={editClient.referentiel || ""} onChange={e => setEditClient(p => ({ ...p, referentiel: e.target.value }))} style={S.select}>{["SYSCOHADA Révisé","SYSCOHADA","IFRS","Autre"].map(r => <option key={r}>{r}</option>)}</select></div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>Banque</label><select value={editClient.banque || ""} onChange={e => setEditClient(p => ({ ...p, banque: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["Afriland First Bank","BICEC","CCA Bank","Ecobank","Société Générale","SCB Cameroun","UBA","BGFI Bank","Atlantic Bank","NFC Bank","Autre"].map(b => <option key={b}>{b}</option>)}</select></div>
-              <div style={S.formGroup}><label style={S.label}>N° Patente</label><input value={editClient.patente || ""} onChange={e => setEditClient(p => ({ ...p, patente: e.target.value }))} style={S.input} /></div>
-            </div>
-
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>🏢 Suivi cabinet</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>Responsable dossier</label><select value={editClient.responsable || ""} onChange={e => setEditClient(p => ({ ...p, responsable: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{collaborateurs.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}</select></div>
-              <div style={S.formGroup}><label style={S.label}>Type de mission</label><select value={editClient.type_mission || ""} onChange={e => setEditClient(p => ({ ...p, type_mission: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["Tenue comptable SYSCOHADA","Audit légal / CAC","Audit contractuel","Conseil fiscal & juridique","Gestion de la paie","Déclarations fiscales (DSF, TVA...)","Création / Immatriculation","Assistance DGI / Contentieux","Autre"].map(m => <option key={m}>{m}</option>)}</select></div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>Statut</label><select value={editClient.statut || "Actif"} onChange={e => setEditClient(p => ({ ...p, statut: e.target.value }))} style={S.select}>{["Actif","En attente","Inactif","Suspendu"].map(s => <option key={s}>{s}</option>)}</select></div>
-              <div style={S.formGroup}><label style={S.label}>Date d'entrée en relation</label><input type="date" value={editClient.date_entree || ""} onChange={e => setEditClient(p => ({ ...p, date_entree: e.target.value }))} style={S.input} /></div>
-            </div>
-            <div style={S.formGroup}><label style={S.label}>Honoraires (FCFA/an)</label><input type="number" value={editClient.honoraires || ""} onChange={e => setEditClient(p => ({ ...p, honoraires: e.target.value }))} style={S.input} /></div>
-            <div style={S.formGroup}><label style={S.label}>Chiffre d'affaires estimé (FCFA/an)</label><input type="number" placeholder="Ex: 50000000" value={editClient.ca || ""} onChange={e => setEditClient(p => ({ ...p, ca: e.target.value }))} style={S.input} /></div>
-          </div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
-            <button onClick={() => setEditClient(null)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
-            <button onClick={updateClient} style={S.primaryBtn}>💾 Enregistrer</button>
-          </div>
-        </Modal>
-      )}
-
       {showAddClient && (
         <Modal title="Nouveau client" onClose={() => setShowAddClient(false)}>
-          <div style={{ paddingRight: 4 }}>
+          <div style={{ overflowY: "auto", maxHeight: "65vh", paddingRight: 4 }}>
 
             {/* ── Identification ── */}
             <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
@@ -3063,14 +2871,14 @@ export default function App() {
                 <label style={S.label}>Régime fiscal</label>
                 <select value={newClient.regime_fiscal} onChange={e => setNewClient(p => ({ ...p, regime_fiscal: e.target.value }))} style={S.select}>
                   <option value="">— Choisir —</option>
-                  {["Régime de l'Impôt Général Synthétique (IGS)","Régime Réel","Régime des Organisations à But Non Lucratif","Régime des Contribuables Non Professionnels"].map(r => <option key={r}>{r}</option>)}
+                  {["DGE (Grandes Entreprises)","DSF / DME (Moyennes Entreprises)","CDE (Centre des Entreprises)","RSI (Régime Simplifié)","Forfait de base","Exonéré"].map(r => <option key={r}>{r}</option>)}
                 </select>
               </div>
               <div style={S.formGroup}>
                 <label style={S.label}>Centre des impôts</label>
                 <select value={newClient.centre_impots} onChange={e => setNewClient(p => ({ ...p, centre_impots: e.target.value }))} style={S.select}>
                   <option value="">— Choisir —</option>
-                  {["DGE (Direction des Grandes Entreprises)","CIME (Centre des Impôts des Moyennes Entreprises)","CFLP (Centre de Fiscalité Locale et des Particuliers)","CSI (Centre Spécialisé des Impôts)"].map(c => <option key={c}>{c}</option>)}
+                  {["DGE Yaoundé","DGE Douala","DSF Centre","DSF Littoral","DSF Nord","DSF Sud","CDE Yaoundé","CDE Douala","Autre"].map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
@@ -3139,10 +2947,6 @@ export default function App() {
             <div style={S.formGroup}>
               <label style={S.label}>Honoraires convenus (FCFA/an)</label>
               <input type="number" placeholder="500000" value={newClient.honoraires} onChange={e => setNewClient(p => ({ ...p, honoraires: e.target.value }))} style={S.input} />
-            </div>
-            <div style={S.formGroup}>
-              <label style={S.label}>Chiffre d'affaires estimé (FCFA/an)</label>
-              <input type="number" placeholder="Ex: 50000000" value={newClient.ca} onChange={e => setNewClient(p => ({ ...p, ca: e.target.value }))} style={S.input} />
             </div>
           </div>
 
@@ -3491,8 +3295,8 @@ const S = {
   label: { fontSize: 12, fontWeight: 600, color: "#4a6d8c" },
   input: { padding: "9px 12px", borderRadius: 8, border: "1px solid #87CEEB", fontSize: 13, color: "#1e3a57", background: "#ffffff", outline: "none", fontFamily: "inherit" },
   select: { padding: "9px 12px", borderRadius: 8, border: "1px solid #87CEEB", fontSize: 13, color: "#1e3a57", background: "#ffffff", outline: "none" },
-  overlay: { position: "fixed", inset: 0, background: "rgba(15,39,68,.5)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, overflowY: "auto", padding: "20px 12px" },
-  modal: { background: "#fff", borderRadius: 16, padding: "24px 28px", width: "min(520px, 95vw)", maxWidth: "95vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)", overflowX: "hidden", boxSizing: "border-box", margin: "auto" },
+  overlay: { position: "fixed", inset: 0, background: "rgba(15,39,68,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
+  modal: { background: "#fff", borderRadius: 16, padding: "24px 28px", width: 480, maxWidth: "92vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)", maxHeight: "90vh", overflowY: "auto" },
   modalHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   modalTitle: { fontSize: 16, fontWeight: 700, color: "#1e3a57" },
 };
