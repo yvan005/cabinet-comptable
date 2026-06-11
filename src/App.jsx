@@ -2922,7 +2922,7 @@ export default function App() {
             <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📊 Fiscalité & Comptabilité</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}><label style={S.label}>Régime fiscal</label><select value={editClient.regime_fiscal || ""} onChange={e => setEditClient(p => ({ ...p, regime_fiscal: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["Régime de l'Impôt Général Synthétique (IGS)","Régime Réel","Régime des Organisations à But Non Lucratif","Régime des Contribuables Non Professionnels"].map(r => <option key={r}>{r}</option>)}</select></div>
-              <div style={S.formGroup}><label style={S.label}>Centre des impôts</label><select value={editClient.centre_impots || ""} onChange={e => setEditClient(p => ({ ...p, centre_impots: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["DGE (Direction des Grandes Entreprises)","CIME (Centre des Impôts des Moyennes Entreprises)","CFLP (Centre des Impôts des Petites Entreprises et Particuliers)","CSI (Centre Spécialisé des Impôts — Professions Libérales)"].map(c => <option key={c}>{c}</option>)}</select></div>
+              <div style={S.formGroup}><label style={S.label}>Centre des impôts</label><select value={editClient.centre_impots || ""} onChange={e => setEditClient(p => ({ ...p, centre_impots: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["DGE (Direction des Grandes Entreprises)","CIME (Centre des Impôts des Moyennes Entreprises)","CFLP (Centre de Fiscalité Locale et des Particuliers)","CSI (Centre Spécialisé des Impôts)"].map(c => <option key={c}>{c}</option>)}</select></div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}><label style={S.label}>Régime TVA</label><select value={editClient.tva || ""} onChange={e => setEditClient(p => ({ ...p, tva: e.target.value }))} style={S.select}>{["Assujetti 19,25%","Non assujetti","Exonéré","Suspension de TVA","Partiellement assujetti"].map(r => <option key={r}>{r}</option>)}</select></div>
@@ -3070,7 +3070,7 @@ export default function App() {
                 <label style={S.label}>Centre des impôts</label>
                 <select value={newClient.centre_impots} onChange={e => setNewClient(p => ({ ...p, centre_impots: e.target.value }))} style={S.select}>
                   <option value="">— Choisir —</option>
-                  {["DGE (Direction des Grandes Entreprises)","CIME (Centre des Impôts des Moyennes Entreprises)","CFLP (Centre des Impôts des Petites Entreprises et Particuliers)","CSI (Centre Spécialisé des Impôts — Professions Libérales)"].map(c => <option key={c}>{c}</option>)}
+                  {["DGE (Direction des Grandes Entreprises)","CIME (Centre des Impôts des Moyennes Entreprises)","CFLP (Centre de Fiscalité Locale et des Particuliers)","CSI (Centre Spécialisé des Impôts)"].map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
@@ -3492,7 +3492,7 @@ const S = {
   input: { padding: "9px 12px", borderRadius: 8, border: "1px solid #87CEEB", fontSize: 13, color: "#1e3a57", background: "#ffffff", outline: "none", fontFamily: "inherit" },
   select: { padding: "9px 12px", borderRadius: 8, border: "1px solid #87CEEB", fontSize: 13, color: "#1e3a57", background: "#ffffff", outline: "none" },
   overlay: { position: "fixed", inset: 0, background: "rgba(15,39,68,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
-  modal: { background: "#fff", borderRadius: 16, padding: "24px 28px", width: 480, maxWidth: "92vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)", maxHeight: "90vh", overflowY: "auto" },
+  modal: { background: "#fff", borderRadius: 16, padding: "24px 28px", width: "min(520px, 95vw)", maxWidth: "95vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)", maxHeight: "90vh", overflowY: "auto", overflowX: "hidden", boxSizing: "border-box" },
   modalHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   modalTitle: { fontSize: 16, fontWeight: 700, color: "#1e3a57" },
 };
