@@ -259,7 +259,7 @@ export default function App() {
   const [showPreview, setShowPreview] = useState(false);
   const [editingDevisId, setEditingDevisId] = useState(null);
 
-  const [newClient, setNewClient] = useState({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA", statut: "Actif", honoraires: "" });
+  const [newClient, setNewClient] = useState({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA", statut: "Actif", honoraires: "", ca: "" });
 
   const [collaborateurs, setCollaborateurs] = useState([]);
   const [showAddCollab, setShowAddCollab] = useState(false);
@@ -332,7 +332,7 @@ export default function App() {
   const addClient = async () => {
     if (!newClient.nom) return;
     await db.post("clients", newClient);
-    setNewClient({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA Révisé", statut: "Actif", honoraires: "" });
+    setNewClient({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA Révisé", statut: "Actif", honoraires: "", ca: "" });
     setShowAddClient(false); loadAll();
   };
   const deleteClient = async (id) => { await db.delete("clients", id); loadAll(); };
@@ -2862,6 +2862,7 @@ export default function App() {
                 { label: "Type de mission", value: viewClient.type_mission },
                 { label: "Date d'entrée", value: viewClient.date_entree ? new Date(viewClient.date_entree).toLocaleDateString("fr-FR") : null },
                 { label: "Honoraires", value: viewClient.honoraires ? Number(viewClient.honoraires).toLocaleString("fr-FR") + " FCFA/an" : null },
+                { label: "CA estimé", value: viewClient.ca ? Number(viewClient.ca).toLocaleString("fr-FR") + " FCFA/an" : null },
               ].filter(f => f.value).map((f, i) => (
                 <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
                   <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
@@ -2942,6 +2943,7 @@ export default function App() {
               <div style={S.formGroup}><label style={S.label}>Date d'entrée en relation</label><input type="date" value={editClient.date_entree || ""} onChange={e => setEditClient(p => ({ ...p, date_entree: e.target.value }))} style={S.input} /></div>
             </div>
             <div style={S.formGroup}><label style={S.label}>Honoraires (FCFA/an)</label><input type="number" value={editClient.honoraires || ""} onChange={e => setEditClient(p => ({ ...p, honoraires: e.target.value }))} style={S.input} /></div>
+            <div style={S.formGroup}><label style={S.label}>Chiffre d'affaires estimé (FCFA/an)</label><input type="number" placeholder="Ex: 50000000" value={editClient.ca || ""} onChange={e => setEditClient(p => ({ ...p, ca: e.target.value }))} style={S.input} /></div>
           </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
             <button onClick={() => setEditClient(null)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
@@ -3137,6 +3139,10 @@ export default function App() {
             <div style={S.formGroup}>
               <label style={S.label}>Honoraires convenus (FCFA/an)</label>
               <input type="number" placeholder="500000" value={newClient.honoraires} onChange={e => setNewClient(p => ({ ...p, honoraires: e.target.value }))} style={S.input} />
+            </div>
+            <div style={S.formGroup}>
+              <label style={S.label}>Chiffre d'affaires estimé (FCFA/an)</label>
+              <input type="number" placeholder="Ex: 50000000" value={newClient.ca} onChange={e => setNewClient(p => ({ ...p, ca: e.target.value }))} style={S.input} />
             </div>
           </div>
 
