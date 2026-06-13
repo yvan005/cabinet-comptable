@@ -2304,7 +2304,7 @@ export default function App() {
                         <button key={f} onClick={() => {}} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: "#fff", color: "#4a6d8c", cursor: "pointer", fontSize: 12 }}>{f} ({f === "Tous" ? abonnements.length : abonnements.filter(a => a.statut === f).length})</button>
                       ))}
                     </div>
-                    <button onClick={() => { setNewAbonnement({ client: clients[0]?.nom || "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" }); setShowAddAbonnement(true); }} style={S.primaryBtn}>
+                    <button onClick={() => { setNewAbonnement({ client: clients[0]?.nom || "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" }); setShowAddAbo(true); }} style={S.primaryBtn}>
                       <Icon d={ic.plus} size={14} stroke="#fff" /> Nouvel abonnement
                     </button>
                   </div>
