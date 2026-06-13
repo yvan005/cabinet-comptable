@@ -247,7 +247,7 @@ export default function App() {
   const [showAddAbonnement, setShowAddAbonnement] = useState(false);
   const [showAddAbo, setShowAddAbo] = useState(false);
   const [aboFilter, setAboFilter] = useState("Tous");
-  const [newAbo, setNewAbo] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
+  const [newAbo, setNewAbo] = useState({ client: "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
   const [newAbonnement, setNewAbonnement] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" });
   const [serviceSearch, setServiceSearch] = useState("");
   const [abonnements, setAbonnements] = useState([]);
@@ -259,7 +259,7 @@ export default function App() {
   const [showPreview, setShowPreview] = useState(false);
   const [editingDevisId, setEditingDevisId] = useState(null);
 
-  const [newClient, setNewClient] = useState({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA", statut: "Actif", honoraires: "", ca: "" });
+  const [newClient, setNewClient] = useState({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", numero_recepisse: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA", statut: "Actif", honoraires: "", ca: "" });
 
   const [collaborateurs, setCollaborateurs] = useState([]);
   const [showAddCollab, setShowAddCollab] = useState(false);
@@ -332,7 +332,7 @@ export default function App() {
   const addClient = async () => {
     if (!newClient.nom) return;
     await db.post("clients", newClient);
-    setNewClient({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA Révisé", statut: "Actif", honoraires: "", ca: "" });
+    setNewClient({ nom: "", forme_juridique: "", rccm: "", nif: "", numero_contribuable: "", numero_recepisse: "", date_creation: "", secteur: "", region: "", departement: "", arrondissement: "", adresse: "", telephone: "", email: "", site_web: "", dirigeant: "", tel_dirigeant: "", email_dirigeant: "", regime_fiscal: "", centre_impots: "", tva: "Assujetti 19,25%", date_cloture: "31/12", banque: "", patente: "", responsable: "", date_entree: new Date().toISOString().split("T")[0], type_mission: "", referentiel: "SYSCOHADA Révisé", statut: "Actif", honoraires: "", ca: "" });
     setShowAddClient(false); loadAll();
   };
   const deleteClient = async (id) => { await db.delete("clients", id); loadAll(); };
@@ -356,7 +356,8 @@ export default function App() {
   // ABONNEMENTS
   const addAbonnement = async () => {
     if (!newAbonnement.client || !newAbonnement.service || !newAbonnement.montant) return;
-    await db.post("abonnements", { ...newAbonnement, montant: parseFloat(newAbonnement.montant) });
+    const aboData = { ...newAbo, montant: parseFloat(newAbo.montant), service: (newAbo.services || []).join(", ") };
+    await db.post("abonnements", aboData);
     setNewAbonnement({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
     setShowAddAbonnement(false); loadAll();
   };
@@ -2769,7 +2770,7 @@ export default function App() {
       {/* MODAL VISUALISATION CLIENT */}
       {viewClient && (
         <Modal title="Fiche client" onClose={() => setViewClient(null)}>
-          <div style={{ overflowY: "auto", maxHeight: "70vh", paddingRight: 4 }}>
+          <div style={{ paddingRight: 4 }}>
 
             {/* Entête */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: "linear-gradient(135deg,#e8f0fb,#f0f6ff)", marginBottom: 16 }}>
@@ -2788,6 +2789,7 @@ export default function App() {
                 { label: "NIU", value: viewClient.nif },
                 { label: "N° Contribuable", value: viewClient.numero_contribuable },
                 { label: "N° RCCM", value: viewClient.rccm },
+                { label: "N° Récépissé", value: viewClient.numero_recepisse },
                 { label: "N° Patente", value: viewClient.patente },
                 { label: "Date de création", value: viewClient.date_creation ? new Date(viewClient.date_creation).toLocaleDateString("fr-FR") : null },
                 { label: "Date clôture", value: viewClient.date_cloture },
@@ -2880,7 +2882,7 @@ export default function App() {
       {/* MODAL EDITION CLIENT */}
       {editClient && (
         <Modal title="Modifier le client" onClose={() => setEditClient(null)}>
-          <div style={{ overflowY: "auto", maxHeight: "65vh", paddingRight: 4 }}>
+          <div style={{ paddingRight: 4 }}>
 
             <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
             <div style={S.formGroup}><label style={S.label}>Raison sociale *</label><input value={editClient.nom || ""} onChange={e => setEditClient(p => ({ ...p, nom: e.target.value }))} style={S.input} /></div>
@@ -2894,6 +2896,7 @@ export default function App() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}><label style={S.label}>N° Contribuable</label><input value={editClient.numero_contribuable || ""} onChange={e => setEditClient(p => ({ ...p, numero_contribuable: e.target.value }))} style={S.input} /></div>
+              <div style={S.formGroup}><label style={S.label}>N° Récépissé</label><input placeholder="Ex: REC/2024/XXX" value={editClient.numero_recepisse || ""} onChange={e => setEditClient(p => ({ ...p, numero_recepisse: e.target.value }))} style={S.input} /></div>
               <div style={S.formGroup}><label style={S.label}>Date de création</label><input type="date" value={editClient.date_creation || ""} onChange={e => setEditClient(p => ({ ...p, date_creation: e.target.value }))} style={S.input} /></div>
             </div>
 
@@ -2922,7 +2925,7 @@ export default function App() {
             <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📊 Fiscalité & Comptabilité</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}><label style={S.label}>Régime fiscal</label><select value={editClient.regime_fiscal || ""} onChange={e => setEditClient(p => ({ ...p, regime_fiscal: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["Régime de l'Impôt Général Synthétique (IGS)","Régime Réel","Régime des Organisations à But Non Lucratif","Régime des Contribuables Non Professionnels"].map(r => <option key={r}>{r}</option>)}</select></div>
-              <div style={S.formGroup}><label style={S.label}>Centre des impôts</label><select value={editClient.centre_impots || ""} onChange={e => setEditClient(p => ({ ...p, centre_impots: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["DGE (Direction des Grandes Entreprises)","CIME (Centre des Impôts des Moyennes Entreprises)","CFLP (Centre de Fiscalité Locale et des Particuliers)","CSI (Centre Spécialisé des Impôts)"].map(c => <option key={c}>{c}</option>)}</select></div>
+              <div style={S.formGroup}><label style={S.label}>Centre des impôts</label><select value={editClient.centre_impots || ""} onChange={e => setEditClient(p => ({ ...p, centre_impots: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["DGE (Direction des Grandes Entreprises)","CIME (Centre des Impôts des Moyennes Entreprises)","CFLP (Centre de Fiscalité Locale et des Particuliers)","CSI (Centre Spécialisé des Impôts)","CSIPL (Centre Spécialisé des Impôts des Professions Libérales)"].map(c => <option key={c}>{c}</option>)}</select></div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}><label style={S.label}>Régime TVA</label><select value={editClient.tva || ""} onChange={e => setEditClient(p => ({ ...p, tva: e.target.value }))} style={S.select}>{["Assujetti 19,25%","Non assujetti","Exonéré","Suspension de TVA","Partiellement assujetti"].map(r => <option key={r}>{r}</option>)}</select></div>
@@ -2954,7 +2957,7 @@ export default function App() {
 
       {showAddClient && (
         <Modal title="Nouveau client" onClose={() => setShowAddClient(false)}>
-          <div style={{ overflowY: "auto", maxHeight: "65vh", paddingRight: 4 }}>
+          <div style={{ paddingRight: 4 }}>
 
             {/* ── Identification ── */}
             <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
@@ -2992,6 +2995,10 @@ export default function App() {
               <div style={S.formGroup}>
                 <label style={S.label}>N° Contribuable</label>
                 <input placeholder="P012-XXX-XXX-XXX-X" value={newClient.numero_contribuable} onChange={e => setNewClient(p => ({ ...p, numero_contribuable: e.target.value }))} style={S.input} />
+              </div>
+              <div style={S.formGroup}>
+                <label style={S.label}>N° Récépissé</label>
+                <input placeholder="Ex: REC/2024/XXX" value={newClient.numero_recepisse} onChange={e => setNewClient(p => ({ ...p, numero_recepisse: e.target.value }))} style={S.input} />
               </div>
               <div style={S.formGroup}>
                 <label style={S.label}>Date de création</label>
@@ -3070,7 +3077,7 @@ export default function App() {
                 <label style={S.label}>Centre des impôts</label>
                 <select value={newClient.centre_impots} onChange={e => setNewClient(p => ({ ...p, centre_impots: e.target.value }))} style={S.select}>
                   <option value="">— Choisir —</option>
-                  {["DGE (Direction des Grandes Entreprises)","CIME (Centre des Impôts des Moyennes Entreprises)","CFLP (Centre de Fiscalité Locale et des Particuliers)","CSI (Centre Spécialisé des Impôts)"].map(c => <option key={c}>{c}</option>)}
+                  {["DGE (Direction des Grandes Entreprises)","CIME (Centre des Impôts des Moyennes Entreprises)","CFLP (Centre de Fiscalité Locale et des Particuliers)","CSI (Centre Spécialisé des Impôts)","CSIPL (Centre Spécialisé des Impôts des Professions Libérales)"].map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
@@ -3280,15 +3287,33 @@ export default function App() {
             </select>
           </div>
           <div style={S.formGroup}>
-            <label style={S.label}>Service souscrit *</label>
-            <select value={newAbo.service} onChange={e => setNewAbo(p => ({ ...p, service: e.target.value }))} style={S.select}>
-              <option value="">-- Sélectionner --</option>
-              {["Assistance Comptable","Assistance Fiscale","Assistance Sociale","Assistance Juridique"].map(g => (
-                <optgroup key={g} label={g}>
-                  {services.filter(s => s.groupe === g).map(s => <option key={s.id}>{s.nom}</option>)}
-                </optgroup>
-              ))}
-            </select>
+            <label style={S.label}>Services souscrits * <span style={{ color: "#8da4c0", fontWeight: 400 }}>({newAbo.services?.length || 0} sélectionné(s))</span></label>
+            <div style={{ border: "1.5px solid #87CEEB", borderRadius: 8, padding: "8px 10px", maxHeight: 200, overflowY: "auto", background: "#fff" }}>
+              {["Assistance Comptable","Assistance Fiscale","Assistance Sociale","Assistance Juridique"].map(g => {
+                const srvs = services.filter(s => s.groupe === g);
+                if (!srvs.length) return null;
+                return (
+                  <div key={g} style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>{g}</div>
+                    {srvs.map(s => (
+                      <label key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 6px", borderRadius: 6, cursor: "pointer", background: newAbo.services?.includes(s.nom) ? "#e8f0fb" : "transparent" }}>
+                        <input type="checkbox"
+                          checked={newAbo.services?.includes(s.nom) || false}
+                          onChange={e => {
+                            const updated = e.target.checked
+                              ? [...(newAbo.services || []), s.nom]
+                              : (newAbo.services || []).filter(n => n !== s.nom);
+                            setNewAbo(p => ({ ...p, services: updated }));
+                          }}
+                          style={{ accentColor: "#1a5c9e", width: 14, height: 14 }} />
+                        <span style={{ fontSize: 12, color: "#1e3a57" }}>{s.nom}</span>
+                      </label>
+                    ))}
+                  </div>
+                );
+              })}
+              {services.length === 0 && <div style={{ fontSize: 12, color: "#8da4c0", textAlign: "center", padding: 8 }}>Aucun service disponible</div>}
+            </div>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <div style={S.formGroup}>
@@ -3491,8 +3516,8 @@ const S = {
   label: { fontSize: 12, fontWeight: 600, color: "#4a6d8c" },
   input: { padding: "9px 12px", borderRadius: 8, border: "1px solid #87CEEB", fontSize: 13, color: "#1e3a57", background: "#ffffff", outline: "none", fontFamily: "inherit" },
   select: { padding: "9px 12px", borderRadius: 8, border: "1px solid #87CEEB", fontSize: 13, color: "#1e3a57", background: "#ffffff", outline: "none" },
-  overlay: { position: "fixed", inset: 0, background: "rgba(15,39,68,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 },
-  modal: { background: "#fff", borderRadius: 16, padding: "24px 28px", width: "min(520px, 95vw)", maxWidth: "95vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)", maxHeight: "90vh", overflowY: "auto", overflowX: "hidden", boxSizing: "border-box" },
+  overlay: { position: "fixed", inset: 0, background: "rgba(15,39,68,.5)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, overflowY: "auto", padding: "20px 12px" },
+  modal: { background: "#fff", borderRadius: 16, padding: "24px 28px", width: "min(520px, 95vw)", maxWidth: "95vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)", overflowX: "hidden", boxSizing: "border-box", margin: "auto" },
   modalHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   modalTitle: { fontSize: 16, fontWeight: 700, color: "#1e3a57" },
 };
