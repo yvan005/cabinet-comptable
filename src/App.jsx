@@ -247,7 +247,7 @@ export default function App() {
   const [showAddAbo, setShowAddAbo] = useState(false);
   const [viewAbo, setViewAbo] = useState(null);
   const [aboFilter, setAboFilter] = useState("Tous");
-  const [newAbo, setNewAbo] = useState({ client: "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" });
+  const [newAbo, setNewAbo] = useState({ client: "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
   const [serviceSearch, setServiceSearch] = useState("");
   const [abonnements, setAbonnements] = useState([]);
   const [devisClientSearch, setDevisClientSearch] = useState("");
@@ -357,7 +357,10 @@ export default function App() {
   const addAbonnement = async () => {
     if (!newAbo.client || !newAbo.services?.length || !newAbo.montant) return;
     const { services, ...rest } = newAbo;
-    const aboData = { ...rest, montant: parseFloat(newAbo.montant), service: services.join(", ") };
+    const freqDays = { "Mensuel": 30, "Trimestriel": 90, "Semestriel": 180, "Annuel": 365 };
+    const echeance = new Date();
+    echeance.setDate(echeance.getDate() + (freqDays[newAbo.frequence] || 30));
+    const aboData = { ...rest, montant: parseFloat(newAbo.montant), service: services.join(", "), prochaine_echeance: echeance.toISOString().split("T")[0] };
     await db.post("abonnements", aboData);
     setNewAbo({ client: "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
     setShowAddAbo(false);
@@ -3255,17 +3258,11 @@ export default function App() {
             <label style={S.label}>Date de début</label>
             <input type="date" value={newAbo.date_debut} onChange={e => setNewAbo(p => ({ ...p, date_debut: e.target.value }))} style={S.input} />
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <div style={S.formGroup}>
-              <label style={S.label}>Prochaine échéance</label>
-              <input type="date" value={newAbo.prochaine_echeance} onChange={e => setNewAbo(p => ({ ...p, prochaine_echeance: e.target.value }))} style={S.input} />
-            </div>
-            <div style={S.formGroup}>
-              <label style={S.label}>Statut</label>
-              <select value={newAbo.statut} onChange={e => setNewAbo(p => ({ ...p, statut: e.target.value }))} style={S.select}>
-                {["Actif","Suspendu","Résilié"].map(s => <option key={s}>{s}</option>)}
-              </select>
-            </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Statut</label>
+            <select value={newAbo.statut} onChange={e => setNewAbo(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+              {["Actif","Suspendu","Résilié"].map(s => <option key={s}>{s}</option>)}
+            </select>
           </div>
           <div style={S.formGroup}>
             <label style={S.label}>Note (optionnel)</label>
