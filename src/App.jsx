@@ -3093,7 +3093,13 @@ export default function App() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 32 }}>
                 <div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: "#1a5c9e" }}>CGA-CDA</div>
-                  <div style={{ fontSize: 11, color: "#6b8aaa", maxWidth: 240, lineHeight: 1.5 }}>Centrale des Associés - Conseils & Expertise Comptable et Fiscale</div>
+                  <div style={{ fontSize: 11, color: "#4a6d8c", fontWeight: 600, lineHeight: 1.5 }}>Centre de Gestion Agréé — Centrale Des Associés</div>
+                  <div style={{ fontSize: 10, color: "#6b8aaa", lineHeight: 1.8, marginTop: 4 }}>
+                    <div>NIU : M072116419497J</div>
+                    <div>📞 222 29 30 14</div>
+                    <div>✉ contact.cgacda@gmail.com</div>
+                    <div>📍 Carrefour Artisanat, Maroua, Cameroun</div>
+                  </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: "#1e3a57" }}>DEVIS</div>
@@ -3151,7 +3157,8 @@ export default function App() {
 
               {/* Pied de page */}
               <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid #e2eaf4", fontSize: 11, color: "#8da4c0", textAlign: "center" }}>
-                CGA-CDA — Centrale des Associés - Conseils & Expertise Comptable et Fiscale<br/>
+CGA-CDA — Centre de Gestion Agréé | NIU : M072116419497J<br/>
+                Carrefour Artisanat, Maroua, Cameroun | Tél : 222 29 30 14 | contact.cgacda@gmail.com<br/>
                 Devis valable 30 jours à compter de la date d&apos;émission
               </div>
             </div>
