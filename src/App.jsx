@@ -2306,7 +2306,7 @@ export default function App() {
                         <button key={f} onClick={() => {}} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: "#fff", color: "#4a6d8c", cursor: "pointer", fontSize: 12 }}>{f} ({f === "Tous" ? abonnements.length : abonnements.filter(a => a.statut === f).length})</button>
                       ))}
                     </div>
-                    <button onClick={() => { setNewAbonnement({ client: clients[0]?.nom || "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" }); setShowAddAbo(true); }} style={S.primaryBtn}>
+                    <button onClick={() => { setNewAbo({ client: clients[0]?.nom || "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" }); setShowAddAbo(true); }} style={S.primaryBtn}>
                       <Icon d={ic.plus} size={14} stroke="#fff" /> Nouvel abonnement
                     </button>
                   </div>
@@ -3234,57 +3234,7 @@ export default function App() {
       )}
 
 
-      {showAddAbonnement && (
-        <Modal title="Nouvel abonnement" onClose={() => setShowAddAbonnement(false)}>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <div style={S.formGroup}>
-              <label style={S.label}>Client *</label>
-              <select value={newAbonnement.client} onChange={e => setNewAbonnement(p => ({ ...p, client: e.target.value }))} style={S.select}>
-                {clients.map(c => <option key={c.id}>{c.nom}</option>)}
-              </select>
-            </div>
-            <div style={S.formGroup}>
-              <label style={S.label}>Fréquence</label>
-              <select value={newAbonnement.frequence} onChange={e => setNewAbonnement(p => ({ ...p, frequence: e.target.value }))} style={S.select}>
-                {["Mensuel", "Trimestriel", "Semestriel", "Annuel"].map(f => <option key={f}>{f}</option>)}
-              </select>
-            </div>
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Service souscrit *</label>
-            <select value={newAbonnement.service} onChange={e => setNewAbonnement(p => ({ ...p, service: e.target.value }))} style={S.select}>
-              <option value="">-- Sélectionner --</option>
-              {["Assistance Comptable","Assistance Fiscale","Assistance Sociale","Assistance Juridique"].map(g => (
-                <optgroup key={g} label={g}>
-                  {services.filter(s => s.groupe === g).map(s => <option key={s.id}>{s.nom}</option>)}
-                </optgroup>
-              ))}
-            </select>
-          </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <div style={S.formGroup}>
-              <label style={S.label}>Montant (FCFA) *</label>
-              <input type="number" placeholder="0" value={newAbonnement.montant} onChange={e => setNewAbonnement(p => ({ ...p, montant: e.target.value }))} style={S.input} />
-            </div>
-            <div style={S.formGroup}>
-              <label style={S.label}>Date de début</label>
-              <input type="date" value={newAbonnement.date_debut} onChange={e => setNewAbonnement(p => ({ ...p, date_debut: e.target.value }))} style={S.select} />
-            </div>
-            <div style={S.formGroup}>
-              <label style={S.label}>Prochaine échéance</label>
-              <input type="date" value={newAbonnement.prochaine_echeance} onChange={e => setNewAbonnement(p => ({ ...p, prochaine_echeance: e.target.value }))} style={S.select} />
-            </div>
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Note (optionnel)</label>
-            <input placeholder="Remarque sur l'abonnement..." value={newAbonnement.note} onChange={e => setNewAbonnement(p => ({ ...p, note: e.target.value }))} style={S.input} />
-          </div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
-            <button onClick={() => setShowAddAbonnement(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
-            <button onClick={addAbonnement} style={S.primaryBtn}>Enregistrer</button>
-          </div>
-        </Modal>
-      )}
+
 
 
       {showAddService && (
