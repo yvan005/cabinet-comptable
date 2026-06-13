@@ -828,32 +828,35 @@ export default function App() {
                   {/* ── ROW 3 : Top clients + Activité récente ── */}
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
 
-                    {/* Top clients */}
+                    {/* Alertes abonnements */}
                     <div className="card-hover" style={S.card}>
                       <div style={S.cardHeader}>
-                        <Icon d={ic.clients} size={16} stroke="#8e44ad" />
-                        <span style={S.cardTitle}>Top clients (CA)</span>
+                        <Icon d={ic.alert} size={16} stroke="#c0392b" />
+                        <span style={S.cardTitle}>Abonnements à renouveler</span>
+                        {abosSoon.length > 0 && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#fff0f0", color: "#c0392b", padding: "3px 8px", borderRadius: 6 }}>{abosSoon.length} dans 30j</span>}
                       </div>
-                      {topClients.length === 0 ? (
-                        <div style={S.empty}>Aucun devis payé pour l'instant</div>
+                      {abosSoon.length === 0 ? (
+                        <div style={S.empty}>✅ Aucune échéance dans les 30 prochains jours</div>
                       ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          {topClients.map(([nom, ca], i) => (
-                            <div key={nom} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <div style={{ width: 24, height: 24, borderRadius: "50%", background: ["linear-gradient(135deg,#f6c90e,#e8a400)","#e8e8e8","#cd7f32","#e8f0fb"][i] || "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: i === 0 ? "#7a5000" : "#6b8aaa", flexShrink: 0 }}>
-                                {i + 1}
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{nom}</span>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a5c9e" }}>{ca.toLocaleString("fr-FR")} FCFA</span>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                          {abosSoon.map((a, i) => {
+                            const days = Math.round((new Date(a.prochaine_echeance) - now) / 86400000);
+                            return (
+                              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < abosSoon.length - 1 ? "1px solid #f0f4fa" : "none" }}>
+                                <div style={{ width: 30, height: 30, borderRadius: 8, background: days <= 7 ? "#fff0f0" : "#fff8e6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
+                                  {days <= 7 ? "🔴" : "🟡"}
                                 </div>
-                                <div style={{ height: 5, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
-                                  <div style={{ width: `${(ca / maxTopCA) * 100}%`, height: "100%", background: i === 0 ? "linear-gradient(90deg,#f6c90e,#e8a400)" : "#c8ddf5", borderRadius: 3 }} />
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{a.client}</div>
+                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{a.service}</div>
+                                </div>
+                                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: days <= 7 ? "#c0392b" : "#c17f2a" }}>J-{days}</div>
+                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{(a.montant || 0).toLocaleString("fr-FR")} FCFA</div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -890,35 +893,32 @@ export default function App() {
                   {/* ── ROW 4 : Alertes + Dépenses vs MRR ── */}
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
 
-                    {/* Alertes abonnements */}
+                    {/* Top clients */}
                     <div className="card-hover" style={S.card}>
                       <div style={S.cardHeader}>
-                        <Icon d={ic.alert} size={16} stroke="#c0392b" />
-                        <span style={S.cardTitle}>Abonnements à renouveler</span>
-                        {abosSoon.length > 0 && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#fff0f0", color: "#c0392b", padding: "3px 8px", borderRadius: 6 }}>{abosSoon.length} dans 30j</span>}
+                        <Icon d={ic.clients} size={16} stroke="#8e44ad" />
+                        <span style={S.cardTitle}>Top clients (CA)</span>
                       </div>
-                      {abosSoon.length === 0 ? (
-                        <div style={S.empty}>✅ Aucune échéance dans les 30 prochains jours</div>
+                      {topClients.length === 0 ? (
+                        <div style={S.empty}>Aucun devis payé pour l'instant</div>
                       ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                          {abosSoon.map((a, i) => {
-                            const days = Math.round((new Date(a.prochaine_echeance) - now) / 86400000);
-                            return (
-                              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < abosSoon.length - 1 ? "1px solid #f0f4fa" : "none" }}>
-                                <div style={{ width: 30, height: 30, borderRadius: 8, background: days <= 7 ? "#fff0f0" : "#fff8e6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
-                                  {days <= 7 ? "🔴" : "🟡"}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                          {topClients.map(([nom, ca], i) => (
+                            <div key={nom} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 24, height: 24, borderRadius: "50%", background: ["linear-gradient(135deg,#f6c90e,#e8a400)","#e8e8e8","#cd7f32","#e8f0fb"][i] || "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: i === 0 ? "#7a5000" : "#6b8aaa", flexShrink: 0 }}>
+                                {i + 1}
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{nom}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a5c9e" }}>{ca.toLocaleString("fr-FR")} FCFA</span>
                                 </div>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{a.client}</div>
-                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{a.service}</div>
-                                </div>
-                                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 700, color: days <= 7 ? "#c0392b" : "#c17f2a" }}>J-{days}</div>
-                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{(a.montant || 0).toLocaleString("fr-FR")} FCFA</div>
+                                <div style={{ height: 5, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
+                                  <div style={{ width: `${(ca / maxTopCA) * 100}%`, height: "100%", background: i === 0 ? "linear-gradient(90deg,#f6c90e,#e8a400)" : "#c8ddf5", borderRadius: 3 }} />
                                 </div>
                               </div>
-                            );
-                          })}
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
