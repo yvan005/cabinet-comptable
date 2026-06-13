@@ -357,7 +357,8 @@ export default function App() {
   // ABONNEMENTS
   const addAbonnement = async () => {
     if (!newAbo.client || !newAbo.services?.length || !newAbo.montant) return;
-    const aboData = { ...newAbo, montant: parseFloat(newAbo.montant), service: (newAbo.services || []).join(", ") };
+    const { services, ...rest } = newAbo;
+    const aboData = { ...rest, montant: parseFloat(newAbo.montant), service: services.join(", ") };
     await db.post("abonnements", aboData);
     setNewAbo({ client: "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
     setShowAddAbo(false);
