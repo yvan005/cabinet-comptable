@@ -244,12 +244,10 @@ export default function App() {
   const [newService, setNewService] = useState({ nom: "", description: "", tarif: "", unite: "forfait", groupe: "Assistance Comptable", actif: true });
   const [showEditService, setShowEditService] = useState(false);
   const [editService, setEditService] = useState(null);
-  const [showAddAbonnement, setShowAddAbonnement] = useState(false);
   const [showAddAbo, setShowAddAbo] = useState(false);
   const [viewAbo, setViewAbo] = useState(null);
   const [aboFilter, setAboFilter] = useState("Tous");
   const [newAbo, setNewAbo] = useState({ client: "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" });
-  const [newAbonnement, setNewAbonnement] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" });
   const [serviceSearch, setServiceSearch] = useState("");
   const [abonnements, setAbonnements] = useState([]);
   const [devisClientSearch, setDevisClientSearch] = useState("");
@@ -365,8 +363,6 @@ export default function App() {
     setShowAddAbo(false);
     loadAll();
   };
-  const toggleAbonnementStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
-  const deleteAbonnement = async (id) => { await db.delete("abonnements", id); loadAll(); };
   const deleteAbo = async (id) => { await db.delete("abonnements", id); loadAll(); };
   const toggleAboStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
   const getMRR = () => abonnements.filter(a => a.statut === "Actif").reduce((s, a) => {
@@ -2353,10 +2349,10 @@ export default function App() {
                           {/* Actions */}
                           <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
                             <button title="Voir détail" onClick={() => setViewAbo(a)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.eye} size={13} stroke="#1a5c9e" /></button>
-                            {a.statut === "Actif" && <button title="Suspendre" onClick={() => toggleAbonnementStatut(a, "Suspendu")} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #f0d080", background: "#fff8e6", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>⏸</button>}
-                            {a.statut === "Suspendu" && <button title="Réactiver" onClick={() => toggleAbonnementStatut(a, "Actif")} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>▶️</button>}
-                            {a.statut !== "Résilié" && <button title="Résilier" onClick={() => { if(window.confirm("Résilier cet abonnement ?")) toggleAbonnementStatut(a, "Résilié"); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🚫</button>}
-                            {a.statut === "Résilié" && <button title="Supprimer" onClick={() => { if(window.confirm("Supprimer définitivement ?")) deleteAbonnement(a.id); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>}
+                            {a.statut === "Actif" && <button title="Suspendre" onClick={() => toggleAboStatut(a, "Suspendu")} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #f0d080", background: "#fff8e6", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>⏸</button>}
+                            {a.statut === "Suspendu" && <button title="Réactiver" onClick={() => toggleAboStatut(a, "Actif")} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>▶️</button>}
+                            {a.statut !== "Résilié" && <button title="Résilier" onClick={() => { if(window.confirm("Résilier cet abonnement ?")) toggleAboStatut(a, "Résilié"); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🚫</button>}
+                            {a.statut === "Résilié" && <button title="Supprimer" onClick={() => { if(window.confirm("Supprimer définitivement ?")) deleteAbo(a.id); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>}
                           </div>
                         </div>
                       );
