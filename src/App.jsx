@@ -356,11 +356,12 @@ export default function App() {
 
   // ABONNEMENTS
   const addAbonnement = async () => {
-    if (!newAbonnement.client || !newAbonnement.service || !newAbonnement.montant) return;
+    if (!newAbo.client || !newAbo.services?.length || !newAbo.montant) return;
     const aboData = { ...newAbo, montant: parseFloat(newAbo.montant), service: (newAbo.services || []).join(", ") };
     await db.post("abonnements", aboData);
-    setNewAbonnement({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
-    setShowAddAbonnement(false); loadAll();
+    setNewAbo({ client: "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
+    setShowAddAbo(false);
+    loadAll();
   };
   const toggleAbonnementStatut = async (a, statut) => { await db.patch("abonnements", a.id, { statut }); loadAll(); };
   const deleteAbonnement = async (id) => { await db.delete("abonnements", id); loadAll(); };
