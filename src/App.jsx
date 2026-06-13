@@ -246,8 +246,9 @@ export default function App() {
   const [editService, setEditService] = useState(null);
   const [showAddAbonnement, setShowAddAbonnement] = useState(false);
   const [showAddAbo, setShowAddAbo] = useState(false);
+  const [viewAbo, setViewAbo] = useState(null);
   const [aboFilter, setAboFilter] = useState("Tous");
-  const [newAbo, setNewAbo] = useState({ client: "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" });
+  const [newAbo, setNewAbo] = useState({ client: "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" });
   const [newAbonnement, setNewAbonnement] = useState({ client: "", service: "", montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], prochaine_echeance: "", statut: "Actif", note: "" });
   const [serviceSearch, setServiceSearch] = useState("");
   const [abonnements, setAbonnements] = useState([]);
@@ -2351,6 +2352,7 @@ export default function App() {
                           <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 20, background: sc.bg, color: sc.color, border: "1px solid " + sc.border, flexShrink: 0 }}>{a.statut}</span>
                           {/* Actions */}
                           <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                            <button title="Voir détail" onClick={() => setViewAbo(a)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.eye} size={13} stroke="#1a5c9e" /></button>
                             {a.statut === "Actif" && <button title="Suspendre" onClick={() => toggleAbonnementStatut(a, "Suspendu")} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #f0d080", background: "#fff8e6", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>⏸</button>}
                             {a.statut === "Suspendu" && <button title="Réactiver" onClick={() => toggleAbonnementStatut(a, "Actif")} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>▶️</button>}
                             {a.statut !== "Résilié" && <button title="Résilier" onClick={() => { if(window.confirm("Résilier cet abonnement ?")) toggleAbonnementStatut(a, "Résilié"); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🚫</button>}
@@ -3161,6 +3163,49 @@ export default function App() {
 
 
 
+      {/* MODAL VISUALISATION ABONNEMENT */}
+      {viewAbo && (
+        <Modal title="Détail abonnement" onClose={() => setViewAbo(null)}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: "linear-gradient(135deg,#e8f0fb,#f0f6ff)", marginBottom: 16 }}>
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: "linear-gradient(135deg,#2e7fcf,#1a5c9e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🔄</div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#1e3a57" }}>{viewAbo.client}</div>
+              <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: viewAbo.statut === "Actif" ? "#e8f5ee" : viewAbo.statut === "Suspendu" ? "#fff8e6" : "#fff0f0", color: viewAbo.statut === "Actif" ? "#1a7a4a" : viewAbo.statut === "Suspendu" ? "#c17f2a" : "#c0392b" }}>{viewAbo.statut}</span>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+            {[
+              { label: "Montant", value: viewAbo.montant ? Number(viewAbo.montant).toLocaleString("fr-FR") + " FCFA" : "—" },
+              { label: "Fréquence", value: viewAbo.frequence || "—" },
+              { label: "Date de début", value: viewAbo.date_debut ? new Date(viewAbo.date_debut).toLocaleDateString("fr-FR") : "—" },
+              { label: "Prochaine échéance", value: viewAbo.prochaine_echeance ? new Date(viewAbo.prochaine_echeance).toLocaleDateString("fr-FR") : "—" },
+            ].map((f, i) => (
+              <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
+                <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
+                <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 700, marginTop: 2 }}>{f.value}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Services souscrits</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {(viewAbo.service || "").split(", ").filter(Boolean).map((s, i) => (
+                <span key={i} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 20, background: "#e8f0fb", color: "#1a5c9e", fontWeight: 600 }}>{s}</span>
+              ))}
+              {!viewAbo.service && <span style={{ fontSize: 12, color: "#8da4c0" }}>Aucun service</span>}
+            </div>
+          </div>
+          {viewAbo.note && (
+            <div style={{ padding: "10px 14px", borderRadius: 9, background: "#f5f8fc", fontSize: 13, color: "#4a6d8c", fontStyle: "italic", marginBottom: 14 }}>
+              📝 {viewAbo.note}
+            </div>
+          )}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+            <button onClick={() => setViewAbo(null)} style={{ padding: "9px 20px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Fermer</button>
+          </div>
+        </Modal>
+      )}
+
       {showAddAbo && (
         <Modal title="Nouvel abonnement" onClose={() => setShowAddAbo(false)}>
           <div style={S.formGroup}>
@@ -3210,15 +3255,19 @@ export default function App() {
               </select>
             </div>
           </div>
+          <div style={S.formGroup}>
+            <label style={S.label}>Date de début</label>
+            <input type="date" value={newAbo.date_debut} onChange={e => setNewAbo(p => ({ ...p, date_debut: e.target.value }))} style={S.input} />
+          </div>
           <div style={{ display: "flex", gap: 12 }}>
             <div style={S.formGroup}>
-              <label style={S.label}>Date de début</label>
-              <input type="date" value={newAbo.date_debut} onChange={e => setNewAbo(p => ({ ...p, date_debut: e.target.value }))} style={S.select} />
+              <label style={S.label}>Prochaine échéance</label>
+              <input type="date" value={newAbo.prochaine_echeance} onChange={e => setNewAbo(p => ({ ...p, prochaine_echeance: e.target.value }))} style={S.input} />
             </div>
             <div style={S.formGroup}>
               <label style={S.label}>Statut</label>
               <select value={newAbo.statut} onChange={e => setNewAbo(p => ({ ...p, statut: e.target.value }))} style={S.select}>
-                {["Actif","Suspendu"].map(s => <option key={s}>{s}</option>)}
+                {["Actif","Suspendu","Résilié"].map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
           </div>
