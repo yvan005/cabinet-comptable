@@ -3114,7 +3114,7 @@ export default function App() {
                 return (
                   <div style={{ background: "#f5f8fc", borderRadius: 10, padding: "16px 20px", marginBottom: 24, display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
                     <div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", marginBottom: 8, letterSpacing: 0.5 }}>Destinataire</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", marginBottom: 8, letterSpacing: 0.5 }}>Client</div>
                       <div style={{ fontWeight: 800, fontSize: 15, color: "#1e3a57" }}>{previewDevis.client}</div>
                       {cd.forme_juridique && <div style={{ fontSize: 12, color: "#4a6d8c", fontWeight: 600 }}>{cd.forme_juridique}</div>}
                       {cd.secteur && <div style={{ fontSize: 11, color: "#6b8aaa", marginTop: 2 }}>Secteur : {cd.secteur}</div>}
