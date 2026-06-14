@@ -3122,13 +3122,7 @@ export default function App() {
                       {cd.telephone && <div style={{ fontSize: 11, color: "#6b8aaa" }}>📞 {cd.telephone}</div>}
                       {cd.email && <div style={{ fontSize: 11, color: "#6b8aaa" }}>✉ {cd.email}</div>}
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      {cd.nif && <div style={{ fontSize: 11, color: "#6b8aaa" }}>NIU : <span style={{ fontWeight: 700, color: "#1e3a57" }}>{cd.nif}</span></div>}
-                      {cd.rccm && <div style={{ fontSize: 11, color: "#6b8aaa" }}>RCCM : <span style={{ fontWeight: 700, color: "#1e3a57" }}>{cd.rccm}</span></div>}
-                      {cd.numero_contribuable && <div style={{ fontSize: 11, color: "#6b8aaa" }}>N° Contribuable : <span style={{ fontWeight: 700, color: "#1e3a57" }}>{cd.numero_contribuable}</span></div>}
-                      {cd.regime_fiscal && <div style={{ fontSize: 11, color: "#6b8aaa", marginTop: 4 }}>Régime : {cd.regime_fiscal}</div>}
-                      {cd.dirigeant && <div style={{ fontSize: 11, color: "#6b8aaa" }}>Représentant : {cd.dirigeant}</div>}
-                    </div>
+
                   </div>
                 );
               })()}
