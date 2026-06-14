@@ -1269,11 +1269,11 @@ export default function App() {
                         <Icon d={ic.eye} size={14} stroke="#1a5c9e" /> Aperçu
                       </button>
                       {editingDevisId ? (
-                        {canDo("devis","modifier") && <button onClick={() => updateDevis(editingDevisId, "Enregistré")} disabled={devisSaving} style={{ ...S.primaryBtn, background: "#1a7a4a" }}>
+                        canDo("devis","modifier") && <button onClick={() => updateDevis(editingDevisId, "Enregistré")} disabled={devisSaving} style={{ ...S.primaryBtn, background: "#1a7a4a" }}>
                           <Icon d={ic.check} size={14} stroke="#fff" />{devisSaving ? "…" : "Mettre à jour"}
                         </button>
                       ) : (
-                        {canDo("devis","ajouter") && <button onClick={() => saveDevis("Enregistré")} disabled={devisSaving} style={S.primaryBtn}>
+                        canDo("devis","ajouter") && <button onClick={() => saveDevis("Enregistré")} disabled={devisSaving} style={S.primaryBtn}>
                           <Icon d={ic.send} size={14} stroke="#fff" />{devisSaving ? "…" : "Enregistrer"}
                         </button>
                       )}
