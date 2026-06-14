@@ -219,6 +219,7 @@ const Modal = ({ title, onClose, children }) => (
 export default function App() {
   const isMobile = useIsMobile();
   const [session, setSession] = useState(() => auth.getSession());
+  const [userPerms, setUserPerms] = useState(null);
   const [page, setPage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -267,6 +268,9 @@ export default function App() {
   const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
   const [collabSaving, setCollabSaving] = useState(false);
   const [showAccesCollab, setShowAccesCollab] = useState(false);
+  const [showPermissions, setShowPermissions] = useState(false);
+  const [permCollab, setPermCollab] = useState(null);
+  const [permSaving, setPermSaving] = useState(false);
   const [accesCollab, setAccesCollab] = useState(null);
   const [accesEmail, setAccesEmail] = useState("");
   const [accesPassword, setAccesPassword] = useState("");
@@ -298,6 +302,16 @@ export default function App() {
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  const savePermissions = async () => {
+    if (!permCollab) return;
+    setPermSaving(true);
+    await db.patch("collaborateurs", permCollab.id, { permissions: permCollab.permissions });
+    setPermSaving(false);
+    setShowPermissions(false);
+    setPermCollab(null);
+    loadAll();
+  };
 
   const createAcces = async () => {
     if (!accesEmail || !accesPassword) { setAccesMsg({ type: "error", text: "Email et mot de passe requis." }); return; }
@@ -528,6 +542,27 @@ export default function App() {
 
   const pageTitle = { abonnements: "Abonnements", dashboard: "Tableau de bord", clients: "Clients", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", depenses: "Dépenses", settings: "Paramètres" }[page] || "";
 
+  // Charger les permissions du collaborateur connecté
+  const loadUserPerms = useCallback(async () => {
+    if (!session) return;
+    const email = session.user?.email;
+    const col = collaborateurs.find(c => c.email === email);
+    if (col) setUserPerms(col.permissions || {});
+    else setUserPerms(null); // admin — pas de restriction
+  }, [session, collaborateurs]);
+
+  useEffect(() => { loadUserPerms(); }, [loadUserPerms]);
+
+  const canDo = (module, action) => {
+    if (!userPerms) return true; // admin — tout autorisé
+    return userPerms[module]?.[action] !== false && (userPerms[module]?.[action] === true || userPerms[module]?.voir === true);
+  };
+
+  const canSee = (module) => {
+    if (!userPerms) return true;
+    return userPerms[module]?.voir === true;
+  };
+
   if (!session) return <LoginScreen onLogin={(s) => setSession(s)} />;
 
   return (
@@ -575,7 +610,7 @@ export default function App() {
           </div>
         </div>
         <nav style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 12px", flex: 1 }}>
-          {navItems.map(item => (
+          {navItems.filter(item => canSee(item.id)).map(item => (
             <button key={item.id} onClick={() => navigate(item.id)} className="nav-hover" style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", borderRadius: 9, background: page === item.id ? "linear-gradient(135deg,#2e7fcf,#1a5c9e)" : "none", border: "none", cursor: "pointer", color: page === item.id ? "#fff" : "#8da4c0", fontSize: 13, fontWeight: page === item.id ? 600 : 500, textAlign: "left", width: "100%" }}>
               <Icon d={item.icon} size={17} stroke={page === item.id ? "#fff" : "#8da4c0"} />
               <span style={{ flex: 1 }}>{item.label}</span>
@@ -1792,6 +1827,120 @@ export default function App() {
 
             {/* ── COLLABORATEURS ── */}
             {/* Modal accès collaborateur — hors IIFE */}
+            {/* MODAL PERMISSIONS */}
+            {showPermissions && permCollab && (() => {
+              const modules = [
+                { id: "dashboard", label: "📊 Dashboard" },
+                { id: "clients", label: "👥 Clients" },
+                { id: "abonnements", label: "🔄 Abonnements" },
+                { id: "devis", label: "📄 Devis" },
+                { id: "services", label: "🛠 Services" },
+                { id: "depenses", label: "💸 Dépenses" },
+                { id: "rapports", label: "📈 Rapports" },
+                { id: "collab", label: "👤 Collaborateurs" },
+                { id: "documents", label: "📁 Documents" },
+                { id: "settings", label: "⚙️ Paramètres" },
+              ];
+              const actions = ["voir", "ajouter", "modifier", "supprimer"];
+              const actionLabels = { voir: "Voir", ajouter: "Ajouter", modifier: "Modifier", supprimer: "Supprimer" };
+
+              const getPerm = (moduleId, action) => {
+                return permCollab.permissions?.[moduleId]?.[action] || false;
+              };
+
+              const togglePerm = (moduleId, action) => {
+                const current = getPerm(moduleId, action);
+                setPermCollab(p => ({
+                  ...p,
+                  permissions: {
+                    ...p.permissions,
+                    [moduleId]: {
+                      ...(p.permissions?.[moduleId] || {}),
+                      [action]: !current
+                    }
+                  }
+                }));
+              };
+
+              const toggleAll = (moduleId) => {
+                const allChecked = actions.every(a => getPerm(moduleId, a));
+                setPermCollab(p => ({
+                  ...p,
+                  permissions: {
+                    ...p.permissions,
+                    [moduleId]: Object.fromEntries(actions.map(a => [a, !allChecked]))
+                  }
+                }));
+              };
+
+              return (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(10,30,60,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+                  <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 600, boxShadow: "0 8px 40px rgba(0,30,80,.18)", maxHeight: "90vh", overflowY: "auto" }}>
+                    {/* Header */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                      <div style={{ width: 42, height: 42, borderRadius: "50%", background: "#1a5c9e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15 }}>
+                        {permCollab.nom?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: "#1e3a57" }}>Permissions — {permCollab.nom}</div>
+                        <div style={{ fontSize: 11, color: "#8da4c0" }}>Définissez les droits d'accès de ce collaborateur</div>
+                      </div>
+                    </div>
+
+                    {/* Tableau permissions */}
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: "#f5f8fc" }}>
+                            <th style={{ padding: "10px 12px", textAlign: "left", color: "#4a6d8c", fontWeight: 700, borderBottom: "2px solid #e2eaf4" }}>Module</th>
+                            {actions.map(a => (
+                              <th key={a} style={{ padding: "10px 12px", textAlign: "center", color: "#4a6d8c", fontWeight: 700, borderBottom: "2px solid #e2eaf4" }}>{actionLabels[a]}</th>
+                            ))}
+                            <th style={{ padding: "10px 12px", textAlign: "center", color: "#4a6d8c", fontWeight: 700, borderBottom: "2px solid #e2eaf4" }}>Tout</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {modules.map((mod, i) => (
+                            <tr key={mod.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafbfd", borderBottom: "1px solid #f0f4fa" }}>
+                              <td style={{ padding: "10px 12px", fontWeight: 600, color: "#1e3a57" }}>{mod.label}</td>
+                              {actions.map(action => (
+                                <td key={action} style={{ padding: "10px 12px", textAlign: "center" }}>
+                                  <input type="checkbox"
+                                    checked={getPerm(mod.id, action)}
+                                    onChange={() => togglePerm(mod.id, action)}
+                                    style={{ width: 16, height: 16, accentColor: "#1a5c9e", cursor: "pointer" }}
+                                  />
+                                </td>
+                              ))}
+                              <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                                <input type="checkbox"
+                                  checked={actions.every(a => getPerm(mod.id, a))}
+                                  onChange={() => toggleAll(mod.id)}
+                                  style={{ width: 16, height: 16, accentColor: "#8e44ad", cursor: "pointer" }}
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Boutons */}
+                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+                      <button onClick={() => { setShowPermissions(false); setPermCollab(null); }}
+                        style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>
+                        Annuler
+                      </button>
+                      <button onClick={savePermissions} disabled={permSaving}
+                        style={{ ...S.primaryBtn, opacity: permSaving ? 0.7 : 1 }}>
+                        {permSaving ? "Enregistrement..." : "💾 Enregistrer"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {showAccesCollab && accesCollab && (
               <div style={{ position: "fixed", inset: 0, background: "rgba(10,30,60,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
                 <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 420, boxShadow: "0 8px 40px rgba(0,30,80,.18)" }}>
@@ -2009,6 +2158,10 @@ export default function App() {
                           <div key={c.id} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
                             {/* Actions */}
                             <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6 }}>
+                              <button onClick={() => { setPermCollab({ ...c, permissions: c.permissions || {} }); setShowPermissions(true); }}
+                                title="Gérer les permissions" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
+                                🔒
+                              </button>
                               <button onClick={() => { setAccesCollab(c); setAccesEmail(c.email || ""); setAccesPassword(""); setAccesMsg(null); setShowAccesCollab(true); }}
                                 title="Créer un accès" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
                                 🔑
@@ -2759,7 +2912,7 @@ export default function App() {
         {/* BOTTOM NAV mobile */}
         {isMobile && (
           <nav style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", borderTop: "1px solid #e2eaf4", display: "flex", zIndex: 50, paddingBottom: "env(safe-area-inset-bottom)" }}>
-            {navItems.filter(item => ["dashboard", "clients", "services", "depenses", "devis", "rapports"].includes(item.id)).map(item => (
+            {navItems.filter(item => ["dashboard", "clients", "services", "depenses", "devis", "rapports"].includes(item.id) && canSee(item.id)).map(item => (
               <button key={item.id} onClick={() => navigate(item.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "10px 4px", background: "none", border: "none", cursor: "pointer", color: page === item.id ? "#1a5c9e" : "#8da4c0", position: "relative" }}>
                 <Icon d={item.icon} size={20} stroke={page === item.id ? "#1a5c9e" : "#8da4c0"} />
                 <span style={{ fontSize: 9, marginTop: 3, fontWeight: page === item.id ? 700 : 400 }}>{item.label.split(" ")[0]}</span>
