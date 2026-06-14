@@ -3109,11 +3109,29 @@ export default function App() {
               </div>
 
               {/* Infos client */}
-              <div style={{ background: "#f5f8fc", borderRadius: 10, padding: "16px 20px", marginBottom: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", marginBottom: 8, letterSpacing: 0.5 }}>Client</div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "#1e3a57" }}>{previewDevis.client}</div>
-                {previewDevis.clientData?.secteur && <div style={{ fontSize: 12, color: "#6b8aaa", marginTop: 2 }}>Secteur : {previewDevis.clientData.secteur}</div>}
-              </div>
+              {(() => {
+                const cd = clients.find(c => c.nom === previewDevis.client) || {};
+                return (
+                  <div style={{ background: "#f5f8fc", borderRadius: 10, padding: "16px 20px", marginBottom: 24, display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", textTransform: "uppercase", marginBottom: 8, letterSpacing: 0.5 }}>Destinataire</div>
+                      <div style={{ fontWeight: 800, fontSize: 15, color: "#1e3a57" }}>{previewDevis.client}</div>
+                      {cd.forme_juridique && <div style={{ fontSize: 12, color: "#4a6d8c", fontWeight: 600 }}>{cd.forme_juridique}</div>}
+                      {cd.secteur && <div style={{ fontSize: 11, color: "#6b8aaa", marginTop: 2 }}>Secteur : {cd.secteur}</div>}
+                      {cd.adresse && <div style={{ fontSize: 11, color: "#6b8aaa" }}>📍 {cd.adresse}{cd.arrondissement ? ", " + cd.arrondissement : ""}{cd.region ? " — " + cd.region : ""}</div>}
+                      {cd.telephone && <div style={{ fontSize: 11, color: "#6b8aaa" }}>📞 {cd.telephone}</div>}
+                      {cd.email && <div style={{ fontSize: 11, color: "#6b8aaa" }}>✉ {cd.email}</div>}
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      {cd.nif && <div style={{ fontSize: 11, color: "#6b8aaa" }}>NIU : <span style={{ fontWeight: 700, color: "#1e3a57" }}>{cd.nif}</span></div>}
+                      {cd.rccm && <div style={{ fontSize: 11, color: "#6b8aaa" }}>RCCM : <span style={{ fontWeight: 700, color: "#1e3a57" }}>{cd.rccm}</span></div>}
+                      {cd.numero_contribuable && <div style={{ fontSize: 11, color: "#6b8aaa" }}>N° Contribuable : <span style={{ fontWeight: 700, color: "#1e3a57" }}>{cd.numero_contribuable}</span></div>}
+                      {cd.regime_fiscal && <div style={{ fontSize: 11, color: "#6b8aaa", marginTop: 4 }}>Régime : {cd.regime_fiscal}</div>}
+                      {cd.dirigeant && <div style={{ fontSize: 11, color: "#6b8aaa" }}>Représentant : {cd.dirigeant}</div>}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Lignes */}
               <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 24 }}>
