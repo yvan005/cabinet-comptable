@@ -1011,7 +1011,7 @@ export default function App() {
                       <Icon d={ic.search} size={15} stroke="#8da4c0" />
                       <input placeholder="Rechercher un client…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#1e3a57", width: 160 }} />
                     </div>
-                    <button onClick={() => setShowAddClient(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouveau</button>
+                    {canDo("clients","ajouter") && <button onClick={() => setShowAddClient(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouveau</button>}
                   </div>
                 </div>
                 {isMobile ? (
@@ -1036,10 +1036,8 @@ export default function App() {
                             <button onClick={() => setViewClient(c)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                               <Icon d={ic.eye} size={14} stroke="#1a5c9e" />
                             </button>
-                            <button onClick={() => setEditClient({ ...c })} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <Icon d={ic.edit} size={14} stroke="#1a7a4a" />
-                            </button>
-                            <button onClick={() => deleteClient(c.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={14} stroke="#c0392b" /></button>
+                            {canDo("clients","modifier") && <button onClick={() => setEditClient({ ...c })} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.edit} size={14} stroke="#1a7a4a" /></button>}
+                            {canDo("clients","supprimer") && <button onClick={() => deleteClient(c.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={14} stroke="#c0392b" /></button>}
                           </div>
                         </div>
                       </div>
@@ -1067,10 +1065,8 @@ export default function App() {
                           <button onClick={() => setViewClient(c)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                             <Icon d={ic.eye} size={14} stroke="#1a5c9e" />
                           </button>
-                          <button onClick={() => setEditClient({ ...c })} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <Icon d={ic.edit} size={14} stroke="#1a7a4a" />
-                          </button>
-                          <button onClick={() => deleteClient(c.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={14} stroke="#c0392b" /></button>
+                          {canDo("clients","modifier") && <button onClick={() => setEditClient({ ...c })} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.edit} size={14} stroke="#1a7a4a" /></button>}
+                          {canDo("clients","supprimer") && <button onClick={() => deleteClient(c.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={14} stroke="#c0392b" /></button>}
                         </div>
                       </div>
                     ))}
@@ -1273,11 +1269,11 @@ export default function App() {
                         <Icon d={ic.eye} size={14} stroke="#1a5c9e" /> Aperçu
                       </button>
                       {editingDevisId ? (
-                        <button onClick={() => updateDevis(editingDevisId, "Enregistré")} disabled={devisSaving} style={{ ...S.primaryBtn, background: "#1a7a4a" }}>
+                        {canDo("devis","modifier") && <button onClick={() => updateDevis(editingDevisId, "Enregistré")} disabled={devisSaving} style={{ ...S.primaryBtn, background: "#1a7a4a" }}>
                           <Icon d={ic.check} size={14} stroke="#fff" />{devisSaving ? "…" : "Mettre à jour"}
                         </button>
                       ) : (
-                        <button onClick={() => saveDevis("Enregistré")} disabled={devisSaving} style={S.primaryBtn}>
+                        {canDo("devis","ajouter") && <button onClick={() => saveDevis("Enregistré")} disabled={devisSaving} style={S.primaryBtn}>
                           <Icon d={ic.send} size={14} stroke="#fff" />{devisSaving ? "…" : "Enregistrer"}
                         </button>
                       )}
@@ -2136,9 +2132,7 @@ export default function App() {
 
                   {/* Toolbar */}
                   <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
-                    <button onClick={() => { setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" }); setShowAddCollab(true); }} style={S.primaryBtn}>
-                      <Icon d={ic.plus} size={14} stroke="#fff" /> Ajouter un collaborateur
-                    </button>
+                    {canDo("collab","ajouter") && <button onClick={() => { setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" }); setShowAddCollab(true); }} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Ajouter un collaborateur</button>}
                   </div>
 
                   {/* Grille collaborateurs */}
@@ -2170,10 +2164,7 @@ export default function App() {
                                 style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <Icon d={ic.edit} size={12} stroke="#4a6d8c" />
                               </button>
-                              <button onClick={() => deleteCollab(c.id)}
-                                style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <Icon d={ic.trash} size={12} stroke="#c0392b" />
-                              </button>
+                              {canDo("collab","supprimer") && <button onClick={() => deleteCollab(c.id)} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={12} stroke="#c0392b" /></button>}
                             </div>
                             {/* Avatar + infos */}
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -2355,9 +2346,7 @@ export default function App() {
                         </button>
                       ))}
                     </div>
-                    <button onClick={() => setShowAddDoc(true)} style={S.primaryBtn}>
-                      <Icon d={ic.plus} size={14} stroke="#fff" /> Déposer
-                    </button>
+                    {canDo("documents","ajouter") && <button onClick={() => setShowAddDoc(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Déposer</button>}
                   </div>
 
                   {/* Liste */}
@@ -2391,10 +2380,7 @@ export default function App() {
                                 <Icon d={ic.download} size={13} stroke="#1a5c9e" />
                               </a>
                             )}
-                            <button onClick={() => deleteDoc(d)}
-                              style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <Icon d={ic.trash} size={13} stroke="#c0392b" />
-                            </button>
+                            {canDo("documents","supprimer") && <button onClick={() => deleteDoc(d)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>}
                           </div>
                         </div>
                       );
@@ -2459,9 +2445,7 @@ export default function App() {
                         <button key={f} onClick={() => {}} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: "#fff", color: "#4a6d8c", cursor: "pointer", fontSize: 12 }}>{f} ({f === "Tous" ? abonnements.length : abonnements.filter(a => a.statut === f).length})</button>
                       ))}
                     </div>
-                    <button onClick={() => { setNewAbo({ client: clients[0]?.nom || "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" }); setShowAddAbo(true); }} style={S.primaryBtn}>
-                      <Icon d={ic.plus} size={14} stroke="#fff" /> Nouvel abonnement
-                    </button>
+                    {canDo("abonnements","ajouter") && <button onClick={() => { setNewAbo({ client: clients[0]?.nom || "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" }); setShowAddAbo(true); }} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouvel abonnement</button>}
                   </div>
 
                   {/* Liste */}
@@ -2508,7 +2492,7 @@ export default function App() {
                             {a.statut === "Actif" && <button title="Suspendre" onClick={() => toggleAboStatut(a, "Suspendu")} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #f0d080", background: "#fff8e6", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="#c17f2a"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></button>}
                             {a.statut === "Suspendu" && <button title="Réactiver" onClick={() => toggleAboStatut(a, "Actif")} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #c3e6cb", background: "#e8f5ee", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="#1a7a4a"><polygon points="5,3 19,12 5,21"/></svg></button>}
                             {a.statut !== "Résilié" && <button title="Résilier" onClick={() => { if(window.confirm("Résilier cet abonnement ?")) toggleAboStatut(a, "Résilié"); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>🚫</button>}
-                            {a.statut === "Résilié" && <button title="Supprimer" onClick={() => { if(window.confirm("Supprimer définitivement ?")) deleteAbo(a.id); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>}
+                            {a.statut === "Résilié" && canDo("abonnements","supprimer") && <button title="Supprimer" onClick={() => { if(window.confirm("Supprimer définitivement ?")) deleteAbo(a.id); }} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>}
                           </div>
                         </div>
                       );
@@ -2618,9 +2602,7 @@ export default function App() {
                       <Icon d={ic.search} size={15} stroke="#8da4c0" />
                       <input placeholder="Rechercher un service…" value={serviceSearch} onChange={e => setServiceSearch(e.target.value)} style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#1e3a57", width: "100%" }} />
                     </div>
-                    <button onClick={() => { setNewService({ nom: "", description: "", tarif: "", unite: "forfait", groupe: "Assistance Comptable", actif: true }); setShowAddService(true); }} style={S.primaryBtn}>
-                      <Icon d={ic.plus} size={14} stroke="#fff" /> Nouveau service
-                    </button>
+                    {canDo("services","ajouter") && <button onClick={() => { setNewService({ nom: "", description: "", tarif: "", unite: "forfait", groupe: "Assistance Comptable", actif: true }); setShowAddService(true); }} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouveau service</button>}
                   </div>
 
                   {/* Groupes */}
@@ -2653,7 +2635,7 @@ export default function App() {
                                   <button onClick={() => { setEditService(item); setShowEditService(true); }} style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid #e2eaf4", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                     <Icon d={ic.trend} size={12} stroke="#1a5c9e" />
                                   </button>
-                                  {item.id && <button onClick={() => deleteService(item.id)} style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={12} stroke="#c0392b" /></button>}
+                                  {item.id && canDo("services","supprimer") && <button onClick={() => deleteService(item.id)} style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={12} stroke="#c0392b" /></button>}
                                 </div>
                               </div>
                             ))}
@@ -2685,7 +2667,7 @@ export default function App() {
                       <button key={val} onClick={() => setDepensePeriode(val)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: depensePeriode === val ? "#1a5c9e" : "#fff", color: depensePeriode === val ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12, fontWeight: 500 }}>{label}</button>
                     ))}
                   </div>
-                  <button onClick={() => setShowAddDepense(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouvelle dépense</button>
+                  {canDo("depenses","ajouter") && <button onClick={() => setShowAddDepense(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouvelle dépense</button>}
                 </div>
 
                 {/* KPIs période */}
@@ -2759,7 +2741,7 @@ export default function App() {
                         <div style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: color + "18", color, flexShrink: 0 }}>{d.categorie}</div>
                         <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0 }}>{d.date ? new Date(d.date).toLocaleDateString("fr-FR") : "—"}</div>
                         <div style={{ fontWeight: 800, fontSize: 14, color: "#c0392b", flexShrink: 0, minWidth: 120, textAlign: "right" }}>{(d.montant || 0).toLocaleString("fr-FR")} FCFA</div>
-                        <button onClick={() => deleteDepense(d.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>
+                        {canDo("depenses","supprimer") && <button onClick={() => deleteDepense(d.id)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>}
                       </div>
                     );
                   })}
