@@ -2634,7 +2634,7 @@ export default function App() {
                                 <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                                   {canDo("services","modifier") && <button onClick={() => { setEditService(item); setShowEditService(true); }} style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid #e2eaf4", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                     <Icon d={ic.trend} size={12} stroke="#1a5c9e" />
-                                  </button>
+                                  </button>}
                                   {item.id && canDo("services","supprimer") && <button onClick={() => deleteService(item.id)} style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={12} stroke="#c0392b" /></button>}
                                 </div>
                               </div>
