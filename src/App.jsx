@@ -371,7 +371,13 @@ export default function App() {
   const [editClient, setEditClient] = useState(null);
   const [clientTab, setClientTab] = useState(0);
 
-  const addEcheance = async () => {};
+  const addEcheance = async () => {
+    if (!newEcheance.client || !newEcheance.type || !newEcheance.date_echeance) return;
+    await db.post("echeances", newEcheance);
+    setShowAddEcheance(false);
+    setNewEcheance({ client: "", type: "", description: "", date_echeance: "", statut: "À faire", priorite: "Normale" });
+    loadAll();
+  };
   const toggleFait = async () => {};
   const deleteEch = async () => {};
 
@@ -930,6 +936,50 @@ export default function App() {
                       )}
                     </div>
                   </div>
+
+                  {/* ── ROW 2.5 : Échéances fiscales à venir ── */}
+                  {(() => {
+                    const echSoon = echeances.filter(e => {
+                      if (e.statut === "Fait") return false;
+                      const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
+                      return days >= -7 && days <= 30;
+                    }).sort((a, b) => new Date(a.date_echeance) - new Date(b.date_echeance)).slice(0, 5);
+
+                    if (echSoon.length === 0) return null;
+                    return (
+                      <div className="card-hover" style={S.card}>
+                        <div style={S.cardHeader}>
+                          <Icon d={ic.calendar} size={16} stroke="#1a5c9e" />
+                          <span style={S.cardTitle}>Échéances fiscales à venir</span>
+                          <button onClick={() => navigate("echeances")} style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#e8f0fb", color: "#1a5c9e", padding: "3px 8px", borderRadius: 6, border: "none", cursor: "pointer" }}>Voir tout →</button>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                          {echSoon.map((e, i) => {
+                            const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
+                            const isLate = days < 0;
+                            const isUrgent = days >= 0 && days <= 7;
+                            return (
+                              <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < echSoon.length - 1 ? "1px solid #f0f4fa" : "none" }}>
+                                <div style={{ width: 30, height: 30, borderRadius: 8, background: isLate ? "#fff0f0" : isUrgent ? "#fff8e6" : "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
+                                  {isLate ? "🔴" : isUrgent ? "🟡" : "📅"}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.client}</div>
+                                  <div style={{ fontSize: 11, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.type}</div>
+                                </div>
+                                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: isLate ? "#c0392b" : isUrgent ? "#c17f2a" : "#1a5c9e" }}>
+                                    {isLate ? `J+${Math.abs(days)}` : days === 0 ? "Aujourd'hui" : `J-${days}`}
+                                  </div>
+                                  <div style={{ fontSize: 10, color: "#8da4c0" }}>{new Date(e.date_echeance).toLocaleDateString("fr-FR")}</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* ── ROW 3 : Top clients + Activité récente ── */}
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
