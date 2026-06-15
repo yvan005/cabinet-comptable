@@ -225,7 +225,6 @@ export default function App() {
   const [userPerms, setUserPerms] = useState(null);
   const [page, setPage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [clientFilter, setClientFilter] = useState("Tous");
 
   const [clients, setClients] = useState([]);
@@ -642,7 +641,7 @@ export default function App() {
       </aside>
 
       {/* MAIN */}
-      <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden", ...(isMobile ? { width: "100%" } : {}) }}>
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden", position: "relative", ...(isMobile ? { width: "100%" } : {}) }}>
 
         {/* TOPBAR */}
         <header style={{ background: "#fff", borderBottom: "1px solid #e2eaf4", padding: isMobile ? "0 16px" : "0 28px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, gap: 12 }}>
@@ -656,7 +655,9 @@ export default function App() {
             {/* Barre de recherche */}
             {showSearch && (
               <div style={{ flex: 1, position: "relative" }}>
-                <Icon d={ic.search} size={15} stroke="#8da4c0" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
+                <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+                  <Icon d={ic.search} size={15} stroke="#8da4c0" />
+                </div>
                 <input
                   autoFocus
                   value={searchQuery}
