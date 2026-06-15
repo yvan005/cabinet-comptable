@@ -171,6 +171,7 @@ const ic = {
   eye:       "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 100 6 3 3 0 000-6z",
   abonnement: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M8 12h8 M12 8v8",
   download:  "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3",
+  search:    "M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z",
   edit:      "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z",
   settings:  "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z",
 };
@@ -219,6 +220,8 @@ const Modal = ({ title, onClose, children }) => (
 export default function App() {
   const isMobile = useIsMobile();
   const [session, setSession] = useState(() => auth.getSession());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
   const [userPerms, setUserPerms] = useState(null);
   const [page, setPage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -643,16 +646,74 @@ export default function App() {
 
         {/* TOPBAR */}
         <header style={{ background: "#fff", borderBottom: "1px solid #e2eaf4", padding: isMobile ? "0 16px" : "0 28px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
             {isMobile && (
               <button onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", padding: 4 }}>
                 <Icon d={ic.menu} size={22} stroke="#1e3a57" />
               </button>
             )}
-            <div style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "#1e3a57" }}>{pageTitle}</div>
+            {!showSearch && <div style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "#1e3a57" }}>{pageTitle}</div>}
+            {/* Barre de recherche */}
+            {showSearch && (
+              <div style={{ flex: 1, position: "relative" }}>
+                <Icon d={ic.search} size={15} stroke="#8da4c0" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} />
+                <input
+                  autoFocus
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher un client, devis, document..."
+                  style={{ width: "100%", padding: "8px 12px 8px 34px", borderRadius: 10, border: "1.5px solid #87CEEB", fontSize: 13, color: "#1e3a57", outline: "none", boxSizing: "border-box", background: "#f8fbff" }}
+                  onKeyDown={e => { if (e.key === "Escape") { setShowSearch(false); setSearchQuery(""); } }}
+                />
+              </div>
+            )}
           </div>
-
+          <button onClick={() => { setShowSearch(s => !s); setSearchQuery(""); }}
+            style={{ background: showSearch ? "#e8f0fb" : "none", border: showSearch ? "1px solid #c8ddf5" : "none", borderRadius: 8, cursor: "pointer", padding: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Icon d={showSearch ? ic.close : ic.search} size={18} stroke={showSearch ? "#1a5c9e" : "#6b8aaa"} />
+          </button>
         </header>
+
+        {/* PANNEAU RÉSULTATS RECHERCHE */}
+        {showSearch && searchQuery.trim().length >= 2 && (() => {
+          const q = searchQuery.toLowerCase().trim();
+          const results = [
+            ...clients.filter(c => c.nom?.toLowerCase().includes(q) || c.secteur?.toLowerCase().includes(q) || c.nif?.toLowerCase().includes(q) || c.telephone?.toLowerCase().includes(q)).map(c => ({ type: "Client", label: c.nom, sub: c.secteur || c.forme_juridique || "", color: "#1a5c9e", bg: "#e8f0fb", emoji: "👥", action: () => { navigate("clients"); setShowSearch(false); setSearchQuery(""); } })),
+            ...devisList.filter(d => d.client?.toLowerCase().includes(q) || d.numero?.toLowerCase().includes(q) || String(d.total_ttc).includes(q)).map(d => ({ type: "Devis", label: `Devis ${d.numero || ""} — ${d.client}`, sub: `${d.statut} — ${(d.total_ttc||0).toLocaleString("fr-FR")} FCFA`, color: "#1a7a4a", bg: "#e8f5ee", emoji: "📄", action: () => { navigate("devis"); setShowSearch(false); setSearchQuery(""); } })),
+            ...abonnements.filter(a => a.client?.toLowerCase().includes(q) || a.service?.toLowerCase().includes(q)).map(a => ({ type: "Abonnement", label: a.client, sub: `${a.service} — ${a.statut}`, color: "#8e44ad", bg: "#f5eefb", emoji: "🔄", action: () => { navigate("abonnements"); setShowSearch(false); setSearchQuery(""); } })),
+            ...depenses.filter(d => d.libelle?.toLowerCase().includes(q) || d.categorie?.toLowerCase().includes(q)).map(d => ({ type: "Dépense", label: d.libelle, sub: `${d.categorie} — ${(d.montant||0).toLocaleString("fr-FR")} FCFA`, color: "#c0392b", bg: "#fff0f0", emoji: "💸", action: () => { navigate("depenses"); setShowSearch(false); setSearchQuery(""); } })),
+            ...documents.filter(d => d.nom?.toLowerCase().includes(q) || d.client?.toLowerCase().includes(q)).map(d => ({ type: "Document", label: d.nom, sub: d.client || "—", color: "#c17f2a", bg: "#fff8e6", emoji: "📎", action: () => { navigate("documents"); setShowSearch(false); setSearchQuery(""); } })),
+            ...collaborateurs.filter(c => c.nom?.toLowerCase().includes(q) || c.role?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q)).map(c => ({ type: "Collaborateur", label: c.nom, sub: c.role || "", color: "#2980b9", bg: "#e8f4fb", emoji: "👤", action: () => { navigate("collab"); setShowSearch(false); setSearchQuery(""); } })),
+          ].slice(0, 12);
+
+          return (
+            <div style={{ position: "absolute", top: 60, left: isMobile ? 0 : 280, right: 0, background: "#fff", borderBottom: "1px solid #e2eaf4", zIndex: 90, boxShadow: "0 8px 24px rgba(0,30,80,0.1)", maxHeight: 420, overflowY: "auto" }}>
+              {results.length === 0 ? (
+                <div style={{ padding: 24, textAlign: "center", color: "#8da4c0", fontSize: 13 }}>
+                  Aucun résultat pour "<strong>{searchQuery}</strong>"
+                </div>
+              ) : (
+                <div>
+                  <div style={{ padding: "8px 16px", fontSize: 11, color: "#8da4c0", fontWeight: 700, textTransform: "uppercase", borderBottom: "1px solid #f0f4fa" }}>
+                    {results.length} résultat(s) pour "{searchQuery}"
+                  </div>
+                  {results.map((r, i) => (
+                    <div key={i} onClick={r.action} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid #f0f4fa", cursor: "pointer", transition: "background 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#f5f8fc"}
+                      onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+                      <div style={{ width: 36, height: 36, borderRadius: 9, background: r.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{r.emoji}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.label}</div>
+                        <div style={{ fontSize: 11, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.sub}</div>
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: r.bg, color: r.color, flexShrink: 0 }}>{r.type}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* CONTENT */}
         <div style={{ padding: isMobile ? 14 : 24, paddingBottom: isMobile ? 100 : 24, overflowY: "auto", flex: 1 }}>
