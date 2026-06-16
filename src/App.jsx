@@ -372,14 +372,31 @@ export default function App() {
   const [clientTab, setClientTab] = useState(0);
 
   const addEcheance = async () => {
-    if (!newEcheance.client || !newEcheance.type || !newEcheance.date_echeance) return;
-    await db.post("echeances", newEcheance);
-    setShowAddEcheance(false);
-    setNewEcheance({ client: "", type: "", description: "", date_echeance: "", statut: "À faire", priorite: "Normale" });
-    loadAll();
-  };
-  const toggleFait = async () => {};
-  const deleteEch = async () => {};
+  if (!newEcheance.client || !newEcheance.type || !newEcheance.date_echeance) {
+    alert("Veuillez remplir les champs obligatoires (client, type, date).");
+    return;
+  }
+  const result = await db.post("echeances", newEcheance);
+  if (!result || result.error) {
+    alert("Erreur lors de l'enregistrement : " + (result?.message || "vérifiez Supabase."));
+    return;
+  }
+  setShowAddEcheance(false);
+  setNewEcheance({ client: "", type: "", description: "", date_echeance: "", statut: "À faire", priorite: "Normale" });
+  loadAll();
+};
+
+const toggleFait = async (ech) => {
+  const newStatut = ech.statut === "Fait" ? "À faire" : "Fait";
+  await db.patch("echeances", ech.id, { statut: newStatut });
+  loadAll();
+};
+
+const deleteEch = async (id) => {
+  if (!window.confirm("Supprimer cette échéance ?")) return;
+  await db.delete("echeances", id);
+  loadAll();
+};
 
   // MESSAGES
 
