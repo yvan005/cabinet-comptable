@@ -372,29 +372,23 @@ export default function App() {
   const [clientTab, setClientTab] = useState(0);
 
   const addEcheance = async () => {
-    if (!newEcheance.client || !newEcheance.type || !newEcheance.date_echeance) {
-      alert("Veuillez remplir les champs obligatoires : client, type et date.");
-      return;
-    }
-    const result = await db.post("echeances", newEcheance);
-    if (!result || result.error) {
-      alert("Erreur Supabase : " + (result?.message || "vérifiez la table echeances."));
-      return;
-    }
+    if (!newEcheance.client || !newEcheance.type || !newEcheance.date_echeance) return;
+    await db.post("echeances", newEcheance);
     setShowAddEcheance(false);
     setNewEcheance({ client: "", type: "", description: "", date_echeance: "", statut: "À faire", priorite: "Normale" });
     loadAll();
   };
-  const toggleFait = async (ech) => {
-    const newStatut = ech.statut === "Fait" ? "À faire" : "Fait";
-    await db.patch("echeances", ech.id, { statut: newStatut });
-    loadAll();
-  };
-  const deleteEch = async (id) => {
+  const deleteEcheance = async (id) => {
     if (!window.confirm("Supprimer cette échéance ?")) return;
     await db.delete("echeances", id);
     loadAll();
   };
+  const updateStatutEcheance = async (e, statut) => {
+    await db.patch("echeances", e.id, { statut });
+    loadAll();
+  };
+  const toggleFait = async () => {};
+  const deleteEch = async () => {};
 
   // MESSAGES
 
@@ -2928,31 +2922,7 @@ export default function App() {
               const statutColor = { "À faire": "#c17f2a", "En cours": "#1a5c9e", "Fait": "#1a7a4a", "En retard": "#c0392b" };
               const prioriteColor = { "Haute": "#c0392b", "Normale": "#1a5c9e", "Basse": "#8da4c0" };
 
-              const addEcheance = async () => {
-                if (!newEcheance.client || !newEcheance.type || !newEcheance.date_echeance) {
-                  alert("Veuillez remplir les champs obligatoires : client, type et date.");
-                  return;
-                }
-                const result = await db.post("echeances", newEcheance);
-                if (!result || result.error) {
-                  alert("Erreur Supabase : " + (result?.message || "vérifiez la table echeances."));
-                  return;
-                }
-                setShowAddEcheance(false);
-                setNewEcheance({ client: "", type: "", description: "", date_echeance: "", statut: "À faire", priorite: "Normale" });
-                loadAll();
-              };
 
-              const deleteEcheance = async (id) => {
-                if (!window.confirm("Supprimer cette échéance ?")) return;
-                await db.delete("echeances", id);
-                loadAll();
-              };
-
-              const updateStatut = async (e, statut) => {
-                await db.patch("echeances", e.id, { statut });
-                loadAll();
-              };
 
               return (
                 <div>
@@ -2962,7 +2932,7 @@ export default function App() {
                       <div style={{ overflowY: "auto", maxHeight: "65vh" }}>
                         <div style={S.formGroup}>
                           <label style={S.label}>Client *</label>
-                          <select value={newEcheance.client || (clients[0]?.nom ?? "")} onChange={e => setNewEcheance(p => ({ ...p, client: e.target.value }))} style={S.select}>
+                          <select value={newEcheance.client} onChange={e => setNewEcheance(p => ({ ...p, client: e.target.value }))} style={S.select}>
                             <option value="">— Choisir un client —</option>
                             {clients.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
                           </select>
@@ -3029,7 +2999,7 @@ export default function App() {
                         <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", marginBottom: 8 }}>Changer le statut</div>
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                           {["À faire","En cours","Fait","En retard"].map(s => (
-                            <button key={s} onClick={() => { updateStatut(viewEcheance, s); setViewEcheance({ ...viewEcheance, statut: s }); }}
+                            <button key={s} onClick={() => { updateStatutEcheance(viewEcheance, s); setViewEcheance({ ...viewEcheance, statut: s }); }}
                               style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${statutColor[s]}44`, background: viewEcheance.statut === s ? statutColor[s] : "transparent", color: viewEcheance.statut === s ? "#fff" : statutColor[s], cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
                               {s}
                             </button>
