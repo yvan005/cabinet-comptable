@@ -2890,6 +2890,50 @@ export default function App() {
 
 
             {/* ── ÉCHÉANCES FISCALES ── */}
+            {/* MODALS ECHEANCES — hors IIFE */}
+            {showAddEcheance && (
+              <Modal title="Nouvelle échéance" onClose={() => setShowAddEcheance(false)}>
+                <div style={{ overflowY: "auto", maxHeight: "65vh" }}>
+                  <div style={S.formGroup}>
+                    <label style={S.label}>Client *</label>
+                    <select value={newEcheance.client} onChange={e => setNewEcheance(p => ({ ...p, client: e.target.value }))} style={S.select}>
+                      <option value="">— Choisir un client —</option>
+                      {clients.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
+                    </select>
+                  </div>
+                  <div style={S.formGroup}>
+                    <label style={S.label}>Type d'échéance *</label>
+                    <select value={newEcheance.type} onChange={e => setNewEcheance(p => ({ ...p, type: e.target.value }))} style={S.select}>
+                      <option value="">— Choisir —</option>
+                      {["Déclaration TVA", "DSF (Déclaration Statistique et Fiscale)", "Acompte IS (Impôt sur les Sociétés)", "Patente", "Taxe foncière", "CNPS / Cotisations sociales", "Retenue à la source", "Déclaration IGS", "Droits d'enregistrement", "Autre"].map(t => <option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={S.formGroup}>
+                      <label style={S.label}>Date d'échéance *</label>
+                      <input type="date" value={newEcheance.date_echeance} onChange={e => setNewEcheance(p => ({ ...p, date_echeance: e.target.value }))} style={S.input} />
+                    </div>
+                    <div style={S.formGroup}>
+                      <label style={S.label}>Priorité</label>
+                      <select value={newEcheance.priorite} onChange={e => setNewEcheance(p => ({ ...p, priorite: e.target.value }))} style={S.select}>
+                        {["Haute","Normale","Basse"].map(p => <option key={p}>{p}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div style={S.formGroup}>
+                    <label style={S.label}>Description / Note</label>
+                    <textarea value={newEcheance.description} onChange={e => setNewEcheance(p => ({ ...p, description: e.target.value }))}
+                      placeholder="Détails sur cette échéance..." rows={3}
+                      style={{ ...S.input, resize: "vertical" }} />
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
+                  <button onClick={() => setShowAddEcheance(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+                  <button onClick={addEcheance} style={S.primaryBtn}>💾 Enregistrer</button>
+                </div>
+              </Modal>
+            )}
+
             {page === "echeances" && (() => {
               const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
               const moisCourts = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
@@ -2934,49 +2978,6 @@ export default function App() {
 
               return (
                 <div>
-                  {/* Modal ajout */}
-                  {showAddEcheance && (
-                    <Modal title="Nouvelle échéance" onClose={() => setShowAddEcheance(false)}>
-                      <div style={{ overflowY: "auto", maxHeight: "65vh" }}>
-                        <div style={S.formGroup}>
-                          <label style={S.label}>Client *</label>
-                          <select value={newEcheance.client} onChange={e => setNewEcheance(p => ({ ...p, client: e.target.value }))} style={S.select}>
-                            <option value="">— Choisir un client —</option>
-                            {clients.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
-                          </select>
-                        </div>
-                        <div style={S.formGroup}>
-                          <label style={S.label}>Type d'échéance *</label>
-                          <select value={newEcheance.type} onChange={e => setNewEcheance(p => ({ ...p, type: e.target.value }))} style={S.select}>
-                            <option value="">— Choisir —</option>
-                            {typesEcheances.map(t => <option key={t}>{t}</option>)}
-                          </select>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                          <div style={S.formGroup}>
-                            <label style={S.label}>Date d'échéance *</label>
-                            <input type="date" value={newEcheance.date_echeance} onChange={e => setNewEcheance(p => ({ ...p, date_echeance: e.target.value }))} style={S.input} />
-                          </div>
-                          <div style={S.formGroup}>
-                            <label style={S.label}>Priorité</label>
-                            <select value={newEcheance.priorite} onChange={e => setNewEcheance(p => ({ ...p, priorite: e.target.value }))} style={S.select}>
-                              {["Haute","Normale","Basse"].map(p => <option key={p}>{p}</option>)}
-                            </select>
-                          </div>
-                        </div>
-                        <div style={S.formGroup}>
-                          <label style={S.label}>Description / Note</label>
-                          <textarea value={newEcheance.description} onChange={e => setNewEcheance(p => ({ ...p, description: e.target.value }))}
-                            placeholder="Détails sur cette échéance..." rows={3}
-                            style={{ ...S.input, resize: "vertical" }} />
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
-                        <button onClick={() => setShowAddEcheance(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
-                        <button onClick={addEcheance} style={S.primaryBtn}>💾 Enregistrer</button>
-                      </div>
-                    </Modal>
-                  )}
 
                   {/* Modal visualisation */}
                   {viewEcheance && (
