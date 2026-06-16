@@ -2913,13 +2913,20 @@ const deleteEch = async (id) => {
               const d = new Date(debutCalendrier);
               while (d <= dernierJour || jours.length % 7 !== 0) {
                 jours.push(new Date(d));
-                d.setDate(d.getDate() + 1);
-                if (jours.length > 42) break;
-              }
-
-              const echeancesDuMois = echeances.filter(e => {
-                const de = new Date(e.date_echeance);
-                return de.getFullYear() === echeanceAnnee && de.getMonth() === echeanceMois;
+                const addEcheance = async () => {
+  if (!newEcheance.client || !newEcheance.type || !newEcheance.date_echeance) {
+    alert("Veuillez remplir les champs obligatoires : client, type et date.");
+    return;
+  }
+  const result = await db.post("echeances", newEcheance);
+  if (!result || result.error) {
+    alert("Erreur Supabase : " + (result?.message || "vérifiez la table echeances."));
+    return;
+  }
+  setShowAddEcheance(false);
+  setNewEcheance({ client: "", type: "", description: "", date_echeance: "", statut: "À faire", priorite: "Normale" });
+  loadAll();
+};
               });
 
               const getEcheancesJour = (date) => {
@@ -2940,7 +2947,11 @@ const deleteEch = async (id) => {
 
               const deleteEcheance = async (id) => {
                 if (!window.confirm("Supprimer cette échéance ?")) return;
-                await db.delete("echeances", id);
+                <select 
+  value={newEcheance.client || (clients[0]?.nom ?? "")} 
+  onChange={e => setNewEcheance(p => ({ ...p, client: e.target.value }))} 
+  style={S.select}
+>
                 loadAll();
               };
 
