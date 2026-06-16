@@ -372,11 +372,19 @@ export default function App() {
   const [clientTab, setClientTab] = useState(0);
 
   const addEcheance = async () => {
-    if (!newEcheance.client || !newEcheance.type || !newEcheance.date_echeance) return;
-    await db.post("echeances", newEcheance);
-    setShowAddEcheance(false);
-    setNewEcheance({ client: "", type: "", description: "", date_echeance: "", statut: "À faire", priorite: "Normale" });
-    loadAll();
+    console.log("addEcheance called", newEcheance);
+    if (!newEcheance.client) { alert("Veuillez sélectionner un client."); return; }
+    if (!newEcheance.type) { alert("Veuillez choisir un type d'échéance."); return; }
+    if (!newEcheance.date_echeance) { alert("Veuillez choisir une date."); return; }
+    const result = await db.post("echeances", newEcheance);
+    console.log("Result:", result);
+    if (result && !result.error) {
+      setShowAddEcheance(false);
+      setNewEcheance({ client: "", type: "", description: "", date_echeance: "", statut: "À faire", priorite: "Normale" });
+      loadAll();
+    } else {
+      alert("Erreur : " + JSON.stringify(result));
+    }
   };
   const deleteEcheance = async (id) => {
     if (!window.confirm("Supprimer cette échéance ?")) return;
