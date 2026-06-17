@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import * as XLSX from "xlsx";
 
 // ── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://egnhdnuquirsngwokwmy.supabase.co";
@@ -315,17 +314,27 @@ export default function App() {
   useEffect(() => { loadAll(); }, [loadAll]);
 
   // ── EXPORT EXCEL ──
-  const exportExcel = (data, colonnes, nomFichier) => {
-    const ws = XLSX.utils.json_to_sheet(data.map(row => {
+  const exportExcel = async (data, colonnes, nomFichier) => {
+    // Charger SheetJS dynamiquement depuis CDN
+    if (!window.XLSX) {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+    const XL = window.XLSX;
+    const ws = XL.utils.json_to_sheet(data.map(row => {
       const obj = {};
       colonnes.forEach(col => { obj[col.label] = col.value(row) || ""; });
       return obj;
     }));
-    // Style largeur colonnes
     ws["!cols"] = colonnes.map(col => ({ wch: col.width || 20 }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Données");
-    XLSX.writeFile(wb, `${nomFichier}_${new Date().toISOString().split("T")[0]}.xlsx`);
+    const wb = XL.utils.book_new();
+    XL.utils.book_append_sheet(wb, ws, "Données");
+    XL.writeFile(wb, `${nomFichier}_${new Date().toISOString().split("T")[0]}.xlsx`);
   };
 
   const savePermissions = async () => {
