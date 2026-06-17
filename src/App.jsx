@@ -2890,10 +2890,10 @@ export default function App() {
 
 
             {/* ── ÉCHÉANCES FISCALES ── */}
-            {/* MODALS ECHEANCES — hors IIFE */}
+            {/* ── ECHÉANCES FISCALES ── */}
             {showAddEcheance && (
-              <Modal title="Nouvelle échéance" onClose={() => setShowAddEcheance(false)}>
-                <div style={{ overflowY: "auto", maxHeight: "65vh" }}>
+              <Modal title="Nouvelle échéance" onClose={() => { setShowAddEcheance(false); }}>
+                <div style={{ paddingRight: 4 }}>
                   <div style={S.formGroup}>
                     <label style={S.label}>Client *</label>
                     <select value={newEcheance.client} onChange={e => setNewEcheance(p => ({ ...p, client: e.target.value }))} style={S.select}>
@@ -2905,7 +2905,7 @@ export default function App() {
                     <label style={S.label}>Type d'échéance *</label>
                     <select value={newEcheance.type} onChange={e => setNewEcheance(p => ({ ...p, type: e.target.value }))} style={S.select}>
                       <option value="">— Choisir —</option>
-                      {["Déclaration TVA", "DSF (Déclaration Statistique et Fiscale)", "Acompte IS (Impôt sur les Sociétés)", "Patente", "Taxe foncière", "CNPS / Cotisations sociales", "Retenue à la source", "Déclaration IGS", "Droits d'enregistrement", "Autre"].map(t => <option key={t}>{t}</option>)}
+                      {["Déclaration TVA","DSF (Déclaration Statistique et Fiscale)","Acompte IS (Impôt sur les Sociétés)","Patente","Taxe foncière","CNPS / Cotisations sociales","Retenue à la source","Déclaration IGS","Droits d'enregistrement","Autre"].map(t => <option key={t}>{t}</option>)}
                     </select>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -2934,23 +2934,64 @@ export default function App() {
               </Modal>
             )}
 
+            {viewEcheance && (
+              <Modal title="Détail échéance" onClose={() => setViewEcheance(null)}>
+                <div style={{ padding: "14px 16px", borderRadius: 12, background: "#f5f8fc", marginBottom: 16 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#1e3a57" }}>{viewEcheance.client}</div>
+                  <div style={{ fontSize: 13, color: "#4a6d8c", marginTop: 2 }}>{viewEcheance.type}</div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                  {[
+                    { label: "Date", value: viewEcheance.date_echeance ? new Date(viewEcheance.date_echeance).toLocaleDateString("fr-FR") : "—" },
+                    { label: "Priorité", value: viewEcheance.priorite },
+                    { label: "Statut", value: viewEcheance.statut },
+                  ].map((f, i) => (
+                    <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
+                      <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1e3a57", marginTop: 2 }}>{f.value}</div>
+                    </div>
+                  ))}
+                </div>
+                {viewEcheance.description && (
+                  <div style={{ padding: "10px 14px", borderRadius: 9, background: "#f5f8fc", fontSize: 13, color: "#4a6d8c", marginBottom: 14 }}>
+                    📝 {viewEcheance.description}
+                  </div>
+                )}
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", marginBottom: 8 }}>Changer le statut</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {["À faire","En cours","Fait","En retard"].map(s => {
+                      const sc = { "À faire": "#c17f2a", "En cours": "#1a5c9e", "Fait": "#1a7a4a", "En retard": "#c0392b" };
+                      return (
+                        <button key={s} onClick={() => { updateStatutEcheance(viewEcheance, s); setViewEcheance({ ...viewEcheance, statut: s }); }}
+                          style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${sc[s]}44`, background: viewEcheance.statut === s ? sc[s] : "transparent", color: viewEcheance.statut === s ? "#fff" : sc[s], cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 10, justifyContent: "space-between" }}>
+                  <button onClick={() => { deleteEcheance(viewEcheance.id); setViewEcheance(null); }}
+                    style={{ padding: "9px 16px", borderRadius: 9, background: "#fff5f5", color: "#c0392b", border: "1px solid #fde8e8", cursor: "pointer", fontSize: 13 }}>
+                    🗑 Supprimer
+                  </button>
+                  <button onClick={() => setViewEcheance(null)} style={{ padding: "9px 20px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Fermer</button>
+                </div>
+              </Modal>
+            )}
+
             {page === "echeances" && (() => {
               const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-              const moisCourts = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
               const joursNoms = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
-              const typesEcheances = [
-                "Déclaration TVA", "DSF (Déclaration Statistique et Fiscale)",
-                "Acompte IS (Impôt sur les Sociétés)", "Patente", "Taxe foncière",
-                "CNPS / Cotisations sociales", "Retenue à la source",
-                "Déclaration IGS", "Droits d'enregistrement", "Autre"
-              ];
-
+              const statutColor = { "À faire": "#c17f2a", "En cours": "#1a5c9e", "Fait": "#1a7a4a", "En retard": "#c0392b" };
+              const prioriteColor = { "Haute": "#c0392b", "Normale": "#1a5c9e", "Basse": "#8da4c0" };
               const now = new Date();
-              // Calcul du calendrier
+
               const premierJour = new Date(echeanceAnnee, echeanceMois, 1);
               const dernierJour = new Date(echeanceAnnee, echeanceMois + 1, 0);
+              const jourSemaine = (premierJour.getDay() + 6) % 7;
               const debutCalendrier = new Date(premierJour);
-              const jourSemaine = (premierJour.getDay() + 6) % 7; // Lundi = 0
               debutCalendrier.setDate(debutCalendrier.getDate() - jourSemaine);
 
               const jours = [];
@@ -2971,60 +3012,8 @@ export default function App() {
                 return echeances.filter(e => e.date_echeance === ds);
               };
 
-              const statutColor = { "À faire": "#c17f2a", "En cours": "#1a5c9e", "Fait": "#1a7a4a", "En retard": "#c0392b" };
-              const prioriteColor = { "Haute": "#c0392b", "Normale": "#1a5c9e", "Basse": "#8da4c0" };
-
-
-
               return (
                 <div>
-
-                  {/* Modal visualisation */}
-                  {viewEcheance && (
-                    <Modal title="Détail échéance" onClose={() => setViewEcheance(null)}>
-                      <div style={{ padding: "14px 16px", borderRadius: 12, background: "#f5f8fc", marginBottom: 16 }}>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: "#1e3a57" }}>{viewEcheance.client}</div>
-                        <div style={{ fontSize: 13, color: "#4a6d8c", marginTop: 2 }}>{viewEcheance.type}</div>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-                        {[
-                          { label: "Date", value: new Date(viewEcheance.date_echeance).toLocaleDateString("fr-FR") },
-                          { label: "Priorité", value: viewEcheance.priorite },
-                          { label: "Statut", value: viewEcheance.statut },
-                        ].map((f, i) => (
-                          <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                            <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: "#1e3a57", marginTop: 2 }}>{f.value}</div>
-                          </div>
-                        ))}
-                      </div>
-                      {viewEcheance.description && (
-                        <div style={{ padding: "10px 14px", borderRadius: 9, background: "#f5f8fc", fontSize: 13, color: "#4a6d8c", marginBottom: 14 }}>
-                          📝 {viewEcheance.description}
-                        </div>
-                      )}
-                      {/* Changer statut */}
-                      <div style={{ marginBottom: 14 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#8da4c0", marginBottom: 8 }}>Changer le statut</div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          {["À faire","En cours","Fait","En retard"].map(s => (
-                            <button key={s} onClick={() => { updateStatutEcheance(viewEcheance, s); setViewEcheance({ ...viewEcheance, statut: s }); }}
-                              style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${statutColor[s]}44`, background: viewEcheance.statut === s ? statutColor[s] : "transparent", color: viewEcheance.statut === s ? "#fff" : statutColor[s], cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-                              {s}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 10, justifyContent: "space-between" }}>
-                        <button onClick={() => { deleteEcheance(viewEcheance.id); setViewEcheance(null); }}
-                          style={{ padding: "9px 16px", borderRadius: 9, background: "#fff5f5", color: "#c0392b", border: "1px solid #fde8e8", cursor: "pointer", fontSize: 13 }}>
-                          🗑 Supprimer
-                        </button>
-                        <button onClick={() => setViewEcheance(null)} style={{ padding: "9px 20px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Fermer</button>
-                      </div>
-                    </Modal>
-                  )}
-
                   {/* KPIs */}
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
                     {[
@@ -3041,7 +3030,7 @@ export default function App() {
                     ))}
                   </div>
 
-                  {/* Navigation mois + bouton ajouter */}
+                  {/* Navigation mois */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <button onClick={() => { if (echeanceMois === 0) { setEcheanceMois(11); setEcheanceAnnee(y => y - 1); } else setEcheanceMois(m => m - 1); }}
@@ -3059,33 +3048,26 @@ export default function App() {
 
                   {/* Calendrier */}
                   <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
-                    {/* En-tête jours */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 1, marginBottom: 4 }}>
                       {joursNoms.map(j => (
                         <div key={j} style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "#8da4c0", padding: "6px 0" }}>{j}</div>
                       ))}
                     </div>
-                    {/* Grille jours */}
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
                       {jours.map((jour, i) => {
                         const estMoisCourant = jour.getMonth() === echeanceMois;
                         const estAujourdhui = jour.toDateString() === now.toDateString();
                         const echsJour = getEcheancesJour(jour);
                         return (
-                          <div key={i} style={{ minHeight: isMobile ? 44 : 70, borderRadius: 8, background: estAujourdhui ? "#e8f0fb" : estMoisCourant ? "#fff" : "#f9fafc", border: estAujourdhui ? "2px solid #1a5c9e" : "1px solid #f0f4fa", padding: "4px", cursor: echsJour.length > 0 ? "pointer" : "default", position: "relative" }}
-                            onClick={() => echsJour.length === 1 ? setViewEcheance(echsJour[0]) : null}>
-                            <div style={{ fontSize: 11, fontWeight: estAujourdhui ? 800 : 500, color: estAujourdhui ? "#1a5c9e" : estMoisCourant ? "#1e3a57" : "#c0cfe0", textAlign: "right", marginBottom: 2 }}>
-                              {jour.getDate()}
-                            </div>
-                            {echsJour.slice(0, isMobile ? 1 : 2).map((e, ei) => (
-                              <div key={ei} onClick={ev => { ev.stopPropagation(); setViewEcheance(e); }}
+                          <div key={i} style={{ minHeight: isMobile ? 44 : 70, borderRadius: 8, background: estAujourdhui ? "#e8f0fb" : estMoisCourant ? "#fff" : "#f9fafc", border: estAujourdhui ? "2px solid #1a5c9e" : "1px solid #f0f4fa", padding: 4 }}>
+                            <div style={{ fontSize: 11, fontWeight: estAujourdhui ? 800 : 500, color: estAujourdhui ? "#1a5c9e" : estMoisCourant ? "#1e3a57" : "#c0cfe0", textAlign: "right", marginBottom: 2 }}>{jour.getDate()}</div>
+                            {echsJour.slice(0, 2).map((e, ei) => (
+                              <div key={ei} onClick={() => setViewEcheance(e)}
                                 style={{ fontSize: 9, fontWeight: 600, padding: "2px 4px", borderRadius: 3, background: statutColor[e.statut] || "#1a5c9e", color: "#fff", marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}>
                                 {e.client}
                               </div>
                             ))}
-                            {echsJour.length > 2 && !isMobile && (
-                              <div style={{ fontSize: 9, color: "#8da4c0", textAlign: "center" }}>+{echsJour.length - 2}</div>
-                            )}
+                            {echsJour.length > 2 && <div style={{ fontSize: 9, color: "#8da4c0", textAlign: "center" }}>+{echsJour.length - 2}</div>}
                           </div>
                         );
                       })}
@@ -3124,6 +3106,13 @@ export default function App() {
                     </div>
                   )}
 
+                  {echeancesDuMois.length === 0 && (
+                    <div className="card-hover" style={{ ...S.card, textAlign: "center", padding: 40 }}>
+                      <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#1e3a57", marginBottom: 6 }}>Aucune échéance ce mois</div>
+                      <button onClick={() => setShowAddEcheance(true)} style={S.primaryBtn}>+ Ajouter une échéance</button>
+                    </div>
+                  )}
                 </div>
               );
             })()}
