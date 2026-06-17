@@ -809,7 +809,7 @@ export default function App() {
                  const db2 = b.date ? new Date(b.date) : new Date(0);
                  return db2 - da;
                })
-               .slice(0, 10);
+               .slice(0, 20);
 
               // ── Abonnements à renouveler soon ──
               const abosSoon = abonnements.filter(a => {
@@ -960,7 +960,7 @@ export default function App() {
                       if (e.statut === "Fait") return false;
                       const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
                       return days >= -7 && days <= 30;
-                    }).sort((a, b) => new Date(a.date_echeance) - new Date(b.date_echeance)).slice(0, 10);
+                    }).sort((a, b) => new Date(a.date_echeance) - new Date(b.date_echeance)).slice(0, 20);
 
                     if (echSoon.length === 0) return null;
                     return (
@@ -976,7 +976,7 @@ export default function App() {
                             const isLate = days < 0;
                             const isUrgent = days >= 0 && days <= 7;
                             return (
-                              <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid #f0f4fa" }}>
+                              <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: "1px solid #f0f4fa" }}>
                                 <div style={{ width: 30, height: 30, borderRadius: 8, background: isLate ? "#fff0f0" : isUrgent ? "#fff8e6" : "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
                                   {isLate ? "🔴" : isUrgent ? "🟡" : "📅"}
                                 </div>
@@ -1558,7 +1558,7 @@ export default function App() {
               devisList.filter(d => d.statut === "Payé").forEach(d => {
                 caParClient[d.client] = (caParClient[d.client] || 0) + (d.total_ttc || 0);
               });
-              const topClients = Object.entries(caParClient).sort((a, b) => b[1] - a[1]).slice(0, 10);
+              const topClients = Object.entries(caParClient).sort((a, b) => b[1] - a[1]).slice(0, 20);
               const maxClientCA = topClients[0]?.[1] || 1;
 
               return (
