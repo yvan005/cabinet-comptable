@@ -3110,7 +3110,7 @@ export default function App() {
                     <div className="card-hover" style={{ ...S.card, textAlign: "center", padding: 40 }}>
                       <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
                       <div style={{ fontSize: 15, fontWeight: 700, color: "#1e3a57", marginBottom: 6 }}>Aucune échéance ce mois</div>
-                      <button onClick={() => setShowAddEcheance(true)} style={S.primaryBtn}>+ Ajouter une échéance</button>
+                      <div style={{ fontSize: 13, color: "#8da4c0" }}>Cliquez sur "Nouvelle échéance" pour en ajouter une</div>
                     </div>
                   )}
                 </div>
