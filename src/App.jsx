@@ -2107,28 +2107,32 @@ export default function App() {
               };
 
               const togglePerm = (moduleId, action) => {
-                const current = getPerm(moduleId, action);
-                setPermCollab(p => ({
-                  ...p,
-                  permissions: {
-                    ...p.permissions,
-                    [moduleId]: {
-                      ...(p.permissions?.[moduleId] || {}),
-                      [action]: !current
+                setPermCollab(p => {
+                  const current = p.permissions?.[moduleId]?.[action] || false;
+                  return {
+                    ...p,
+                    permissions: {
+                      ...p.permissions,
+                      [moduleId]: {
+                        ...(p.permissions?.[moduleId] || {}),
+                        [action]: !current
+                      }
                     }
-                  }
-                }));
+                  };
+                });
               };
 
               const toggleAll = (moduleId) => {
-                const allChecked = actions.every(a => getPerm(moduleId, a));
-                setPermCollab(p => ({
-                  ...p,
-                  permissions: {
-                    ...p.permissions,
-                    [moduleId]: Object.fromEntries(actions.map(a => [a, !allChecked]))
-                  }
-                }));
+                setPermCollab(p => {
+                  const allChecked = actions.every(a => p.permissions?.[moduleId]?.[a] || false);
+                  return {
+                    ...p,
+                    permissions: {
+                      ...p.permissions,
+                      [moduleId]: Object.fromEntries(actions.map(a => [a, !allChecked]))
+                    }
+                  };
+                });
               };
 
               return (
