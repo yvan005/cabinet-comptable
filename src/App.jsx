@@ -223,8 +223,6 @@ export default function App() {
   const [session, setSession] = useState(() => auth.getSession());
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showNotifs, setShowNotifs] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [userPerms, setUserPerms] = useState(null);
   const [page, setPage] = useState("dashboard");
