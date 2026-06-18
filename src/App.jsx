@@ -3449,6 +3449,7 @@ export default function App() {
                 { label: "NIU", value: viewClient.nif },
                 { label: "N° RCCM", value: viewClient.rccm },
                 { label: "N° Récépissé", value: viewClient.numero_recepisse },
+                { label: "CA estimé", value: viewClient.ca ? Number(viewClient.ca).toLocaleString("fr-FR") + " FCFA/an" : null },
                 { label: "N° Patente", value: viewClient.patente },
                 { label: "Date de création", value: viewClient.date_creation ? new Date(viewClient.date_creation).toLocaleDateString("fr-FR") : null },
                 { label: "Date clôture", value: viewClient.date_cloture },
@@ -3521,7 +3522,7 @@ export default function App() {
               {[
                 { label: "Responsable", value: viewClient.responsable },
                 { label: "Date d'entrée", value: viewClient.date_entree ? new Date(viewClient.date_entree).toLocaleDateString("fr-FR") : null },
-                { label: "CA estimé", value: viewClient.ca ? Number(viewClient.ca).toLocaleString("fr-FR") + " FCFA/an" : null },
+
               ].filter(f => f.value).map((f, i) => (
                 <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
                   <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
@@ -3555,6 +3556,7 @@ export default function App() {
               <div style={S.formGroup}><label style={S.label}>N° Récépissé</label><input placeholder="Ex: REC/2024/XXX" value={editClient.numero_recepisse || ""} onChange={e => setEditClient(p => ({ ...p, numero_recepisse: e.target.value }))} style={S.input} /></div>
               <div style={S.formGroup}><label style={S.label}>Date de création</label><input type="date" value={editClient.date_creation || ""} onChange={e => setEditClient(p => ({ ...p, date_creation: e.target.value }))} style={S.input} /></div>
             </div>
+            <div style={S.formGroup}><label style={S.label}>Chiffre d'affaires estimé (FCFA/an)</label><input type="number" placeholder="Ex: 50000000" value={editClient.ca || ""} onChange={e => setEditClient(p => ({ ...p, ca: e.target.value }))} style={S.input} /></div>
 
             <div style={{ fontSize: 11, fontWeight: 800, color: "#1a7a4a", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #e8f5ee" }}>📍 Localisation & Coordonnées</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -3600,7 +3602,6 @@ export default function App() {
               <div style={S.formGroup}><label style={S.label}>Statut</label><select value={editClient.statut || "Actif"} onChange={e => setEditClient(p => ({ ...p, statut: e.target.value }))} style={S.select}>{["Actif","En attente","Inactif","Suspendu"].map(s => <option key={s}>{s}</option>)}</select></div>
               <div style={S.formGroup}><label style={S.label}>Date d'entrée en relation</label><input type="date" value={editClient.date_entree || ""} onChange={e => setEditClient(p => ({ ...p, date_entree: e.target.value }))} style={S.input} /></div>
             </div>
-            <div style={S.formGroup}><label style={S.label}>Chiffre d'affaires estimé (FCFA/an)</label><input type="number" placeholder="Ex: 50000000" value={editClient.ca || ""} onChange={e => setEditClient(p => ({ ...p, ca: e.target.value }))} style={S.input} /></div>
           </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
             <button onClick={() => setEditClient(null)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
