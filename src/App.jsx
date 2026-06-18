@@ -1256,8 +1256,7 @@ export default function App() {
                       { label: "Email", value: r => r.email, width: 25 },
                       { label: "Responsable", value: r => r.responsable, width: 20 },
                       { label: "Statut", value: r => r.statut, width: 12 },
-                      { label: "Honoraires (FCFA)", value: r => r.honoraires, width: 18 },
-                    ], "clients")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, background: "#e8f5ee", color: "#1a7a4a", border: "1px solid #c3e6cb", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                      ], "clients")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, background: "#e8f5ee", color: "#1a7a4a", border: "1px solid #c3e6cb", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
                       📥 Excel
                     </button>
                     {canDo("clients","ajouter") && <button onClick={() => setShowAddClient(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouveau</button>}
@@ -3448,7 +3447,6 @@ export default function App() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
               {[
                 { label: "NIU", value: viewClient.nif },
-                { label: "N° Contribuable", value: viewClient.numero_contribuable },
                 { label: "N° RCCM", value: viewClient.rccm },
                 { label: "N° Récépissé", value: viewClient.numero_recepisse },
                 { label: "N° Patente", value: viewClient.patente },
@@ -3554,7 +3552,6 @@ export default function App() {
               <div style={S.formGroup}><label style={S.label}>NIU</label><input value={editClient.nif || ""} onChange={e => setEditClient(p => ({ ...p, nif: e.target.value }))} style={S.input} /></div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>N° Contribuable</label><input value={editClient.numero_contribuable || ""} onChange={e => setEditClient(p => ({ ...p, numero_contribuable: e.target.value }))} style={S.input} /></div>
               <div style={S.formGroup}><label style={S.label}>N° Récépissé</label><input placeholder="Ex: REC/2024/XXX" value={editClient.numero_recepisse || ""} onChange={e => setEditClient(p => ({ ...p, numero_recepisse: e.target.value }))} style={S.input} /></div>
               <div style={S.formGroup}><label style={S.label}>Date de création</label><input type="date" value={editClient.date_creation || ""} onChange={e => setEditClient(p => ({ ...p, date_creation: e.target.value }))} style={S.input} /></div>
             </div>
@@ -3627,7 +3624,6 @@ export default function App() {
               <div style={S.formGroup}><label style={S.label}>NIU</label><input placeholder="M012345678901A" value={newClient.nif} onChange={e => setNewClient(p => ({ ...p, nif: e.target.value }))} style={S.input} /></div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>N° Contribuable</label><input placeholder="P012-XXX-XXX-XXX-X" value={newClient.numero_contribuable} onChange={e => setNewClient(p => ({ ...p, numero_contribuable: e.target.value }))} style={S.input} /></div>
               <div style={S.formGroup}><label style={S.label}>N° Récépissé</label><input placeholder="Ex: REC/2024/XXX" value={newClient.numero_recepisse} onChange={e => setNewClient(p => ({ ...p, numero_recepisse: e.target.value }))} style={S.input} /></div>
             </div>
             <div style={S.formGroup}><label style={S.label}>Date de création</label><input type="date" value={newClient.date_creation} onChange={e => setNewClient(p => ({ ...p, date_creation: e.target.value }))} style={S.input} /></div>
@@ -3678,7 +3674,6 @@ export default function App() {
               <div style={S.formGroup}><label style={S.label}>Date d'entrée en relation</label><input type="date" value={newClient.date_entree} onChange={e => setNewClient(p => ({ ...p, date_entree: e.target.value }))} style={S.input} /></div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>Honoraires (FCFA/an)</label><input type="number" placeholder="500000" value={newClient.honoraires} onChange={e => setNewClient(p => ({ ...p, honoraires: e.target.value }))} style={S.input} /></div>
               <div style={S.formGroup}><label style={S.label}>CA estimé (FCFA/an)</label><input type="number" placeholder="50000000" value={newClient.ca} onChange={e => setNewClient(p => ({ ...p, ca: e.target.value }))} style={S.input} /></div>
             </div>
 
