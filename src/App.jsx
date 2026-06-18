@@ -3628,6 +3628,7 @@ export default function App() {
               <div style={S.formGroup}><label style={S.label}>N° Récépissé</label><input placeholder="Ex: REC/2024/XXX" value={newClient.numero_recepisse} onChange={e => setNewClient(p => ({ ...p, numero_recepisse: e.target.value }))} style={S.input} /></div>
             </div>
             <div style={S.formGroup}><label style={S.label}>Date de création</label><input type="date" value={newClient.date_creation} onChange={e => setNewClient(p => ({ ...p, date_creation: e.target.value }))} style={S.input} /></div>
+            <div style={S.formGroup}><label style={S.label}>CA estimé (FCFA/an)</label><input type="number" placeholder="50000000" value={newClient.ca} onChange={e => setNewClient(p => ({ ...p, ca: e.target.value }))} style={S.input} /></div>
 
             <div style={{ fontSize: 11, fontWeight: 800, color: "#1a7a4a", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #e8f5ee" }}>📍 Localisation & Coordonnées</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -3673,9 +3674,6 @@ export default function App() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}><label style={S.label}>Statut</label><select value={newClient.statut} onChange={e => setNewClient(p => ({ ...p, statut: e.target.value }))} style={S.select}>{["Actif","En attente","Inactif","Suspendu"].map(s => <option key={s}>{s}</option>)}</select></div>
               <div style={S.formGroup}><label style={S.label}>Date d'entrée en relation</label><input type="date" value={newClient.date_entree} onChange={e => setNewClient(p => ({ ...p, date_entree: e.target.value }))} style={S.input} /></div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div style={S.formGroup}><label style={S.label}>CA estimé (FCFA/an)</label><input type="number" placeholder="50000000" value={newClient.ca} onChange={e => setNewClient(p => ({ ...p, ca: e.target.value }))} style={S.input} /></div>
             </div>
 
           </div>
