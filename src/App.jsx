@@ -3522,9 +3522,7 @@ export default function App() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {[
                 { label: "Responsable", value: viewClient.responsable },
-                { label: "Type de mission", value: viewClient.type_mission },
                 { label: "Date d'entrée", value: viewClient.date_entree ? new Date(viewClient.date_entree).toLocaleDateString("fr-FR") : null },
-                { label: "Honoraires", value: viewClient.honoraires ? Number(viewClient.honoraires).toLocaleString("fr-FR") + " FCFA/an" : null },
                 { label: "CA estimé", value: viewClient.ca ? Number(viewClient.ca).toLocaleString("fr-FR") + " FCFA/an" : null },
               ].filter(f => f.value).map((f, i) => (
                 <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
@@ -3600,13 +3598,11 @@ export default function App() {
             <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>🏢 Suivi cabinet</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}><label style={S.label}>Responsable dossier</label><select value={editClient.responsable || ""} onChange={e => setEditClient(p => ({ ...p, responsable: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{collaborateurs.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}</select></div>
-              <div style={S.formGroup}><label style={S.label}>Type de mission</label><select value={editClient.type_mission || ""} onChange={e => setEditClient(p => ({ ...p, type_mission: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["Tenue comptable SYSCOHADA","Audit légal / CAC","Audit contractuel","Conseil fiscal & juridique","Gestion de la paie","Déclarations fiscales (DSF, TVA...)","Création / Immatriculation","Assistance DGI / Contentieux","Autre"].map(m => <option key={m}>{m}</option>)}</select></div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}><label style={S.label}>Statut</label><select value={editClient.statut || "Actif"} onChange={e => setEditClient(p => ({ ...p, statut: e.target.value }))} style={S.select}>{["Actif","En attente","Inactif","Suspendu"].map(s => <option key={s}>{s}</option>)}</select></div>
               <div style={S.formGroup}><label style={S.label}>Date d'entrée en relation</label><input type="date" value={editClient.date_entree || ""} onChange={e => setEditClient(p => ({ ...p, date_entree: e.target.value }))} style={S.input} /></div>
             </div>
-            <div style={S.formGroup}><label style={S.label}>Honoraires (FCFA/an)</label><input type="number" value={editClient.honoraires || ""} onChange={e => setEditClient(p => ({ ...p, honoraires: e.target.value }))} style={S.input} /></div>
             <div style={S.formGroup}><label style={S.label}>Chiffre d'affaires estimé (FCFA/an)</label><input type="number" placeholder="Ex: 50000000" value={editClient.ca || ""} onChange={e => setEditClient(p => ({ ...p, ca: e.target.value }))} style={S.input} /></div>
           </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
@@ -3676,7 +3672,6 @@ export default function App() {
             <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 10px", paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>🏢 Suivi cabinet</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}><label style={S.label}>Responsable dossier</label><select value={newClient.responsable} onChange={e => setNewClient(p => ({ ...p, responsable: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{collaborateurs.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}</select></div>
-              <div style={S.formGroup}><label style={S.label}>Type de mission</label><select value={newClient.type_mission} onChange={e => setNewClient(p => ({ ...p, type_mission: e.target.value }))} style={S.select}><option value="">— Choisir —</option>{["Tenue comptable SYSCOHADA","Audit légal / CAC","Audit contractuel","Conseil fiscal & juridique","Gestion de la paie","Déclarations fiscales (DSF, TVA...)","Création / Immatriculation","Assistance DGI / Contentieux","Autre"].map(m => <option key={m}>{m}</option>)}</select></div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <div style={S.formGroup}><label style={S.label}>Statut</label><select value={newClient.statut} onChange={e => setNewClient(p => ({ ...p, statut: e.target.value }))} style={S.select}>{["Actif","En attente","Inactif","Suspendu"].map(s => <option key={s}>{s}</option>)}</select></div>
