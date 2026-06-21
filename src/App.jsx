@@ -2118,10 +2118,6 @@ export default function App() {
               const actions = ["voir", "ajouter", "modifier", "supprimer"];
               const actionLabels = { voir: "Voir", ajouter: "Ajouter", modifier: "Modifier", supprimer: "Supprimer" };
 
-              const getPerm = (moduleId, action) => {
-                return permCollab.permissions?.[moduleId]?.[action] || false;
-              };
-
               const togglePerm = (moduleId, action) => {
                 setPermCollab(p => {
                   const current = p.permissions?.[moduleId]?.[action] || false;
