@@ -614,7 +614,7 @@ export default function App() {
 
   const canDo = (module, action) => {
     if (!userPerms) return true; // admin — tout autorisé
-    return userPerms[module]?.[action] !== false && (userPerms[module]?.[action] === true || userPerms[module]?.voir === true);
+    return userPerms[module]?.[action] === true;
   };
 
   const canSee = (module) => {
