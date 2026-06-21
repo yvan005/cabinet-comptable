@@ -2095,6 +2095,7 @@ export default function App() {
                 { id: "services", label: "🛠 Services" },
                 { id: "depenses", label: "💸 Dépenses" },
                 { id: "rapports", label: "📈 Rapports" },
+                { id: "echeances", label: "📅 Échéances fiscales" },
                 { id: "collab", label: "👤 Collaborateurs" },
                 { id: "documents", label: "📁 Documents" },
                 { id: "settings", label: "⚙️ Paramètres" },
@@ -2168,7 +2169,7 @@ export default function App() {
                               {actions.map(action => (
                                 <td key={action} style={{ padding: "10px 12px", textAlign: "center" }}>
                                   <input type="checkbox"
-                                    checked={getPerm(mod.id, action)}
+                                    checked={permCollab.permissions?.[mod.id]?.[action] || false}
                                     onChange={() => togglePerm(mod.id, action)}
                                     style={{ width: 16, height: 16, accentColor: "#1a5c9e", cursor: "pointer" }}
                                   />
@@ -2176,7 +2177,7 @@ export default function App() {
                               ))}
                               <td style={{ padding: "10px 12px", textAlign: "center" }}>
                                 <input type="checkbox"
-                                  checked={actions.every(a => getPerm(mod.id, a))}
+                                  checked={actions.every(a => permCollab.permissions?.[mod.id]?.[a] || false)}
                                   onChange={() => toggleAll(mod.id)}
                                   style={{ width: 16, height: 16, accentColor: "#8e44ad", cursor: "pointer" }}
                                 />
