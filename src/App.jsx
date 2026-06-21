@@ -1694,8 +1694,23 @@ export default function App() {
                       <div style={{ fontSize: 18, fontWeight: 800, color: "#1e3a57" }}>Synthèse financière {annee}</div>
                       <div style={{ fontSize: 12, color: "#8da4c0", marginTop: 2 }}>Données en temps réel depuis Supabase</div>
                     </div>
-                    <div style={{ fontSize: 11, background: "#e8f0fb", color: "#1a5c9e", fontWeight: 700, padding: "6px 14px", borderRadius: 20 }}>
-                      Mis à jour : {now.toLocaleDateString("fr-FR")}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      <button onClick={() => exportExcel(
+                        resultatsMois,
+                        [
+                          { label: "Mois", value: r => r.mois, width: 14 },
+                          { label: "CA (FCFA)", value: r => r.ca, width: 18 },
+                          { label: "Dépenses (FCFA)", value: r => r.dep, width: 18 },
+                          { label: "Résultat net (FCFA)", value: r => r.net, width: 20 },
+                          { label: "Marge (%)", value: r => r.ca > 0 ? Math.round((r.net / r.ca) * 100) + "%" : "—", width: 12 },
+                        ],
+                        `rapport_financier_${annee}`
+                      )} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, background: "#e8f5ee", color: "#1a7a4a", border: "1px solid #c3e6cb", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                        📥 Export Excel
+                      </button>
+                      <div style={{ fontSize: 11, background: "#e8f0fb", color: "#1a5c9e", fontWeight: 700, padding: "6px 14px", borderRadius: 20 }}>
+                        Mis à jour : {now.toLocaleDateString("fr-FR")}
+                      </div>
                     </div>
                   </div>
 
