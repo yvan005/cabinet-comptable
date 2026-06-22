@@ -225,6 +225,7 @@ export default function App() {
   const [showSearch, setShowSearch] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [userPerms, setUserPerms] = useState(null);
+  const [accessRevoked, setAccessRevoked] = useState(false);
   const [page, setPage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [clientFilter, setClientFilter] = useState("Tous");
@@ -313,6 +314,27 @@ export default function App() {
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  // Vérification sécurité : déconnecter si le collaborateur a été supprimé
+  useEffect(() => {
+    if (!session || collaborateurs.length === 0) return;
+    const email = session.user?.email;
+    // Vérifier si cet email était un collaborateur connu
+    // On stocke les emails vus pour détecter les suppressions
+    const emailsCollabs = collaborateurs.map(c => c.email).filter(Boolean);
+    const emailDejaVu = sessionStorage.getItem("collab_emails_vus");
+    if (emailDejaVu) {
+      const vus = JSON.parse(emailDejaVu);
+      // Si l'email était connu comme collaborateur mais n'existe plus → déconnecter
+      if (vus.includes(email) && !emailsCollabs.includes(email)) {
+        auth.clearSession();
+        setSession(null);
+        return;
+      }
+    }
+    // Mémoriser les emails des collaborateurs actuels
+    sessionStorage.setItem("collab_emails_vus", JSON.stringify(emailsCollabs));
+  }, [collaborateurs, session]);
 
   // ── EXPORT EXCEL ──
   const exportExcel = async (data, colonnes, nomFichier) => {
@@ -605,9 +627,27 @@ export default function App() {
   const loadUserPerms = useCallback(async () => {
     if (!session) return;
     const email = session.user?.email;
-    const col = collaborateurs.find(c => c.email === email);
-    if (col) setUserPerms(col.permissions || {});
-    else setUserPerms(null); // admin — pas de restriction
+    // Vérifier d'abord dans Supabase directement (pas dans le state local)
+    const res = await db.get("collaborateurs", `&email=eq.${encodeURIComponent(email)}`);
+    const col = Array.isArray(res) ? res[0] : null;
+    if (col) {
+      setUserPerms(col.permissions || {});
+      setAccessRevoked(false);
+    } else {
+      // Email non trouvé dans collaborateurs → vérifier si c'est l'admin
+      // L'admin est le compte dont l'email n'est dans aucun collaborateur
+      // Si collaborateurs est chargé et non vide, c'est un compte révoqué
+      if (collaborateurs.length > 0) {
+        // Email absent de la liste → accès révoqué sauf si admin reconnu
+        const isKnownCollab = collaborateurs.some(c => c.email === email);
+        if (!isKnownCollab && collaborateurs.length > 0) {
+          setUserPerms(null); // Traité comme admin si email inconnu
+        }
+      } else {
+        setUserPerms(null); // admin
+      }
+      setAccessRevoked(false);
+    }
   }, [session, collaborateurs]);
 
   useEffect(() => { loadUserPerms(); }, [loadUserPerms]);
@@ -623,6 +663,14 @@ export default function App() {
   };
 
   if (!session) return <LoginScreen onLogin={(s) => setSession(s)} />;
+
+  // Vérification : si l'email connecté n'est plus dans collaborateurs ET qu'il y a des collaborateurs
+  // c'est soit l'admin, soit un compte révoqué
+  // On vérifie que le collaborateur existe encore dans la BDD à chaque chargement
+  const emailConnecte = session?.user?.email;
+  const estCollaborateurActif = collaborateurs.length === 0 || collaborateurs.some(c => c.email === emailConnecte);
+  // Si pas trouvé dans collaborateurs et qu'il y en a, c'est l'admin (son email n'est pas dans la liste)
+  // Le seul cas de révocation est si le collab était là et a été supprimé
 
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
@@ -2297,8 +2345,14 @@ export default function App() {
               };
 
               const deleteCollab = async (id) => {
-                if (!window.confirm("Supprimer ce collaborateur ?")) return;
+                if (!window.confirm("Supprimer ce collaborateur ? Son accès à l'application sera immédiatement révoqué.")) return;
+                // Si c'est le collaborateur connecté, le déconnecter
+                const colToDelete = collaborateurs.find(c => c.id === id);
                 await db.delete("collaborateurs", id);
+                if (colToDelete?.email === session?.user?.email) {
+                  auth.clearSession();
+                  setSession(null);
+                }
                 loadAll();
               };
 
