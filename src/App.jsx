@@ -2492,10 +2492,10 @@ export default function App() {
                                 title="Créer un accès" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
                                 🔑
                               </button>
-                              <button onClick={() => { setEditCollab({ ...c }); setShowEditCollab(true); }}
+                              {canDo("collab","modifier") && <button onClick={() => { setEditCollab({ ...c }); setShowEditCollab(true); }}
                                 style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <Icon d={ic.edit} size={12} stroke="#4a6d8c" />
-                              </button>
+                              </button>}
                               {canDo("collab","supprimer") && <button onClick={() => deleteCollab(c.id)} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={12} stroke="#c0392b" /></button>}
                             </div>
                             {/* Avatar + infos */}
@@ -3177,19 +3177,19 @@ export default function App() {
                     {["À faire","En cours","Fait","En retard"].map(s => {
                       const sc = { "À faire": "#c17f2a", "En cours": "#1a5c9e", "Fait": "#1a7a4a", "En retard": "#c0392b" };
                       return (
-                        <button key={s} onClick={() => { updateStatutEcheance(viewEcheance, s); setViewEcheance({ ...viewEcheance, statut: s }); }}
+{canDo("echeances","modifier") && <button key={s} onClick={() => { updateStatutEcheance(viewEcheance, s); setViewEcheance({ ...viewEcheance, statut: s }); }}
                           style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${sc[s]}44`, background: viewEcheance.statut === s ? sc[s] : "transparent", color: viewEcheance.statut === s ? "#fff" : sc[s], cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
                           {s}
-                        </button>
+                        </button>}
                       );
                     })}
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, justifyContent: "space-between" }}>
-                  <button onClick={() => { deleteEcheance(viewEcheance.id); setViewEcheance(null); }}
+{canDo("echeances","supprimer") && <button onClick={() => { deleteEcheance(viewEcheance.id); setViewEcheance(null); }}
                     style={{ padding: "9px 16px", borderRadius: 9, background: "#fff5f5", color: "#c0392b", border: "1px solid #fde8e8", cursor: "pointer", fontSize: 13 }}>
                     🗑 Supprimer
-                  </button>
+                  </button>}
                   <button onClick={() => setViewEcheance(null)} style={{ padding: "9px 20px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Fermer</button>
                 </div>
               </Modal>
@@ -3265,9 +3265,9 @@ export default function App() {
                     ], "echeances")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, background: "#e8f5ee", color: "#1a7a4a", border: "1px solid #c3e6cb", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
                       📥 Excel
                     </button>
-                    <button onClick={() => setShowAddEcheance(true)} style={S.primaryBtn}>
+{canDo("echeances","ajouter") && <button onClick={() => setShowAddEcheance(true)} style={S.primaryBtn}>
                       <Icon d={ic.plus} size={14} stroke="#fff" /> Nouvelle échéance
-                    </button>
+                    </button>}
                   </div>
 
                   {/* Calendrier */}
