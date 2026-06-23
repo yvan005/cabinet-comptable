@@ -286,7 +286,7 @@ export default function App() {
   const [documents, setDocuments] = useState([]);
   const [echeances, setEcheances] = useState([]);
   const [showAddEcheance, setShowAddEcheance] = useState(false);
-  const [newEcheance, setNewEcheance] = useState({ client: "", type: "", description: "", date_echeance: "", statut: "À faire", priorite: "Normale" });
+  const [newEcheance, setNewEcheance] = useState({ client: "", types: [], description: "", date_echeance: "", statut: "À faire", priorite: "Normale" });
   const [echeanceMois, setEcheanceMois] = useState(new Date().getMonth());
   const [echeanceAnnee, setEcheanceAnnee] = useState(new Date().getFullYear());
   const [viewEcheance, setViewEcheance] = useState(null);
@@ -421,16 +421,18 @@ export default function App() {
   const addEcheance = async () => {
     console.log("addEcheance called", newEcheance);
     if (!newEcheance.client) { alert("Veuillez sélectionner un client."); return; }
-    if (!newEcheance.type) { alert("Veuillez choisir un type d'échéance."); return; }
+    if (!newEcheance.types || newEcheance.types.length === 0) { alert("Veuillez choisir au moins un type d'échéance."); return; }
     if (!newEcheance.date_echeance) { alert("Veuillez choisir une date."); return; }
-    const result = await db.post("echeances", newEcheance);
-    console.log("Result:", result);
-    if (result && !result.error) {
+    const results = await Promise.all(
+      newEcheance.types.map(type => db.post("echeances", { ...newEcheance, type, types: undefined }))
+    );
+    const hasError = results.some(r => !r || r.error);
+    if (!hasError) {
       setShowAddEcheance(false);
-      setNewEcheance({ client: "", type: "", description: "", date_echeance: "", statut: "À faire", priorite: "Normale" });
+      setNewEcheance({ client: "", types: [], description: "", date_echeance: "", statut: "À faire", priorite: "Normale" });
       loadAll();
     } else {
-      alert("Erreur : " + JSON.stringify(result));
+      alert("Erreur lors de l'enregistrement.");
     }
   };
   const deleteEcheance = async (id) => {
@@ -3108,11 +3110,25 @@ export default function App() {
                     </select>
                   </div>
                   <div style={S.formGroup}>
-                    <label style={S.label}>Type d'échéance *</label>
-                    <select value={newEcheance.type} onChange={e => setNewEcheance(p => ({ ...p, type: e.target.value }))} style={S.select}>
-                      <option value="">— Choisir —</option>
-                      {["Déclaration TVA","DSF (Déclaration Statistique et Fiscale)","Acompte IS (Impôt sur les Sociétés)","Patente","Taxe foncière","CNPS / Cotisations sociales","Retenue à la source","Déclaration IGS","Droits d'enregistrement","Autre"].map(t => <option key={t}>{t}</option>)}
-                    </select>
+                    <label style={S.label}>Type(s) d'échéance *</label>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 7, padding: "10px 12px", borderRadius: 9, border: "1px solid #d8e6f3", background: "#f8fafd", maxHeight: 210, overflowY: "auto" }}>
+                      {["Déclaration TVA","DSF (Déclaration Statistique et Fiscale)","Acompte IS (Impôt sur les Sociétés)","Patente","Taxe foncière","CNPS / Cotisations sociales","Retenue à la source","Déclaration IGS","Droits d'enregistrement","Autre"].map(t => (
+                        <label key={t} style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", fontSize: 13, color: "#1e3a57" }}>
+                          <input type="checkbox" checked={newEcheance.types.includes(t)}
+                            onChange={e => setNewEcheance(p => ({
+                              ...p,
+                              types: e.target.checked ? [...p.types, t] : p.types.filter(x => x !== t)
+                            }))}
+                            style={{ accentColor: "#1a7a4a", width: 15, height: 15, cursor: "pointer" }} />
+                          {t}
+                        </label>
+                      ))}
+                    </div>
+                    {newEcheance.types.length > 0 && (
+                      <div style={{ marginTop: 6, fontSize: 11, color: "#1a7a4a", fontWeight: 600 }}>
+                        {newEcheance.types.length} type{newEcheance.types.length > 1 ? "s" : ""} sélectionné{newEcheance.types.length > 1 ? "s" : ""} → {newEcheance.types.length} échéance{newEcheance.types.length > 1 ? "s" : ""} sera{newEcheance.types.length > 1 ? "ont" : ""} créée{newEcheance.types.length > 1 ? "s" : ""}
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <div style={S.formGroup}>
