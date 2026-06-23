@@ -1285,7 +1285,7 @@ export default function App() {
                       <Icon d={ic.search} size={15} stroke="#8da4c0" />
                       <input placeholder="Rechercher un client…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#1e3a57", width: 160 }} />
                     </div>
-                    <button onClick={() => exportExcel(clients, [
+                    {canDo("clients","modifier") && <button onClick={() => exportExcel(clients, [
                       { label: "Raison sociale", value: r => r.nom, width: 30 },
                       { label: "Forme juridique", value: r => r.forme_juridique, width: 18 },
                       { label: "Secteur", value: r => r.secteur, width: 25 },
@@ -1298,7 +1298,7 @@ export default function App() {
                       { label: "Statut", value: r => r.statut, width: 12 },
                       ], "clients")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, background: "#e8f5ee", color: "#1a7a4a", border: "1px solid #c3e6cb", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
                       📥 Excel
-                    </button>
+                    </button>}
                     {canDo("clients","ajouter") && <button onClick={() => setShowAddClient(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouveau</button>}
                   </div>
                 </div>
@@ -1574,7 +1574,7 @@ export default function App() {
                       <div style={S.cardHeader}>
                         <Icon d={ic.folder} size={16} stroke="#4a6d8c" />
                         <span style={S.cardTitle}>Historique des devis</span>
-                        <button onClick={() => exportExcel(devisList, [
+                        {canDo("devis","modifier") && <button onClick={() => exportExcel(devisList, [
                           { label: "Numéro", value: r => r.numero, width: 15 },
                           { label: "Client", value: r => r.client, width: 30 },
                           { label: "Date", value: r => r.date, width: 14 },
@@ -1584,7 +1584,7 @@ export default function App() {
                           { label: "TTC (FCFA)", value: r => r.total_ttc, width: 16 },
                         ], "devis")} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, background: "#e8f5ee", color: "#1a7a4a", border: "1px solid #c3e6cb", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
                           📥 Excel
-                        </button>
+                        </button>}
                       </div>
                       {devisList.map((d, idx) => (
                         <div key={d.id} style={{
@@ -1735,7 +1735,7 @@ export default function App() {
                       <div style={{ fontSize: 12, color: "#8da4c0", marginTop: 2 }}>Données en temps réel depuis Supabase</div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                      <button onClick={() => exportExcel(
+                      {canDo("rapports","modifier") && <button onClick={() => exportExcel(
                         resultatsMois,
                         [
                           { label: "Mois", value: r => r.mois, width: 14 },
@@ -1747,7 +1747,7 @@ export default function App() {
                         `rapport_financier_${annee}`
                       )} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, background: "#e8f5ee", color: "#1a7a4a", border: "1px solid #c3e6cb", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
                         📥 Export Excel
-                      </button>
+                      </button>}
                       <div style={{ fontSize: 11, background: "#e8f0fb", color: "#1a5c9e", fontWeight: 700, padding: "6px 14px", borderRadius: 20 }}>
                         Mis à jour : {now.toLocaleDateString("fr-FR")}
                       </div>
@@ -2066,7 +2066,7 @@ export default function App() {
                     <div style={S.cardHeader}>
                       <span style={{ fontSize: 16 }}>📅</span>
                       <span style={S.cardTitle}>Résultats mensuels détaillés — {annee}</span>
-                      <button onClick={() => {
+                      {canDo("rapports","modifier") && <button onClick={() => {
                         const rows = resultatsMois.map(m => {
                           const marge = m.ca > 0 ? Math.round((m.net / m.ca) * 100) : 0;
                           return `${m.mois}\t${m.ca}\t${m.dep}\t${m.net}\t${marge}%`;
@@ -2078,7 +2078,7 @@ export default function App() {
                         URL.revokeObjectURL(url);
                       }} style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, background: "#e8f0fb", color: "#1a5c9e", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
                         ⬇ Exporter
-                      </button>
+                      </button>}
                     </div>
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -2769,7 +2769,7 @@ export default function App() {
                         <button key={f} onClick={() => {}} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: "#fff", color: "#4a6d8c", cursor: "pointer", fontSize: 12 }}>{f} ({f === "Tous" ? abonnements.length : abonnements.filter(a => a.statut === f).length})</button>
                       ))}
                     </div>
-                    <button onClick={() => exportExcel(abonnements, [
+                    {canDo("abonnements","modifier") && <button onClick={() => exportExcel(abonnements, [
                     { label: "Client", value: r => r.client, width: 30 },
                     { label: "Service(s)", value: r => r.service, width: 35 },
                     { label: "Montant (FCFA)", value: r => r.montant, width: 16 },
@@ -2779,7 +2779,7 @@ export default function App() {
                     { label: "Statut", value: r => r.statut, width: 12 },
                   ], "abonnements")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, background: "#e8f5ee", color: "#1a7a4a", border: "1px solid #c3e6cb", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
                     📥 Excel
-                  </button>
+                  </button>}
                   {canDo("abonnements","ajouter") && <button onClick={() => { setNewAbo({ client: clients[0]?.nom || "", services: [], montant: "", frequence: "Mensuel", date_debut: new Date().toISOString().split("T")[0], statut: "Actif", note: "" }); setShowAddAbo(true); }} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouvel abonnement</button>}
                   </div>
 
@@ -3002,7 +3002,7 @@ export default function App() {
                       <button key={val} onClick={() => setDepensePeriode(val)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: depensePeriode === val ? "#1a5c9e" : "#fff", color: depensePeriode === val ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12, fontWeight: 500 }}>{label}</button>
                     ))}
                   </div>
-                  <button onClick={() => exportExcel(depenses, [
+                  {canDo("depenses","modifier") && <button onClick={() => exportExcel(depenses, [
                     { label: "Date", value: r => r.date, width: 14 },
                     { label: "Libellé", value: r => r.libelle, width: 30 },
                     { label: "Catégorie", value: r => r.categorie, width: 20 },
@@ -3010,7 +3010,7 @@ export default function App() {
                     { label: "Note", value: r => r.note, width: 25 },
                   ], "depenses")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, background: "#e8f5ee", color: "#1a7a4a", border: "1px solid #c3e6cb", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
                     📥 Excel
-                  </button>
+                  </button>}
                   {canDo("depenses","ajouter") && <button onClick={() => setShowAddDepense(true)} style={S.primaryBtn}><Icon d={ic.plus} size={14} stroke="#fff" /> Nouvelle dépense</button>}
                 </div>
 
@@ -3247,7 +3247,7 @@ export default function App() {
                       <button onClick={() => { setEcheanceMois(now.getMonth()); setEcheanceAnnee(now.getFullYear()); }}
                         style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: "#f5f8fc", color: "#4a6d8c", cursor: "pointer", fontSize: 12 }}>Aujourd'hui</button>
                     </div>
-                    <button onClick={() => exportExcel(echeances, [
+                    {canDo("echeances","modifier") && <button onClick={() => exportExcel(echeances, [
                       { label: "Client", value: r => r.client, width: 30 },
                       { label: "Type", value: r => r.type, width: 35 },
                       { label: "Date échéance", value: r => r.date_echeance, width: 16 },
@@ -3256,7 +3256,7 @@ export default function App() {
                       { label: "Description", value: r => r.description, width: 30 },
                     ], "echeances")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, background: "#e8f5ee", color: "#1a7a4a", border: "1px solid #c3e6cb", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
                       📥 Excel
-                    </button>
+                    </button>}
 {canDo("echeances","ajouter") && <button onClick={() => setShowAddEcheance(true)} style={S.primaryBtn}>
                       <Icon d={ic.plus} size={14} stroke="#fff" /> Nouvelle échéance
                     </button>}
