@@ -664,14 +664,6 @@ export default function App() {
 
   if (!session) return <LoginScreen onLogin={(s) => setSession(s)} />;
 
-  // Vérification : si l'email connecté n'est plus dans collaborateurs ET qu'il y a des collaborateurs
-  // c'est soit l'admin, soit un compte révoqué
-  // On vérifie que le collaborateur existe encore dans la BDD à chaque chargement
-  const emailConnecte = session?.user?.email;
-  const estCollaborateurActif = collaborateurs.length === 0 || collaborateurs.some(c => c.email === emailConnecte);
-  // Si pas trouvé dans collaborateurs et qu'il y en a, c'est l'admin (son email n'est pas dans la liste)
-  // Le seul cas de révocation est si le collab était là et a été supprimé
-
   return (
     <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", background: "#f0f4fa", fontFamily: "'DM Sans','Segoe UI',sans-serif", position: "relative" }}>
       <style>{`
