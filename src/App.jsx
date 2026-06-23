@@ -971,25 +971,20 @@ export default function App() {
                 { label: "En attente", value: montantEnAttente > 0 ? (montantEnAttente / 1000).toFixed(0) + "k FCFA" : "0 FCFA", delta: `${devisEnAttente} devis à encaisser`, color: "#c17f2a", icon: ic.alert, bg: "#fff8e6" },
               ];
 
-              // ── Score santé cabinet ──
-              const scoreItems = [
-                { ok: clientsActifs > 0, label: "Clients actifs" },
-                { ok: mrr > 0, label: "Revenus récurrents" },
-                { ok: devisEnAttente === 0, label: "Aucun devis en attente" },
-                { ok: totalCA > depensesTotal, label: "CA > Dépenses" },
-                { ok: echSoon2 === 0, label: "Échéances à jour" },
-              ];
-              // echSoon2 calculé après, on le refera inline
+              // ── Échéances urgentes (pour score + actions) ──
               const echUrgentes = echeances.filter(e => {
                 if (e.statut === "Fait") return false;
                 const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
                 return days >= -7 && days <= 7;
               });
+
+              // ── Devis en attente depuis > 7j ──
               const devisEnAttenteLong = devisList.filter(d => {
                 if (d.statut !== "Enregistré" && d.statut !== "Envoyé") return false;
-                const days = Math.round((now - new Date(d.date || d.created_at)) / 86400000);
-                return days >= 7;
+                return Math.round((now - new Date(d.date || d.created_at)) / 86400000) >= 7;
               });
+
+              // ── Score santé cabinet ──
               const scoreOk = [
                 clientsActifs > 0,
                 mrr > 0,
@@ -1004,37 +999,28 @@ export default function App() {
               // ── Actions prioritaires ──
               const actionsPrio = [
                 ...devisEnAttenteLong.map(d => ({
-                  emoji: "📄",
-                  color: "#1a5c9e",
-                  bg: "#e8f0fb",
+                  emoji: "📄", color: "#1a5c9e", bg: "#e8f0fb",
                   titre: `Devis en attente — ${d.client}`,
                   detail: `Depuis ${Math.round((now - new Date(d.date || d.created_at)) / 86400000)}j · ${(d.total_ttc||0).toLocaleString("fr-FR")} FCFA`,
-                  action: () => navigate("devis"),
-                  cta: "Voir →",
+                  action: () => navigate("devis"), cta: "Voir →",
                 })),
                 ...echUrgentes.map(e => {
                   const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
                   return {
-                    emoji: days < 0 ? "🔴" : "🟡",
-                    color: days < 0 ? "#c0392b" : "#c17f2a",
-                    bg: days < 0 ? "#fff0f0" : "#fff8e6",
+                    emoji: days < 0 ? "🔴" : "🟡", color: days < 0 ? "#c0392b" : "#c17f2a", bg: days < 0 ? "#fff0f0" : "#fff8e6",
                     titre: `${e.type} — ${e.client}`,
                     detail: days < 0 ? `En retard de ${Math.abs(days)}j` : days === 0 ? "Aujourd'hui !" : `Dans ${days}j`,
-                    action: () => navigate("echeances"),
-                    cta: "Traiter →",
+                    action: () => navigate("echeances"), cta: "Traiter →",
                   };
                 }),
                 ...abonnements.filter(a => {
                   if (a.statut !== "Actif" || !a.prochaine_echeance) return false;
                   return Math.round((new Date(a.prochaine_echeance) - now) / 86400000) <= 5;
                 }).map(a => ({
-                  emoji: "🔄",
-                  color: "#8e44ad",
-                  bg: "#f5eefb",
+                  emoji: "🔄", color: "#8e44ad", bg: "#f5eefb",
                   titre: `Abonnement à renouveler — ${a.client}`,
                   detail: `${a.service} · ${(a.montant||0).toLocaleString("fr-FR")} FCFA`,
-                  action: () => navigate("abonnements"),
-                  cta: "Gérer →",
+                  action: () => navigate("abonnements"), cta: "Gérer →",
                 })),
               ].slice(0, 6);
 
