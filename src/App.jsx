@@ -971,11 +971,101 @@ export default function App() {
                 { label: "En attente", value: montantEnAttente > 0 ? (montantEnAttente / 1000).toFixed(0) + "k FCFA" : "0 FCFA", delta: `${devisEnAttente} devis à encaisser`, color: "#c17f2a", icon: ic.alert, bg: "#fff8e6" },
               ];
 
+              // ── Score santé cabinet ──
+              const scoreItems = [
+                { ok: clientsActifs > 0, label: "Clients actifs" },
+                { ok: mrr > 0, label: "Revenus récurrents" },
+                { ok: devisEnAttente === 0, label: "Aucun devis en attente" },
+                { ok: totalCA > depensesTotal, label: "CA > Dépenses" },
+                { ok: echSoon2 === 0, label: "Échéances à jour" },
+              ];
+              // echSoon2 calculé après, on le refera inline
+              const echUrgentes = echeances.filter(e => {
+                if (e.statut === "Fait") return false;
+                const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
+                return days >= -7 && days <= 7;
+              });
+              const devisEnAttenteLong = devisList.filter(d => {
+                if (d.statut !== "Enregistré" && d.statut !== "Envoyé") return false;
+                const days = Math.round((now - new Date(d.date || d.created_at)) / 86400000);
+                return days >= 7;
+              });
+              const scoreOk = [
+                clientsActifs > 0,
+                mrr > 0,
+                devisEnAttente === 0,
+                totalCA > depensesTotal,
+                echUrgentes.length === 0,
+              ].filter(Boolean).length;
+              const scorePct = Math.round((scoreOk / 5) * 100);
+              const scoreColor = scorePct >= 80 ? "#1a7a4a" : scorePct >= 50 ? "#c17f2a" : "#c0392b";
+              const scoreLabel = scorePct >= 80 ? "Excellent" : scorePct >= 60 ? "Bon" : scorePct >= 40 ? "À surveiller" : "Attention requise";
+
+              // ── Actions prioritaires ──
+              const actionsPrio = [
+                ...devisEnAttenteLong.map(d => ({
+                  emoji: "📄",
+                  color: "#1a5c9e",
+                  bg: "#e8f0fb",
+                  titre: `Devis en attente — ${d.client}`,
+                  detail: `Depuis ${Math.round((now - new Date(d.date || d.created_at)) / 86400000)}j · ${(d.total_ttc||0).toLocaleString("fr-FR")} FCFA`,
+                  action: () => navigate("devis"),
+                  cta: "Voir →",
+                })),
+                ...echUrgentes.map(e => {
+                  const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
+                  return {
+                    emoji: days < 0 ? "🔴" : "🟡",
+                    color: days < 0 ? "#c0392b" : "#c17f2a",
+                    bg: days < 0 ? "#fff0f0" : "#fff8e6",
+                    titre: `${e.type} — ${e.client}`,
+                    detail: days < 0 ? `En retard de ${Math.abs(days)}j` : days === 0 ? "Aujourd'hui !" : `Dans ${days}j`,
+                    action: () => navigate("echeances"),
+                    cta: "Traiter →",
+                  };
+                }),
+                ...abonnements.filter(a => {
+                  if (a.statut !== "Actif" || !a.prochaine_echeance) return false;
+                  return Math.round((new Date(a.prochaine_echeance) - now) / 86400000) <= 5;
+                }).map(a => ({
+                  emoji: "🔄",
+                  color: "#8e44ad",
+                  bg: "#f5eefb",
+                  titre: `Abonnement à renouveler — ${a.client}`,
+                  detail: `${a.service} · ${(a.montant||0).toLocaleString("fr-FR")} FCFA`,
+                  action: () => navigate("abonnements"),
+                  cta: "Gérer →",
+                })),
+              ].slice(0, 6);
+
               return (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
+                  {/* ── BANNIÈRE ACTIONS PRIORITAIRES ── */}
+                  {actionsPrio.length > 0 && (
+                    <div style={{ background: "linear-gradient(135deg,#1e3a57,#1a5c9e)", borderRadius: 16, padding: isMobile ? "14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                        <span style={{ fontSize: 16 }}>⚡</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Actions prioritaires</span>
+                        <span style={{ marginLeft: "auto", background: "#c0392b", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 20 }}>{actionsPrio.length}</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : actionsPrio.length === 1 ? "1fr" : "1fr 1fr", gap: 8 }}>
+                        {actionsPrio.map((a, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px 12px", cursor: "pointer" }} onClick={a.action}>
+                            <span style={{ fontSize: 18, flexShrink: 0 }}>{a.emoji}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.titre}</div>
+                              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>{a.detail}</div>
+                            </div>
+                            <button onClick={a.action} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, padding: "4px 10px", cursor: "pointer", flexShrink: 0 }}>{a.cta}</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* ── KPI CARDS ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: isMobile ? 10 : 14 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5,1fr)", gap: isMobile ? 10 : 14 }}>
                     {kpiCards.map((k, i) => (
                       <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 14, padding: isMobile ? "14px" : "18px 20px", boxShadow: "0 1px 4px rgba(0,30,80,.07)", borderTop: `3px solid ${k.color}`, display: "flex", flexDirection: "column", gap: 4 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
@@ -988,6 +1078,20 @@ export default function App() {
                         <div style={{ fontSize: 11, color: "#8da4c0" }}>{k.delta}</div>
                       </div>
                     ))}
+                    {/* Score santé */}
+                    <div className="card-hover" style={{ background: "#fff", borderRadius: 14, padding: isMobile ? "14px" : "18px 20px", boxShadow: "0 1px 4px rgba(0,30,80,.07)", borderTop: `3px solid ${scoreColor}`, display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 9, background: scoreColor + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+                          {scorePct >= 80 ? "🏆" : scorePct >= 50 ? "📊" : "⚠️"}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: scoreColor, lineHeight: 1.1 }}>{scorePct}%</div>
+                      <div style={{ fontSize: isMobile ? 11 : 12, color: "#6b8aaa", fontWeight: 600 }}>Santé cabinet</div>
+                      <div style={{ height: 4, background: "#f0f4fa", borderRadius: 2, overflow: "hidden", marginTop: 2 }}>
+                        <div style={{ width: `${scorePct}%`, height: "100%", background: scoreColor, borderRadius: 2, transition: "width 0.8s ease" }} />
+                      </div>
+                      <div style={{ fontSize: 11, color: scoreColor, fontWeight: 600 }}>{scoreLabel}</div>
+                    </div>
                   </div>
 
                   {/* ── ROW 2 : Graphiques ── */}
@@ -1113,18 +1217,23 @@ export default function App() {
                             const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
                             const isLate = days < 0;
                             const isUrgent = days >= 0 && days <= 7;
+                            const pct = isLate ? 100 : Math.max(0, Math.round((1 - days / 30) * 100));
+                            const barColor = isLate ? "#c0392b" : isUrgent ? "#c17f2a" : "#1a5c9e";
                             return (
                               <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: "1px solid #f0f4fa" }}>
-                                <div style={{ width: 30, height: 30, borderRadius: 8, background: isLate ? "#fff0f0" : isUrgent ? "#fff8e6" : "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
+                                <div style={{ width: 32, height: 32, borderRadius: 8, background: isLate ? "#fff0f0" : isUrgent ? "#fff8e6" : "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>
                                   {isLate ? "🔴" : isUrgent ? "🟡" : "📅"}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                   <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.client}</div>
-                                  <div style={{ fontSize: 11, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.type}</div>
+                                  <div style={{ fontSize: 11, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>{e.type}</div>
+                                  <div style={{ height: 3, background: "#f0f4fa", borderRadius: 2, overflow: "hidden" }}>
+                                    <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 2, transition: "width 0.6s ease" }} />
+                                  </div>
                                 </div>
-                                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 700, color: isLate ? "#c0392b" : isUrgent ? "#c17f2a" : "#1a5c9e" }}>
-                                    {isLate ? `J+${Math.abs(days)}` : days === 0 ? "Aujourd'hui" : `J-${days}`}
+                                <div style={{ textAlign: "right", flexShrink: 0, minWidth: 52 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 800, color: isLate ? "#c0392b" : isUrgent ? "#c17f2a" : "#1a5c9e" }}>
+                                    {isLate ? `+${Math.abs(days)}j` : days === 0 ? "⚡ Auj." : `J-${days}`}
                                   </div>
                                   <div style={{ fontSize: 10, color: "#8da4c0" }}>{new Date(e.date_echeance).toLocaleDateString("fr-FR")}</div>
                                 </div>
