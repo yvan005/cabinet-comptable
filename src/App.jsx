@@ -3112,7 +3112,7 @@ export default function App() {
                   <div style={S.formGroup}>
                     <label style={S.label}>Type(s) d'échéance *</label>
                     <div style={{ display: "flex", flexDirection: "column", gap: 7, padding: "10px 12px", borderRadius: 9, border: "1px solid #d8e6f3", background: "#f8fafd", maxHeight: 210, overflowY: "auto" }}>
-                      {["Déclaration TVA","DSF (Déclaration Statistique et Fiscale)","Acompte IS (Impôt sur les Sociétés)","Patente","Taxe foncière","CNPS / Cotisations sociales","Retenue à la source","Déclaration IGS","Droits d'enregistrement","Autre"].map(t => (
+                      {["Impôt général synthétique (IGS)","Impôts sur les Bénéfices Agricoles","Impôts sur les Bénéfices Artisanaux, Industriels et Commerciaux (BAIC)","Impôts sur les Bénéfices des Professions Non Commerciales","Impôts sur les Revenus des Capitaux Mobiliers (IRCM)","Impôts sur les Revenus Foncier","Impôts sur les traitements, salaires et rentes viagères (I/TS)","Licence","Précompte sur loyer","Taxe de séjour dans les établissements d'hébergement","CNPS / Cotisations sociales"].map(t => (
                         <label key={t} style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", fontSize: 13, color: "#1e3a57" }}>
                           <input type="checkbox" checked={newEcheance.types.includes(t)}
                             onChange={e => setNewEcheance(p => ({
