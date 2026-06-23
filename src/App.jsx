@@ -3169,16 +3169,16 @@ export default function App() {
                     {["À faire","En cours","Fait","En retard"].map(s => {
                       const sc = { "À faire": "#c17f2a", "En cours": "#1a5c9e", "Fait": "#1a7a4a", "En retard": "#c0392b" };
                       return (
-{canDo("echeances","modifier") && <button key={s} onClick={() => { updateStatutEcheance(viewEcheance, s); setViewEcheance({ ...viewEcheance, statut: s }); }}
+                        canDo("echeances","modifier") && <button key={s} onClick={() => { updateStatutEcheance(viewEcheance, s); setViewEcheance({ ...viewEcheance, statut: s }); }}
                           style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${sc[s]}44`, background: viewEcheance.statut === s ? sc[s] : "transparent", color: viewEcheance.statut === s ? "#fff" : sc[s], cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
                           {s}
-                        </button>}
+                        </button>
                       );
                     })}
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, justifyContent: "space-between" }}>
-{canDo("echeances","supprimer") && <button onClick={() => { deleteEcheance(viewEcheance.id); setViewEcheance(null); }}
+                  {canDo("echeances","supprimer") && <button onClick={() => { deleteEcheance(viewEcheance.id); setViewEcheance(null); }}
                     style={{ padding: "9px 16px", borderRadius: 9, background: "#fff5f5", color: "#c0392b", border: "1px solid #fde8e8", cursor: "pointer", fontSize: 13 }}>
                     🗑 Supprimer
                   </button>}
