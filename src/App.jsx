@@ -2476,14 +2476,14 @@ export default function App() {
                           <div key={c.id} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
                             {/* Actions */}
                             <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6 }}>
-                              <button onClick={() => { setPermCollab({ ...c, permissions: c.permissions || {} }); setShowPermissions(true); }}
+                              {canDo("collab","modifier") && <button onClick={() => { setPermCollab({ ...c, permissions: c.permissions || {} }); setShowPermissions(true); }}
                                 title="Gérer les permissions" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
                                 🔒
-                              </button>
-                              <button onClick={() => { setAccesCollab(c); setAccesEmail(c.email || ""); setAccesPassword(""); setAccesMsg(null); setShowAccesCollab(true); }}
+                              </button>}
+                              {canDo("collab","modifier") && <button onClick={() => { setAccesCollab(c); setAccesEmail(c.email || ""); setAccesPassword(""); setAccesMsg(null); setShowAccesCollab(true); }}
                                 title="Créer un accès" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
                                 🔑
-                              </button>
+                              </button>}
                               {canDo("collab","modifier") && <button onClick={() => { setEditCollab({ ...c }); setShowEditCollab(true); }}
                                 style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <Icon d={ic.edit} size={12} stroke="#4a6d8c" />
