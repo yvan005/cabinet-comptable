@@ -3316,27 +3316,31 @@ export default function App() {
                   </div>
 
                   {/* Calendrier */}
-                  <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 1, marginBottom: 4 }}>
+                  <div className="card-hover" style={{ ...S.card, marginBottom: 16, overflow: "hidden", padding: isMobile ? "12px 8px" : "18px 20px" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: isMobile ? 0 : 1, marginBottom: 4 }}>
                       {joursNoms.map(j => (
-                        <div key={j} style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "#8da4c0", padding: "6px 0" }}>{j}</div>
+                        <div key={j} style={{ textAlign: "center", fontSize: isMobile ? 9 : 11, fontWeight: 700, color: "#8da4c0", padding: isMobile ? "4px 0" : "6px 0", overflow: "hidden" }}>{j}</div>
                       ))}
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: isMobile ? 1 : 2 }}>
                       {jours.map((jour, i) => {
                         const estMoisCourant = jour.getMonth() === echeanceMois;
                         const estAujourdhui = jour.toDateString() === now.toDateString();
                         const echsJour = getEcheancesJour(jour);
                         return (
-                          <div key={i} style={{ minHeight: isMobile ? 44 : 70, borderRadius: 8, background: estAujourdhui ? "#e8f0fb" : estMoisCourant ? "#fff" : "#f9fafc", border: estAujourdhui ? "2px solid #1a5c9e" : "1px solid #f0f4fa", padding: 4 }}>
-                            <div style={{ fontSize: 11, fontWeight: estAujourdhui ? 800 : 500, color: estAujourdhui ? "#1a5c9e" : estMoisCourant ? "#1e3a57" : "#c0cfe0", textAlign: "right", marginBottom: 2 }}>{jour.getDate()}</div>
-                            {echsJour.slice(0, 2).map((e, ei) => (
+                          <div key={i} style={{ minHeight: isMobile ? 34 : 70, borderRadius: isMobile ? 4 : 8, background: estAujourdhui ? "#e8f0fb" : estMoisCourant ? "#fff" : "#f9fafc", border: estAujourdhui ? "2px solid #1a5c9e" : "1px solid #f0f4fa", padding: isMobile ? 2 : 4, overflow: "hidden", boxSizing: "border-box" }}>
+                            <div style={{ fontSize: isMobile ? 9 : 11, fontWeight: estAujourdhui ? 800 : 500, color: estAujourdhui ? "#1a5c9e" : estMoisCourant ? "#1e3a57" : "#c0cfe0", textAlign: "right", marginBottom: 1, lineHeight: 1 }}>{jour.getDate()}</div>
+                            {!isMobile && echsJour.slice(0, 2).map((e, ei) => (
                               <div key={ei} onClick={() => setViewEcheance(e)}
                                 style={{ fontSize: 9, fontWeight: 600, padding: "2px 4px", borderRadius: 3, background: statutColor[e.statut] || "#1a5c9e", color: "#fff", marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}>
                                 {e.client}
                               </div>
                             ))}
-                            {echsJour.length > 2 && <div style={{ fontSize: 9, color: "#8da4c0", textAlign: "center" }}>+{echsJour.length - 2}</div>}
+                            {isMobile && echsJour.length > 0 && (
+                              <div onClick={() => setViewEcheance(echsJour[0])} style={{ width: "100%", height: 4, borderRadius: 2, background: statutColor[echsJour[0].statut] || "#1a5c9e", cursor: "pointer" }} />
+                            )}
+                            {!isMobile && echsJour.length > 2 && <div style={{ fontSize: 9, color: "#8da4c0", textAlign: "center" }}>+{echsJour.length - 2}</div>}
+                            {isMobile && echsJour.length > 1 && <div style={{ fontSize: 8, color: "#8da4c0", textAlign: "center", lineHeight: 1 }}>+{echsJour.length - 1}</div>}
                           </div>
                         );
                       })}
