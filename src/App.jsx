@@ -3535,7 +3535,7 @@ export default function App() {
       {/* MODAL VISUALISATION CLIENT */}
       {viewClient && (
         <Modal title="Fiche client" onClose={() => { setViewClient(null); setClientTab(0); }}>
-          <div style={{ paddingRight: 4 }}>
+          <div style={{ paddingRight: 4, maxHeight: "70vh", overflowY: "auto" }}>
 
             {/* Entête */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: "linear-gradient(135deg,#e8f0fb,#f0f6ff)", marginBottom: 16 }}>
