@@ -3534,7 +3534,7 @@ export default function App() {
       {/* MODALS */}
       {/* MODAL VISUALISATION CLIENT */}
       {viewClient && (
-        <Modal title="Fiche client" onClose={() => setViewClient(null)}>
+        <Modal title="Fiche client" onClose={() => { setViewClient(null); setClientTab(0); }}>
           <div style={{ paddingRight: 4 }}>
 
             {/* Entête */}
@@ -3547,37 +3547,97 @@ export default function App() {
               </div>
             </div>
 
-            {/* Identification */}
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-              {[
-                { label: "NIU", value: viewClient.nif },
-                { label: "N° RCCM", value: viewClient.rccm },
-                { label: "N° Récépissé", value: viewClient.numero_recepisse },
-                { label: "CA estimé", value: viewClient.ca ? Number(viewClient.ca).toLocaleString("fr-FR") + " FCFA/an" : null },
-                { label: "N° Patente", value: viewClient.patente },
-                { label: "Date de création", value: viewClient.date_creation ? new Date(viewClient.date_creation).toLocaleDateString("fr-FR") : null },
-                { label: "Date clôture", value: viewClient.date_cloture },
-              ].filter(f => f.value).map((f, i) => (
-                <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                  <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                  <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
-                </div>
+            {/* Onglets */}
+            <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "2px solid #f0f4fa", paddingBottom: 0 }}>
+              {[{ label: "📋 Fiche", idx: 0 }, { label: "🕘 Historique", idx: 1 }].map(t => (
+                <button key={t.idx} onClick={() => setClientTab(t.idx)} style={{ padding: "7px 16px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: clientTab === t.idx ? "#1a5c9e" : "transparent", color: clientTab === t.idx ? "#fff" : "#6b8aaa", marginBottom: -2, borderBottom: clientTab === t.idx ? "2px solid #1a5c9e" : "2px solid transparent" }}>
+                  {t.label}
+                </button>
               ))}
             </div>
 
-            {/* Localisation */}
-            {(viewClient.region || viewClient.adresse) && <>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#1a7a4a", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f5ee" }}>📍 Localisation</div>
+            {/* ── ONGLET FICHE ── */}
+            {clientTab === 0 && <>
+              {/* Identification */}
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
                 {[
-                  { label: "Région", value: viewClient.region },
-                  { label: "Département", value: viewClient.departement },
-                  { label: "Arrondissement", value: viewClient.arrondissement },
-                  { label: "Adresse", value: viewClient.adresse },
-                  { label: "Téléphone", value: viewClient.telephone },
-                  { label: "Email", value: viewClient.email },
-                  { label: "Site web", value: viewClient.site_web },
+                  { label: "NIU", value: viewClient.nif },
+                  { label: "N° RCCM", value: viewClient.rccm },
+                  { label: "N° Récépissé", value: viewClient.numero_recepisse },
+                  { label: "CA estimé", value: viewClient.ca ? Number(viewClient.ca).toLocaleString("fr-FR") + " FCFA/an" : null },
+                  { label: "N° Patente", value: viewClient.patente },
+                  { label: "Date de création", value: viewClient.date_creation ? new Date(viewClient.date_creation).toLocaleDateString("fr-FR") : null },
+                  { label: "Date clôture", value: viewClient.date_cloture },
+                ].filter(f => f.value).map((f, i) => (
+                  <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
+                    <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
+                    <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Localisation */}
+              {(viewClient.region || viewClient.adresse) && <>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#1a7a4a", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f5ee" }}>📍 Localisation</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                  {[
+                    { label: "Région", value: viewClient.region },
+                    { label: "Département", value: viewClient.departement },
+                    { label: "Arrondissement", value: viewClient.arrondissement },
+                    { label: "Adresse", value: viewClient.adresse },
+                    { label: "Téléphone", value: viewClient.telephone },
+                    { label: "Email", value: viewClient.email },
+                    { label: "Site web", value: viewClient.site_web },
+                  ].filter(f => f.value).map((f, i) => (
+                    <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
+                      <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
+                      <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </>}
+
+              {/* Représentant légal */}
+              {viewClient.dirigeant && <>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#8e44ad", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #f5eefb" }}>👤 Représentant légal</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                  {[
+                    { label: "Dirigeant", value: viewClient.dirigeant },
+                    { label: "Téléphone", value: viewClient.tel_dirigeant },
+                    { label: "Email", value: viewClient.email_dirigeant },
+                  ].filter(f => f.value).map((f, i) => (
+                    <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
+                      <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
+                      <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </>}
+
+              {/* Fiscalité */}
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📊 Fiscalité & Comptabilité</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                {[
+                  { label: "Régime fiscal", value: viewClient.regime_fiscal },
+                  { label: "Centre des impôts", value: viewClient.centre_impots },
+                  { label: "TVA", value: viewClient.tva },
+                  { label: "Référentiel", value: viewClient.referentiel },
+                  { label: "Banque", value: viewClient.banque },
+                ].filter(f => f.value).map((f, i) => (
+                  <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
+                    <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
+                    <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Suivi cabinet */}
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>🏢 Suivi cabinet</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {[
+                  { label: "Responsable", value: viewClient.responsable },
+                  { label: "Date d'entrée", value: viewClient.date_entree ? new Date(viewClient.date_entree).toLocaleDateString("fr-FR") : null },
                 ].filter(f => f.value).map((f, i) => (
                   <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
                     <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
@@ -3587,57 +3647,119 @@ export default function App() {
               </div>
             </>}
 
-            {/* Représentant légal */}
-            {viewClient.dirigeant && <>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#8e44ad", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #f5eefb" }}>👤 Représentant légal</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-                {[
-                  { label: "Dirigeant", value: viewClient.dirigeant },
-                  { label: "Téléphone", value: viewClient.tel_dirigeant },
-                  { label: "Email", value: viewClient.email_dirigeant },
-                ].filter(f => f.value).map((f, i) => (
-                  <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                    <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                    <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
+            {/* ── ONGLET HISTORIQUE ── */}
+            {clientTab === 1 && (() => {
+              const nom = viewClient.nom;
+              const clientDevis = devisList.filter(d => d.client === nom).sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
+              const clientAbos = abonnements.filter(a => a.client === nom);
+              const clientEch = echeances.filter(e => e.client === nom).sort((a, b) => new Date(b.date_echeance) - new Date(a.date_echeance));
+              const clientDocs = documents.filter(d => d.client === nom).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+              const caTotal = clientDevis.filter(d => d.statut === "Payé").reduce((s, d) => s + (d.total_ttc || 0), 0);
+              const sc = { "Payé": "#1a7a4a", "Enregistré": "#1a5c9e", "Envoyé": "#8e44ad", "Brouillon": "#c17f2a", "Annulé": "#c0392b" };
+
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+                  {/* KPIs rapides */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
+                    {[
+                      { label: "CA encaissé", value: caTotal.toLocaleString("fr-FR") + " FCFA", color: "#1a7a4a", bg: "#e8f5ee" },
+                      { label: "Devis", value: clientDevis.length, color: "#1a5c9e", bg: "#e8f0fb" },
+                      { label: "Abonnements", value: clientAbos.length, color: "#8e44ad", bg: "#f5eefb" },
+                      { label: "Documents", value: clientDocs.length, color: "#c17f2a", bg: "#fff8e6" },
+                    ].map((k, i) => (
+                      <div key={i} style={{ background: k.bg, borderRadius: 10, padding: "10px 12px", textAlign: "center" }}>
+                        <div style={{ fontSize: 15, fontWeight: 800, color: k.color }}>{k.value}</div>
+                        <div style={{ fontSize: 10, color: "#6b8aaa", fontWeight: 600, marginTop: 2 }}>{k.label}</div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </>}
 
-            {/* Fiscalité */}
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📊 Fiscalité & Comptabilité</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-              {[
-                { label: "Régime fiscal", value: viewClient.regime_fiscal },
-                { label: "Centre des impôts", value: viewClient.centre_impots },
-                { label: "TVA", value: viewClient.tva },
-                { label: "Référentiel", value: viewClient.referentiel },
-                { label: "Banque", value: viewClient.banque },
-              ].filter(f => f.value).map((f, i) => (
-                <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                  <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                  <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
+                  {/* Devis */}
+                  {clientDevis.length > 0 && <>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📄 Devis</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 10, overflow: "hidden", border: "1px solid #f0f4fa" }}>
+                      {clientDevis.map((d, i) => (
+                        <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: i % 2 === 0 ? "#fff" : "#fafcff", borderBottom: i < clientDevis.length - 1 ? "1px solid #f0f4fa" : "none" }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: (sc[d.statut] || "#ccc") + "18", color: sc[d.statut] || "#666", flexShrink: 0 }}>{d.statut}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{d.numero || "—"}</div>
+                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.date ? new Date(d.date).toLocaleDateString("fr-FR") : "—"}</div>
+                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: sc[d.statut] || "#1e3a57", flexShrink: 0 }}>{(d.total_ttc || 0).toLocaleString("fr-FR")} FCFA</div>
+                        </div>
+                      ))}
+                    </div>
+                  </>}
+
+                  {/* Abonnements */}
+                  {clientAbos.length > 0 && <>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: "#8e44ad", textTransform: "uppercase", letterSpacing: 1, paddingBottom: 6, borderBottom: "2px solid #f5eefb" }}>🔄 Abonnements</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 10, overflow: "hidden", border: "1px solid #f0f4fa" }}>
+                      {clientAbos.map((a, i) => (
+                        <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: i % 2 === 0 ? "#fff" : "#fdf8ff", borderBottom: i < clientAbos.length - 1 ? "1px solid #f0f4fa" : "none" }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: a.statut === "Actif" ? "#e8f5ee" : "#fff0f0", color: a.statut === "Actif" ? "#1a7a4a" : "#c0392b", flexShrink: 0 }}>{a.statut}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.service}</div>
+                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{a.frequence} · depuis {a.date_debut ? new Date(a.date_debut).toLocaleDateString("fr-FR") : "—"}</div>
+                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#8e44ad", flexShrink: 0 }}>{(a.montant || 0).toLocaleString("fr-FR")} FCFA</div>
+                        </div>
+                      ))}
+                    </div>
+                  </>}
+
+                  {/* Échéances */}
+                  {clientEch.length > 0 && <>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: "#c0392b", textTransform: "uppercase", letterSpacing: 1, paddingBottom: 6, borderBottom: "2px solid #fff0f0" }}>📅 Échéances fiscales</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 10, overflow: "hidden", border: "1px solid #f0f4fa" }}>
+                      {clientEch.map((e, i) => {
+                        const days = Math.round((new Date(e.date_echeance) - new Date()) / 86400000);
+                        const isLate = e.statut !== "Fait" && days < 0;
+                        return (
+                          <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: i % 2 === 0 ? "#fff" : "#fffafa", borderBottom: i < clientEch.length - 1 ? "1px solid #f0f4fa" : "none" }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: e.statut === "Fait" ? "#e8f5ee" : isLate ? "#fff0f0" : "#fff8e6", color: e.statut === "Fait" ? "#1a7a4a" : isLate ? "#c0392b" : "#c17f2a", flexShrink: 0 }}>{e.statut}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.type}</div>
+                              <div style={{ fontSize: 11, color: "#8da4c0" }}>{e.date_echeance ? new Date(e.date_echeance).toLocaleDateString("fr-FR") : "—"}</div>
+                            </div>
+                            {e.statut !== "Fait" && <div style={{ fontSize: 12, fontWeight: 700, color: isLate ? "#c0392b" : "#c17f2a", flexShrink: 0 }}>{isLate ? `+${Math.abs(days)}j` : `J-${days}`}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>}
+
+                  {/* Documents */}
+                  {clientDocs.length > 0 && <>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📎 Documents</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 10, overflow: "hidden", border: "1px solid #f0f4fa" }}>
+                      {clientDocs.map((d, i) => (
+                        <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: i % 2 === 0 ? "#fff" : "#fffdf5", borderBottom: i < clientDocs.length - 1 ? "1px solid #f0f4fa" : "none" }}>
+                          <span style={{ fontSize: 16 }}>📄</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nom}</div>
+                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.type} · {d.created_at ? new Date(d.created_at).toLocaleDateString("fr-FR") : "—"}</div>
+                          </div>
+                          {d.url && <a href={d.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, fontWeight: 700, color: "#1a5c9e", textDecoration: "none", background: "#e8f0fb", padding: "3px 8px", borderRadius: 6 }}>Ouvrir</a>}
+                        </div>
+                      ))}
+                    </div>
+                  </>}
+
+                  {clientDevis.length === 0 && clientAbos.length === 0 && clientEch.length === 0 && clientDocs.length === 0 && (
+                    <div style={{ textAlign: "center", padding: 32, color: "#8da4c0", fontSize: 13 }}>
+                      <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
+                      Aucune activité enregistrée pour ce client
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
 
-            {/* Suivi cabinet */}
-            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>🏢 Suivi cabinet</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {[
-                { label: "Responsable", value: viewClient.responsable },
-                { label: "Date d'entrée", value: viewClient.date_entree ? new Date(viewClient.date_entree).toLocaleDateString("fr-FR") : null },
-
-              ].filter(f => f.value).map((f, i) => (
-                <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                  <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                  <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
-                </div>
-              ))}
-            </div>
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-            <button onClick={() => setViewClient(null)} style={{ padding: "9px 20px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Fermer</button>
+            <button onClick={() => { setViewClient(null); setClientTab(0); }} style={{ padding: "9px 20px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Fermer</button>
           </div>
         </Modal>
       )}
