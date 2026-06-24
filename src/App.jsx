@@ -252,6 +252,9 @@ export default function App() {
   const [newDepense, setNewDepense] = useState({ libelle: "", montant: "", categorie: "Fournitures", date: new Date().toISOString().split("T")[0], note: "" });
   const DEFAULT_CATS = ["Fournitures", "Loyer", "Salaires", "Transport", "Informatique", "Communication", "Honoraires", "Autres"];
   const [categoriesDepenses, setCategoriesDepenses] = useState(DEFAULT_CATS);
+  const DEFAULT_CATS_DOCS = ["Bilan", "Contrat", "Liasse", "Courrier", "Rapport", "Autre"];
+  const [categoriesDocs, setCategoriesDocs] = useState(DEFAULT_CATS_DOCS);
+  const [newCatDoc, setNewCatDoc] = useState("");
   const [newCatDepense, setNewCatDepense] = useState("");
   const [depensePeriode, setDepensePeriode] = useState("jour");
   const [services, setServices] = useState([]);
@@ -336,6 +339,21 @@ export default function App() {
         }
       }
     } catch (e) { /* table absente ou erreur reseau - on garde les DEFAULT_CATS */ }
+    try {
+      const docsRes = await fetch(`${SUPABASE_URL}/rest/v1/categories_documents?select=nom`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      });
+      if (docsRes.ok) {
+        const cats = await docsRes.json();
+        if (Array.isArray(cats) && cats.length > 0) {
+          setCategoriesDocs(cats.map(c => c.nom).filter(Boolean));
+        } else if (Array.isArray(cats) && cats.length === 0) {
+          const defaults = ["Bilan", "Contrat", "Liasse", "Courrier", "Rapport", "Autre"];
+          await Promise.all(defaults.map(nom => db.post("categories_documents", { nom })));
+          setCategoriesDocs(defaults);
+        }
+      }
+    } catch (e) { /* table absente - on garde les DEFAULT_CATS_DOCS */ }
     setLoading(false);
   }, []);
 
@@ -2581,7 +2599,7 @@ export default function App() {
 
             {/* ── DOCUMENTS ── */}
             {page === "documents" && (() => {
-              const categories = ["Tous", "Bilan", "Contrat", "Liasse", "Courrier", "Rapport", "Autre"];
+              const categories = ["Tous", ...categoriesDocs];
               const extColor = (nom) => {
                 const ext = nom?.split(".").pop()?.toLowerCase();
                 if (ext === "pdf") return "#c0392b";
@@ -2662,7 +2680,7 @@ export default function App() {
                       <div style={S.formGroup}>
                         <label style={S.label}>Catégorie</label>
                         <select value={newDocType} onChange={e => setNewDocType(e.target.value)} style={S.select}>
-                          {["Bilan","Contrat","Liasse","Courrier","Rapport","Autre"].map(t => <option key={t}>{t}</option>)}
+                          {categoriesDocs.map(t => <option key={t}>{t}</option>)}
                         </select>
                       </div>
                       <div style={S.formGroup}>
@@ -3510,6 +3528,67 @@ export default function App() {
                         if (!nom) return;
                         setNewCatDepense("");
                         const result = await db.post("categories_depenses", { nom });
+                        if (result && (result.error || result.code)) {
+                          if (result.code === "23505") { alert("Cette catégorie existe déjà."); }
+                          else { alert("Erreur : " + (result.message || result.error)); }
+                          return;
+                        }
+                        loadAll();
+                      }} style={S.primaryBtn}>Ajouter</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section Catégories Documents */}
+                <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
+                  <div style={S.cardHeader}>
+                    <span style={{ fontSize: 16 }}>📁</span>
+                    <span style={S.cardTitle}>Catégories de documents</span>
+                    <span style={{ marginLeft: "auto", fontSize: 11, background: "#e8f0fb", color: "#1a5c9e", padding: "2px 8px", borderRadius: 10, fontWeight: 700 }}>{categoriesDocs.length} catégorie{categoriesDocs.length > 1 ? "s" : ""}</span>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                    {categoriesDocs.map((cat, i) => {
+                      const PALETTE = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22","#7f8c8d","#16a085","#d35400"];
+                      const color = PALETTE[i % PALETTE.length];
+                      return (
+                        <div key={cat} style={{ display: "flex", alignItems: "center", gap: 6, background: color + "18", border: `1px solid ${color}44`, borderRadius: 20, padding: "5px 12px" }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color }}>{cat}</span>
+                          {canDo("settings","modifier") && (
+                            <button onClick={async () => {
+                              if (!window.confirm(`Supprimer la catégorie "${cat}" ?`)) return;
+                              setCategoriesDocs(categoriesDocs.filter(c => c !== cat));
+                              await db.deleteWhere("categories_documents", "nom", cat);
+                            }} style={{ background: "none", border: "none", cursor: "pointer", color, fontSize: 14, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}>×</button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {canDo("settings","modifier") && (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input
+                        value={newCatDoc}
+                        onChange={e => setNewCatDoc(e.target.value)}
+                        onKeyDown={async e => {
+                          if (e.key !== "Enter" || !newCatDoc.trim()) return;
+                          const nom = newCatDoc.trim();
+                          setNewCatDoc("");
+                          const result = await db.post("categories_documents", { nom });
+                          if (result && (result.error || result.code)) {
+                            if (result.code === "23505") { alert("Cette catégorie existe déjà."); }
+                            else { alert("Erreur : " + (result.message || result.error)); }
+                            return;
+                          }
+                          loadAll();
+                        }}
+                        placeholder="Nouvelle catégorie... (Entrée pour valider)"
+                        style={{ ...S.input, flex: 1 }}
+                      />
+                      <button onClick={async () => {
+                        const nom = newCatDoc.trim();
+                        if (!nom) return;
+                        setNewCatDoc("");
+                        const result = await db.post("categories_documents", { nom });
                         if (result && (result.error || result.code)) {
                           if (result.code === "23505") { alert("Cette catégorie existe déjà."); }
                           else { alert("Erreur : " + (result.message || result.error)); }
