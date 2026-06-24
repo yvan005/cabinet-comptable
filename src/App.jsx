@@ -1190,13 +1190,13 @@ export default function App() {
                                 <div style={{ width: 30, height: 30, borderRadius: 8, background: days <= 7 ? "#fff0f0" : "#fff8e6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
                                   {days <= 7 ? "🔴" : "🟡"}
                                 </div>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{a.client}</div>
-                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{a.service}</div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.client}</div>
+                                  <div style={{ fontSize: 11, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.service}</div>
                                 </div>
                                 <div style={{ textAlign: "right", flexShrink: 0 }}>
                                   <div style={{ fontSize: 12, fontWeight: 700, color: days <= 7 ? "#c0392b" : "#c17f2a" }}>J-{days}</div>
-                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{(a.montant || 0).toLocaleString("fr-FR")} FCFA</div>
+                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{(a.montant || 0).toLocaleString("fr-FR")} F</div>
                                 </div>
                               </div>
                             );
@@ -1223,8 +1223,8 @@ export default function App() {
                                 <div style={{ fontSize: 10, color: "#8da4c0" }}>{item.date ? new Date(item.date).toLocaleDateString("fr-FR") : "—"}</div>
                               </div>
                               {item.montant !== null && item.montant !== undefined ? (
-                                <div style={{ fontSize: 12, fontWeight: 700, color: item.montant > 0 ? "#1a7a4a" : "#c0392b", flexShrink: 0 }}>
-                                  {item.montant > 0 ? "+" : ""}{Math.abs(item.montant).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
+                                <div style={{ fontSize: 11, fontWeight: 700, color: item.montant > 0 ? "#1a7a4a" : "#c0392b", flexShrink: 0, whiteSpace: "nowrap" }}>
+                                  {item.montant > 0 ? "+" : ""}{Math.abs(item.montant).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} F
                                 </div>
                               ) : null}
                             </div>
@@ -1252,10 +1252,10 @@ export default function App() {
                               <div style={{ width: 24, height: 24, borderRadius: "50%", background: ["linear-gradient(135deg,#f6c90e,#e8a400)","#e8e8e8","#cd7f32","#e8f0fb"][i] || "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: i === 0 ? "#7a5000" : "#6b8aaa", flexShrink: 0 }}>
                                 {i + 1}
                               </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{nom}</span>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a5c9e" }}>{ca.toLocaleString("fr-FR")} FCFA</span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3, gap: 6 }}>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nom}</span>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#1a5c9e", flexShrink: 0 }}>{(ca/1000).toFixed(0)}k</span>
                                 </div>
                                 <div style={{ height: 5, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
                                   <div style={{ width: `${(ca / maxTopCA) * 100}%`, height: "100%", background: i === 0 ? "linear-gradient(90deg,#f6c90e,#e8a400)" : "#c8ddf5", borderRadius: 3 }} />
@@ -1309,16 +1309,16 @@ export default function App() {
             {/* ── CLIENTS ── */}
             {page === "clients" && (
               <div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", marginBottom: 14, gap: 10 }}>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {["Tous", "Actif", "En attente", "Inactif"].map(f => (
                       <button key={f} onClick={() => setClientFilter(f)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: clientFilter === f ? "#1a5c9e" : "#fff", color: clientFilter === f ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12, fontWeight: 500 }}>{f}</button>
                     ))}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f5f8fc", border: "1px solid #87CEEB", borderRadius: 8, padding: "7px 14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f5f8fc", border: "1px solid #87CEEB", borderRadius: 8, padding: "7px 14px", flex: isMobile ? 1 : "unset" }}>
                       <Icon d={ic.search} size={15} stroke="#8da4c0" />
-                      <input placeholder="Rechercher un client…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#1e3a57", width: 160 }} />
+                      <input placeholder="Rechercher un client…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#1e3a57", width: isMobile ? "100%" : 160 }} />
                     </div>
                     {canDo("clients","modifier") && <button onClick={() => exportExcel(clients, [
                       { label: "Raison sociale", value: r => r.nom, width: 30 },
@@ -1344,18 +1344,18 @@ export default function App() {
                       <div key={c.id} style={{ ...S.card, padding: "14px 16px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                           <div style={{ width: 36, height: 36, borderRadius: 9, background: "linear-gradient(135deg,#2e7fcf,#1a5c9e)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>{c.nom?.charAt(0) || "?"}</div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>{c.nom}</div>
-                            <div style={{ fontSize: 12, color: "#6b8aaa" }}>{c.secteur}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, fontSize: 13, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.nom}</div>
+                            <div style={{ fontSize: 11, color: "#6b8aaa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.secteur}</div>
                           </div>
-                          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20, background: c.statut === "Actif" ? "#e8f5ee" : c.statut === "En attente" ? "#fff8e6" : "#f5f5f5", color: c.statut === "Actif" ? "#1a7a4a" : c.statut === "En attente" ? "#c17f2a" : "#8a9aac" }}>{c.statut}</span>
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 20, flexShrink: 0, background: c.statut === "Actif" ? "#e8f5ee" : c.statut === "En attente" ? "#fff8e6" : "#f5f5f5", color: c.statut === "Actif" ? "#1a7a4a" : c.statut === "En attente" ? "#c17f2a" : "#8a9aac" }}>{c.statut}</span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div>
-                            <span style={{ fontSize: 12, color: "#8da4c0" }}>CA : </span>
-                            <span style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57" }}>{c.ca}</span>
+                          <div style={{ minWidth: 0, overflow: "hidden" }}>
+                            <span style={{ fontSize: 11, color: "#8da4c0" }}>CA : </span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{c.ca}</span>
                           </div>
-                          <div style={{ display: "flex", gap: 6 }}>
+                          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                             <button onClick={() => setViewClient(c)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                               <Icon d={ic.eye} size={14} stroke="#1a5c9e" />
                             </button>
@@ -3288,16 +3288,17 @@ export default function App() {
                   </div>
 
                   {/* Navigation mois */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", marginBottom: 14, gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <button onClick={() => { if (echeanceMois === 0) { setEcheanceMois(11); setEcheanceAnnee(y => y - 1); } else setEcheanceMois(m => m - 1); }}
                         style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #e2eaf4", background: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 16 }}>‹</button>
-                      <span style={{ fontSize: 15, fontWeight: 800, color: "#1e3a57", minWidth: 160, textAlign: "center" }}>{moisNoms[echeanceMois]} {echeanceAnnee}</span>
+                      <span style={{ fontSize: isMobile ? 13 : 15, fontWeight: 800, color: "#1e3a57", flex: 1, textAlign: "center" }}>{moisNoms[echeanceMois]} {echeanceAnnee}</span>
                       <button onClick={() => { if (echeanceMois === 11) { setEcheanceMois(0); setEcheanceAnnee(y => y + 1); } else setEcheanceMois(m => m + 1); }}
                         style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #e2eaf4", background: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 16 }}>›</button>
                       <button onClick={() => { setEcheanceMois(now.getMonth()); setEcheanceAnnee(now.getFullYear()); }}
-                        style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: "#f5f8fc", color: "#4a6d8c", cursor: "pointer", fontSize: 12 }}>Aujourd'hui</button>
+                        style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: "#f5f8fc", color: "#4a6d8c", cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>Aujourd'hui</button>
                     </div>
+                    <div style={{ display: "flex", gap: 8 }}>
                     {canDo("echeances","modifier") && <button onClick={() => exportExcel(echeances, [
                       { label: "Client", value: r => r.client, width: 30 },
                       { label: "Type", value: r => r.type, width: 35 },
@@ -3308,9 +3309,10 @@ export default function App() {
                     ], "echeances")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, background: "#e8f5ee", color: "#1a7a4a", border: "1px solid #c3e6cb", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
                       📥 Excel
                     </button>}
-{canDo("echeances","ajouter") && <button onClick={() => setShowAddEcheance(true)} style={S.primaryBtn}>
+                    {canDo("echeances","ajouter") && <button onClick={() => setShowAddEcheance(true)} style={{ ...S.primaryBtn, flex: isMobile ? 1 : "unset" }}>
                       <Icon d={ic.plus} size={14} stroke="#fff" /> Nouvelle échéance
                     </button>}
+                    </div>
                   </div>
 
                   {/* Calendrier */}
@@ -3352,21 +3354,21 @@ export default function App() {
                       {echeancesDuMois.sort((a, b) => new Date(a.date_echeance) - new Date(b.date_echeance)).map((e, i) => {
                         const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
                         return (
-                          <div key={e.id} onClick={() => setViewEcheance(e)} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: i < echeancesDuMois.length - 1 ? "1px solid #f0f4fa" : "none", cursor: "pointer" }}>
-                            <div style={{ width: 36, height: 36, borderRadius: 9, background: (statutColor[e.statut] || "#1a5c9e") + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              <span style={{ fontSize: 16 }}>{e.statut === "Fait" ? "✅" : e.statut === "En retard" ? "🔴" : e.statut === "En cours" ? "🔵" : "⏳"}</span>
+                          <div key={e.id} onClick={() => setViewEcheance(e)} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderBottom: i < echeancesDuMois.length - 1 ? "1px solid #f0f4fa" : "none", cursor: "pointer" }}>
+                            <div style={{ width: 34, height: 34, borderRadius: 9, background: (statutColor[e.statut] || "#1a5c9e") + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <span style={{ fontSize: 15 }}>{e.statut === "Fait" ? "✅" : e.statut === "En retard" ? "🔴" : e.statut === "En cours" ? "🔵" : "⏳"}</span>
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57" }}>{e.client}</div>
-                              <div style={{ fontSize: 11, color: "#8da4c0" }}>{e.type}</div>
+                              <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.client}</div>
+                              <div style={{ fontSize: 10, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.type}</div>
                             </div>
                             <div style={{ textAlign: "right", flexShrink: 0 }}>
                               <div style={{ fontSize: 12, fontWeight: 700, color: days < 0 ? "#c0392b" : days <= 7 ? "#c17f2a" : "#1a7a4a" }}>
-                                {days < 0 ? `J+${Math.abs(days)}` : days === 0 ? "Aujourd'hui" : `J-${days}`}
+                                {days < 0 ? `+${Math.abs(days)}j` : days === 0 ? "⚡Auj." : `J-${days}`}
                               </div>
                               <div style={{ fontSize: 10, color: "#8da4c0" }}>{new Date(e.date_echeance).toLocaleDateString("fr-FR")}</div>
                             </div>
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: (prioriteColor[e.priorite] || "#1a5c9e") + "18", color: prioriteColor[e.priorite] || "#1a5c9e", flexShrink: 0 }}>{e.priorite}</span>
+                            {!isMobile && <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: (prioriteColor[e.priorite] || "#1a5c9e") + "18", color: prioriteColor[e.priorite] || "#1a5c9e", flexShrink: 0 }}>{e.priorite}</span>}
                           </div>
                         );
                       })}
