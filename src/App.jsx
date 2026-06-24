@@ -244,6 +244,9 @@ export default function App() {
   const [depenses, setDepenses] = useState([]);
   const [showAddDepense, setShowAddDepense] = useState(false);
   const [newDepense, setNewDepense] = useState({ libelle: "", montant: "", categorie: "Fournitures", date: new Date().toISOString().split("T")[0], note: "" });
+  const DEFAULT_CATS = ["Fournitures", "Loyer", "Salaires", "Transport", "Informatique", "Communication", "Honoraires", "Autres"];
+  const [categoriesDepenses, setCategoriesDepenses] = useState(DEFAULT_CATS);
+  const [newCatDepense, setNewCatDepense] = useState("");
   const [depensePeriode, setDepensePeriode] = useState("jour");
   const [services, setServices] = useState([]);
   const [showAddService, setShowAddService] = useState(false);
@@ -299,8 +302,8 @@ export default function App() {
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [c, d, dep, srv, abo, col, docs, ech] = await Promise.all([
-      db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"), db.get("collaborateurs"), db.get("documents"), db.get("echeances"),
+    const [c, d, dep, srv, abo, col, docs, ech, cats] = await Promise.all([
+      db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"), db.get("collaborateurs"), db.get("documents"), db.get("echeances"), db.get("categories_depenses"),
     ]);
     setClients(Array.isArray(c) ? c : []);
     setDevisList(Array.isArray(d) ? d : []);
@@ -310,6 +313,9 @@ export default function App() {
     setCollaborateurs(Array.isArray(col) ? col : []);
     setDocuments(Array.isArray(docs) ? docs : []);
     setEcheances(Array.isArray(ech) ? ech : []);
+    if (Array.isArray(cats) && cats.length > 0) {
+      setCategoriesDepenses(cats.map(c => c.nom).filter(Boolean));
+    }
     setLoading(false);
   }, []);
 
@@ -3100,7 +3106,8 @@ export default function App() {
                   <div style={S.cardHeader}><Icon d={ic.depenses} size={16} stroke="#c0392b" /><span style={S.cardTitle}>Liste des dépenses — {{"jour": "Aujourd’hui", "semestre": "Ce semestre", "annee": "Cette année", "tout": "Tout"}[depensePeriode]}</span></div>
                   {filterDepenses(depensePeriode).length === 0 && <div style={S.empty}>Aucune dépense enregistrée pour cette période</div>}
                   {filterDepenses(depensePeriode).map((d, i) => {
-                    const catColors = { Fournitures: "#1a5c9e", Loyer: "#1a7a4a", Salaires: "#c17f2a", Transport: "#8e44ad", Informatique: "#c0392b", Communication: "#2980b9", Honoraires: "#e67e22", Autres: "#7f8c8d" };
+                    const PALETTE = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22","#7f8c8d","#16a085","#d35400","#8e44ad","#2c3e50"];
+                    const catColors = Object.fromEntries(categoriesDepenses.map((c, i) => [c, PALETTE[i % PALETTE.length]]));
                     const color = catColors[d.categorie] || "#6b8aaa";
                     return (
                       <div key={d.id} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #f0f4fa", flexWrap: isMobile ? "wrap" : "nowrap" }}>
@@ -3424,6 +3431,62 @@ export default function App() {
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
                     <button style={S.primaryBtn}>Enregistrer</button>
                   </div>
+                </div>
+
+                {/* Section Catégories Dépenses */}
+                <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
+                  <div style={S.cardHeader}>
+                    <span style={{ fontSize: 16 }}>💸</span>
+                    <span style={S.cardTitle}>Catégories de dépenses</span>
+                    <span style={{ marginLeft: "auto", fontSize: 11, background: "#e8f0fb", color: "#1a5c9e", padding: "2px 8px", borderRadius: 10, fontWeight: 700 }}>{categoriesDepenses.length} catégorie{categoriesDepenses.length > 1 ? "s" : ""}</span>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                    {categoriesDepenses.map((cat, i) => {
+                      const PALETTE = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22","#7f8c8d","#16a085","#d35400","#8e44ad","#2c3e50"];
+                      const color = PALETTE[i % PALETTE.length];
+                      return (
+                        <div key={cat} style={{ display: "flex", alignItems: "center", gap: 6, background: color + "18", border: `1px solid ${color}44`, borderRadius: 20, padding: "5px 12px" }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color }}>{cat}</span>
+                          {canDo("settings","modifier") && (
+                            <button onClick={async () => {
+                              if (!window.confirm(`Supprimer la catégorie "${cat}" ?`)) return;
+                              const newCats = categoriesDepenses.filter(c => c !== cat);
+                              setCategoriesDepenses(newCats);
+                              await db.delete("categories_depenses", null, { nom: cat });
+                            }} style={{ background: "none", border: "none", cursor: "pointer", color, fontSize: 14, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}>×</button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {canDo("settings","modifier") && (
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input
+                        value={newCatDepense}
+                        onChange={e => setNewCatDepense(e.target.value)}
+                        onKeyDown={async e => {
+                          if (e.key !== "Enter" || !newCatDepense.trim()) return;
+                          const nom = newCatDepense.trim();
+                          if (categoriesDepenses.includes(nom)) { alert("Cette catégorie existe déjà."); return; }
+                          const newCats = [...categoriesDepenses, nom];
+                          setCategoriesDepenses(newCats);
+                          setNewCatDepense("");
+                          await db.post("categories_depenses", { nom });
+                        }}
+                        placeholder="Nouvelle catégorie... (Entrée pour valider)"
+                        style={{ ...S.input, flex: 1 }}
+                      />
+                      <button onClick={async () => {
+                        const nom = newCatDepense.trim();
+                        if (!nom) return;
+                        if (categoriesDepenses.includes(nom)) { alert("Cette catégorie existe déjà."); return; }
+                        const newCats = [...categoriesDepenses, nom];
+                        setCategoriesDepenses(newCats);
+                        setNewCatDepense("");
+                        await db.post("categories_depenses", { nom });
+                      }} style={S.primaryBtn}>Ajouter</button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Section Administration */}
@@ -4253,7 +4316,7 @@ CGA-CDA — Centre de Gestion Agréé | NIU : M072116419497J<br/>
           <div style={S.formGroup}>
             <label style={S.label}>Catégorie</label>
             <select value={newDepense.categorie} onChange={e => setNewDepense(p => ({ ...p, categorie: e.target.value }))} style={S.select}>
-              {["Fournitures", "Loyer", "Salaires", "Transport", "Informatique", "Communication", "Honoraires", "Autres"].map(c => <option key={c}>{c}</option>)}
+              {categoriesDepenses.map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div style={S.formGroup}>
