@@ -308,9 +308,8 @@ export default function App() {
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [c, d, dep, srv, abo, col, docs, ech, cats] = await Promise.all([
+    const [c, d, dep, srv, abo, col, docs, ech] = await Promise.all([
       db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"), db.get("collaborateurs"), db.get("documents"), db.get("echeances"),
-      fetch(`${SUPABASE_URL}/rest/v1/categories_depenses?select=nom`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }).then(r => r.ok ? r.json() : []),
     ]);
     setClients(Array.isArray(c) ? c : []);
     setDevisList(Array.isArray(d) ? d : []);
@@ -320,9 +319,17 @@ export default function App() {
     setCollaborateurs(Array.isArray(col) ? col : []);
     setDocuments(Array.isArray(docs) ? docs : []);
     setEcheances(Array.isArray(ech) ? ech : []);
-    if (Array.isArray(cats) && cats.length > 0) {
-      setCategoriesDepenses(cats.map(c => c.nom).filter(Boolean));
-    }
+    try {
+      const catsRes = await fetch(`${SUPABASE_URL}/rest/v1/categories_depenses?select=nom`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      });
+      if (catsRes.ok) {
+        const cats = await catsRes.json();
+        if (Array.isArray(cats) && cats.length > 0) {
+          setCategoriesDepenses(cats.map(c => c.nom).filter(Boolean));
+        }
+      }
+    } catch (e) { /* table absente ou erreur reseau - on garde les DEFAULT_CATS */ }
     setLoading(false);
   }, []);
 
