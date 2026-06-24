@@ -967,21 +967,21 @@ export default function App() {
 
                   {/* ── BANNIÈRE ACTIONS PRIORITAIRES ── */}
                   {actionsPrio.length > 0 && (
-                    <div style={{ background: "linear-gradient(135deg,#1e3a57,#1a5c9e)", borderRadius: 16, padding: isMobile ? "14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ background: "linear-gradient(135deg,#1e3a57,#1a5c9e)", borderRadius: 16, padding: isMobile ? "12px" : "16px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
                         <span style={{ fontSize: 16 }}>⚡</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Actions prioritaires</span>
                         <span style={{ marginLeft: "auto", background: "#c0392b", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 20 }}>{actionsPrio.length}</span>
                       </div>
-                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : actionsPrio.length === 1 ? "1fr" : "1fr 1fr", gap: 8 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                         {actionsPrio.map((a, i) => (
-                          <div key={i} onClick={a.action} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: "10px 12px", cursor: "pointer" }}>
-                            <span style={{ fontSize: 18, flexShrink: 0 }}>{a.emoji}</span>
+                          <div key={i} onClick={a.action} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "10px 10px" : "10px 12px", cursor: "pointer" }}>
+                            <span style={{ fontSize: isMobile ? 16 : 18, flexShrink: 0 }}>{a.emoji}</span>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.titre}</div>
-                              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>{a.detail}</div>
+                              <div style={{ fontSize: isMobile ? 11 : 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.titre}</div>
+                              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 1 }}>{a.detail}</div>
                             </div>
-                            <button onClick={a.action} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, padding: "4px 10px", cursor: "pointer", flexShrink: 0 }}>{a.cta}</button>
+                            <button onClick={e => { e.stopPropagation(); a.action(); }} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, padding: isMobile ? "4px 8px" : "4px 10px", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>{a.cta}</button>
                           </div>
                         ))}
                       </div>
