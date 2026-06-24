@@ -1130,13 +1130,13 @@ export default function App() {
 
                     if (echSoon.length === 0) return null;
                     return (
-                      <div className="card-hover" style={{ ...S.card, gridColumn: "1 / -1" }}>
+                      <div className="card-hover" style={{ ...S.card, padding: isMobile ? "12px" : "18px 20px", overflow: "hidden" }}>
                         <div style={S.cardHeader}>
                           <Icon d={ic.calendar} size={16} stroke="#1a5c9e" />
-                          <span style={S.cardTitle}>Échéances fiscales à venir</span>
-                          <button onClick={() => navigate("echeances")} style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#e8f0fb", color: "#1a5c9e", padding: "3px 8px", borderRadius: 6, border: "none", cursor: "pointer" }}>Voir tout →</button>
+                          <span style={{ ...S.cardTitle, fontSize: isMobile ? 12 : 13 }}>Échéances fiscales à venir</span>
+                          <button onClick={() => navigate("echeances")} style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#e8f0fb", color: "#1a5c9e", padding: "3px 8px", borderRadius: 6, border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>Voir →</button>
                         </div>
-                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "0 24px" }}>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
                           {echSoon.map((e, i) => {
                             const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
                             const isLate = days < 0;
@@ -1144,20 +1144,20 @@ export default function App() {
                             const pct = isLate ? 100 : Math.max(0, Math.round((1 - days / 30) * 100));
                             const barColor = isLate ? "#c0392b" : isUrgent ? "#c17f2a" : "#1a5c9e";
                             return (
-                              <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: "1px solid #f0f4fa" }}>
-                                <div style={{ width: 32, height: 32, borderRadius: 8, background: isLate ? "#fff0f0" : isUrgent ? "#fff8e6" : "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>
+                              <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: isMobile ? "10px 0" : "14px 0", borderBottom: "1px solid #f0f4fa", minWidth: 0 }}>
+                                <div style={{ width: 28, height: 28, borderRadius: 7, background: isLate ? "#fff0f0" : isUrgent ? "#fff8e6" : "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
                                   {isLate ? "🔴" : isUrgent ? "🟡" : "📅"}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.client}</div>
-                                  <div style={{ fontSize: 11, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>{e.type}</div>
+                                  <div style={{ fontSize: 11, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.client}</div>
+                                  <div style={{ fontSize: 10, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 3 }}>{e.type}</div>
                                   <div style={{ height: 3, background: "#f0f4fa", borderRadius: 2, overflow: "hidden" }}>
                                     <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 2, transition: "width 0.6s ease" }} />
                                   </div>
                                 </div>
-                                <div style={{ textAlign: "right", flexShrink: 0, minWidth: 52 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 800, color: isLate ? "#c0392b" : isUrgent ? "#c17f2a" : "#1a5c9e" }}>
-                                    {isLate ? `+${Math.abs(days)}j` : days === 0 ? "⚡ Auj." : `J-${days}`}
+                                <div style={{ textAlign: "right", flexShrink: 0, minWidth: 44 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 800, color: isLate ? "#c0392b" : isUrgent ? "#c17f2a" : "#1a5c9e" }}>
+                                    {isLate ? `+${Math.abs(days)}j` : days === 0 ? "⚡Auj." : `J-${days}`}
                                   </div>
                                   <div style={{ fontSize: 10, color: "#8da4c0" }}>{new Date(e.date_echeance).toLocaleDateString("fr-FR")}</div>
                                 </div>
@@ -1169,34 +1169,34 @@ export default function App() {
                     );
                   })()}
 
-                  {/* ── ROW 3 : Top clients + Activité récente ── */}
+                  {/* ── ROW 3 : Abonnements + Activité récente ── */}
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
 
                     {/* Alertes abonnements */}
-                    <div className="card-hover" style={S.card}>
+                    <div className="card-hover" style={{ ...S.card, padding: isMobile ? "12px" : "18px 20px", overflow: "hidden" }}>
                       <div style={S.cardHeader}>
                         <Icon d={ic.alert} size={16} stroke="#c0392b" />
-                        <span style={S.cardTitle}>Abonnements à renouveler</span>
-                        {abosSoon.length > 0 && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#fff0f0", color: "#c0392b", padding: "3px 8px", borderRadius: 6 }}>{abosSoon.length} dans 30j</span>}
+                        <span style={{ ...S.cardTitle, fontSize: isMobile ? 12 : 13 }}>Abonnements à renouveler</span>
+                        {abosSoon.length > 0 && <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, background: "#fff0f0", color: "#c0392b", padding: "2px 7px", borderRadius: 6, whiteSpace: "nowrap" }}>{abosSoon.length} / 30j</span>}
                       </div>
                       {abosSoon.length === 0 ? (
                         <div style={S.empty}>✅ Aucune échéance dans les 30 prochains jours</div>
                       ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
                           {abosSoon.map((a, i) => {
                             const days = Math.round((new Date(a.prochaine_echeance) - now) / 86400000);
                             return (
-                              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < abosSoon.length - 1 ? "1px solid #f0f4fa" : "none" }}>
-                                <div style={{ width: 30, height: 30, borderRadius: 8, background: days <= 7 ? "#fff0f0" : "#fff8e6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
+                              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: isMobile ? "9px 0" : "10px 0", borderBottom: i < abosSoon.length - 1 ? "1px solid #f0f4fa" : "none", minWidth: 0 }}>
+                                <div style={{ width: 28, height: 28, borderRadius: 7, background: days <= 7 ? "#fff0f0" : "#fff8e6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
                                   {days <= 7 ? "🔴" : "🟡"}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.client}</div>
-                                  <div style={{ fontSize: 11, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.service}</div>
+                                  <div style={{ fontSize: 11, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.client}</div>
+                                  <div style={{ fontSize: 10, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.service}</div>
                                 </div>
                                 <div style={{ textAlign: "right", flexShrink: 0 }}>
                                   <div style={{ fontSize: 12, fontWeight: 700, color: days <= 7 ? "#c0392b" : "#c17f2a" }}>J-{days}</div>
-                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{(a.montant || 0).toLocaleString("fr-FR")} F</div>
+                                  <div style={{ fontSize: 10, color: "#8da4c0" }}>{(a.montant || 0).toLocaleString("fr-FR")} F</div>
                                 </div>
                               </div>
                             );
@@ -1206,25 +1206,25 @@ export default function App() {
                     </div>
 
                     {/* Activité récente */}
-                    <div className="card-hover" style={S.card}>
+                    <div className="card-hover" style={{ ...S.card, padding: isMobile ? "12px" : "18px 20px", overflow: "hidden" }}>
                       <div style={S.cardHeader}>
                         <Icon d={ic.bell} size={16} stroke="#c17f2a" />
-                        <span style={S.cardTitle}>Activité récente</span>
+                        <span style={{ ...S.cardTitle, fontSize: isMobile ? 12 : 13 }}>Activité récente</span>
                       </div>
                       {activiteRecente.length === 0 ? (
                         <div style={S.empty}>Aucune activité récente</div>
                       ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
                           {activiteRecente.map((item, i) => (
-                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < activiteRecente.length - 1 ? "1px solid #f0f4fa" : "none" }}>
-                              <div style={{ width: 30, height: 30, borderRadius: 8, background: item.color + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{item.emoji}</div>
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: isMobile ? "9px 0" : "10px 0", borderBottom: i < activiteRecente.length - 1 ? "1px solid #f0f4fa" : "none", minWidth: 0 }}>
+                              <div style={{ width: 28, height: 28, borderRadius: 7, background: item.color + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>{item.emoji}</div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 12, fontWeight: 500, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</div>
+                                <div style={{ fontSize: 11, fontWeight: 500, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</div>
                                 <div style={{ fontSize: 10, color: "#8da4c0" }}>{item.date ? new Date(item.date).toLocaleDateString("fr-FR") : "—"}</div>
                               </div>
                               {item.montant !== null && item.montant !== undefined ? (
                                 <div style={{ fontSize: 11, fontWeight: 700, color: item.montant > 0 ? "#1a7a4a" : "#c0392b", flexShrink: 0, whiteSpace: "nowrap" }}>
-                                  {item.montant > 0 ? "+" : ""}{Math.abs(item.montant).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} F
+                                  {item.montant > 0 ? "+" : ""}{Math.abs(item.montant / 1000).toFixed(0)}k F
                                 </div>
                               ) : null}
                             </div>
