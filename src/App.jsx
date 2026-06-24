@@ -326,7 +326,13 @@ export default function App() {
       if (catsRes.ok) {
         const cats = await catsRes.json();
         if (Array.isArray(cats) && cats.length > 0) {
+          // Table remplie -> utiliser la DB comme source de vérité
           setCategoriesDepenses(cats.map(c => c.nom).filter(Boolean));
+        } else if (Array.isArray(cats) && cats.length === 0) {
+          // Table vide -> insérer les DEFAULT_CATS automatiquement
+          const defaults = ["Fournitures","Loyer","Salaires","Transport","Informatique","Communication","Honoraires","Autres"];
+          await Promise.all(defaults.map(nom => db.post("categories_depenses", { nom })));
+          setCategoriesDepenses(defaults);
         }
       }
     } catch (e) { /* table absente ou erreur reseau - on garde les DEFAULT_CATS */ }
@@ -3487,9 +3493,13 @@ export default function App() {
                         onKeyDown={async e => {
                           if (e.key !== "Enter" || !newCatDepense.trim()) return;
                           const nom = newCatDepense.trim();
-                          if (categoriesDepenses.includes(nom)) { alert("Cette catégorie existe déjà."); return; }
                           setNewCatDepense("");
-                          await db.post("categories_depenses", { nom });
+                          const result = await db.post("categories_depenses", { nom });
+                          if (result && (result.error || result.code)) {
+                            if (result.code === "23505") { alert("Cette catégorie existe déjà."); }
+                            else { alert("Erreur : " + (result.message || result.error)); }
+                            return;
+                          }
                           loadAll();
                         }}
                         placeholder="Nouvelle catégorie... (Entrée pour valider)"
@@ -3498,11 +3508,11 @@ export default function App() {
                       <button onClick={async () => {
                         const nom = newCatDepense.trim();
                         if (!nom) return;
-                        if (categoriesDepenses.includes(nom)) { alert("Cette catégorie existe déjà."); return; }
                         setNewCatDepense("");
                         const result = await db.post("categories_depenses", { nom });
-                        if (result && result.error) {
-                          alert("Erreur Supabase : " + (result.message || result.error));
+                        if (result && (result.error || result.code)) {
+                          if (result.code === "23505") { alert("Cette catégorie existe déjà."); }
+                          else { alert("Erreur : " + (result.message || result.error)); }
                           return;
                         }
                         loadAll();
