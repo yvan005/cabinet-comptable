@@ -2509,31 +2509,31 @@ export default function App() {
                         const sc = statutColors[c.statut] || statutColors["CDI"];
                         const avatarColor = avatarColors[i % avatarColors.length];
                         return (
-                          <div key={c.id} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
-                            {/* Actions */}
-                            <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6 }}>
-                              {canDo("collab","modifier") && <button onClick={() => { setPermCollab({ ...c, permissions: c.permissions || {} }); setShowPermissions(true); }}
-                                title="Gérer les permissions" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
-                                🔒
-                              </button>}
-                              {canDo("collab","modifier") && <button onClick={() => { setAccesCollab(c); setAccesEmail(c.email || ""); setAccesPassword(""); setAccesMsg(null); setShowAccesCollab(true); }}
-                                title="Créer un accès" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
-                                🔑
-                              </button>}
-                              {canDo("collab","modifier") && <button onClick={() => { setEditCollab({ ...c }); setShowEditCollab(true); }}
-                                style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <Icon d={ic.edit} size={12} stroke="#4a6d8c" />
-                              </button>}
-                              {canDo("collab","supprimer") && <button onClick={() => deleteCollab(c.id)} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={12} stroke="#c0392b" /></button>}
-                            </div>
-                            {/* Avatar + infos */}
+                          <div key={c.id} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12 }}>
+                            {/* Avatar + infos + actions sur la même ligne */}
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                               <div style={{ width: 46, height: 46, borderRadius: "50%", background: avatarColor, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
                                 {getInitials(c.nom)}
                               </div>
-                              <div style={{ paddingRight: 60 }}>
-                                <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>{c.nom}</div>
-                                <div style={{ fontSize: 12, color: "#6b8aaa" }}>{c.role || "—"}</div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.nom}</div>
+                                <div style={{ fontSize: 12, color: "#6b8aaa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.role || "—"}</div>
+                              </div>
+                              {/* Actions inline */}
+                              <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                                {canDo("collab","modifier") && <button onClick={() => { setPermCollab({ ...c, permissions: c.permissions || {} }); setShowPermissions(true); }}
+                                  title="Gérer les permissions" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
+                                  🔒
+                                </button>}
+                                {canDo("collab","modifier") && <button onClick={() => { setAccesCollab(c); setAccesEmail(c.email || ""); setAccesPassword(""); setAccesMsg(null); setShowAccesCollab(true); }}
+                                  title="Créer un accès" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
+                                  🔑
+                                </button>}
+                                {canDo("collab","modifier") && <button onClick={() => { setEditCollab({ ...c }); setShowEditCollab(true); }}
+                                  style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  <Icon d={ic.edit} size={12} stroke="#4a6d8c" />
+                                </button>}
+                                {canDo("collab","supprimer") && <button onClick={() => deleteCollab(c.id)} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={12} stroke="#c0392b" /></button>}
                               </div>
                             </div>
                             {/* Contact */}
