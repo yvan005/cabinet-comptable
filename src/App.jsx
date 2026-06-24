@@ -2509,7 +2509,7 @@ export default function App() {
                         const sc = statutColors[c.statut] || statutColors["CDI"];
                         const avatarColor = avatarColors[i % avatarColors.length];
                         return (
-                          <div key={c.id} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12 }}>
+                          <div key={c.id} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12, overflow: "hidden", minWidth: 0 }}>
                             {/* Avatar + infos + actions sur la même ligne */}
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                               <div style={{ width: 46, height: 46, borderRadius: "50%", background: avatarColor, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
@@ -2537,8 +2537,8 @@ export default function App() {
                               </div>
                             </div>
                             {/* Contact */}
-                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                              {c.email && <div style={{ fontSize: 12, color: "#8da4c0", display: "flex", alignItems: "center", gap: 6 }}>📧 {c.email}</div>}
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                              {c.email && <div style={{ fontSize: 12, color: "#8da4c0", display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}><span style={{ flexShrink: 0 }}>📧</span><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.email}</span></div>}
                               {c.telephone && <div style={{ fontSize: 12, color: "#8da4c0", display: "flex", alignItems: "center", gap: 6 }}>📞 {c.telephone}</div>}
                             </div>
                             {/* Note */}
