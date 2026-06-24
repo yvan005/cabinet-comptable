@@ -1544,13 +1544,13 @@ export default function App() {
                             )}
                           </div>
                           <div style={{ flex: 1.2, fontSize: 11, color: "#6b8aaa", display: isMobile ? "none" : "block" }}>{line.groupe || "—"}</div>
-                          <div style={{ width: 60 }}>
+                          <div style={{ width: isMobile ? 50 : 60 }}>
                             <input type="number" min={1} value={line.qty} onChange={e => updateLine(i, "qty", parseInt(e.target.value) || 1)} style={{ ...S.select, width: "100%", textAlign: "center", padding: "8px 4px" }} />
                           </div>
-                          <div style={{ width: 130 }}>
-                            <input type="number" value={line.tarif || 0} onChange={e => updateLine(i, "tarif", parseFloat(e.target.value) || 0)} style={{ ...S.select, width: "100%", textAlign: "right", padding: "8px 6px" }} />
+                          <div style={{ width: isMobile ? 90 : 130 }}>
+                            <input type="number" value={line.tarif || 0} onChange={e => updateLine(i, "tarif", parseFloat(e.target.value) || 0)} style={{ ...S.select, width: "100%", textAlign: "right", padding: "8px 6px", fontSize: isMobile ? 12 : 13 }} />
                           </div>
-                          <div style={{ width: 130, textAlign: "right", fontSize: 13, fontWeight: 700, color: "#1a5c9e" }}>{((line.tarif || 0) * line.qty).toLocaleString("fr-FR")} FCFA</div>
+                          <div style={{ width: isMobile ? 90 : 130, textAlign: "right", fontSize: isMobile ? 12 : 13, fontWeight: 700, color: "#1a5c9e" }}>{((line.tarif || 0) * line.qty).toLocaleString("fr-FR")} FCFA</div>
                           <button onClick={() => removeLine(i)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#fff", cursor: "pointer", color: "#c0392b", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
                         </div>
                       ))}
@@ -2731,7 +2731,7 @@ export default function App() {
                           </div>
                           <div style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "#f0f4fa", color: "#4a6d8c", flexShrink: 0 }}>{d.type || "—"}</div>
                           <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0 }}>{formatSize(d.taille)}</div>
-                          <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0, minWidth: 80 }}>{d.created_at ? new Date(d.created_at).toLocaleDateString("fr-FR") : "—"}</div>
+                          {!isMobile && <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0 }}>{d.created_at ? new Date(d.created_at).toLocaleDateString("fr-FR") : "—"}</div>}
                           <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                             {d.url && (
                               <a href={d.url} target="_blank" rel="noreferrer"
@@ -2885,7 +2885,7 @@ export default function App() {
                               <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
                                 <div style={{ width: mrr > 0 ? (mrrFreq/mrr*100) + "%" : "0%", height: "100%", background: "linear-gradient(90deg,#2e7fcf,#1a5c9e)", borderRadius: 4 }} />
                               </div>
-                              <div style={{ width: 130, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{Math.round(mrrFreq).toLocaleString("fr-FR")} FCFA/mois</div>
+                              <div style={{ minWidth: isMobile ? 80 : 130, fontSize: isMobile ? 11 : 12, fontWeight: 700, color: "#1e3a57", textAlign: "right", flexShrink: 0 }}>{Math.round(mrrFreq).toLocaleString("fr-FR")} FCFA/mois</div>
                             </div>
                           );
                         })}
@@ -3033,9 +3033,9 @@ export default function App() {
               <div>
                 {/* Période selector */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {[["jour", "Aujourd’hui"], ["semestre", "Ce semestre"], ["annee", "Cette année"], ["tout", "Tout"]].map(([val, label]) => (
-                      <button key={val} onClick={() => setDepensePeriode(val)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: depensePeriode === val ? "#1a5c9e" : "#fff", color: depensePeriode === val ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12, fontWeight: 500 }}>{label}</button>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {[["jour", "Aujourd’hui"], ["semestre", "Semestre"], ["annee", "Année"], ["tout", "Tout"]].map(([val, label]) => (
+                      <button key={val} onClick={() => setDepensePeriode(val)} style={{ padding: isMobile ? "6px 10px" : "7px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: depensePeriode === val ? "#1a5c9e" : "#fff", color: depensePeriode === val ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: isMobile ? 11 : 12, fontWeight: 500, whiteSpace: "nowrap" }}>{label}</button>
                     ))}
                   </div>
                   {canDo("depenses","modifier") && <button onClick={() => exportExcel(depenses, [
@@ -3089,12 +3089,12 @@ export default function App() {
                       <div style={S.cardHeader}><Icon d={ic.trend} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Répartition par catégorie</span></div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         {Object.entries(cats).sort((a,b) => b[1]-a[1]).map(([cat, montant]) => (
-                          <div key={cat} style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <div style={{ width: 100, fontSize: 12, color: "#4a6d8c", flexShrink: 0 }}>{cat}</div>
+                          <div key={cat} style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12 }}>
+                            <div style={{ width: isMobile ? 70 : 100, fontSize: isMobile ? 10 : 12, color: "#4a6d8c", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat}</div>
                             <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
                               <div style={{ width: `${total ? (montant/total*100) : 0}%`, height: "100%", background: catColors[cat] || "#1a5c9e", borderRadius: 4 }} />
                             </div>
-                            <div style={{ width: 120, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{montant.toLocaleString("fr-FR")} FCFA</div>
+                            <div style={{ minWidth: isMobile ? 80 : 120, fontSize: isMobile ? 11 : 12, fontWeight: 700, color: "#1e3a57", textAlign: "right", flexShrink: 0 }}>{montant.toLocaleString("fr-FR")} FCFA</div>
                           </div>
                         ))}
                       </div>
