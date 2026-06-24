@@ -3500,7 +3500,11 @@ export default function App() {
                         if (!nom) return;
                         if (categoriesDepenses.includes(nom)) { alert("Cette catégorie existe déjà."); return; }
                         setNewCatDepense("");
-                        await db.post("categories_depenses", { nom });
+                        const result = await db.post("categories_depenses", { nom });
+                        if (result && result.error) {
+                          alert("Erreur Supabase : " + (result.message || result.error));
+                          return;
+                        }
                         loadAll();
                       }} style={S.primaryBtn}>Ajouter</button>
                     </div>
