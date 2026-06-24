@@ -34,6 +34,12 @@ const db = {
       method: "DELETE",
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
     });
+  },
+  async deleteWhere(table, col, val) {
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}?${col}=eq.${encodeURIComponent(val)}`, {
+      method: "DELETE",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
   }
 };
 
@@ -303,7 +309,8 @@ export default function App() {
   const loadAll = useCallback(async () => {
     setLoading(true);
     const [c, d, dep, srv, abo, col, docs, ech, cats] = await Promise.all([
-      db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"), db.get("collaborateurs"), db.get("documents"), db.get("echeances"), db.get("categories_depenses"),
+      db.get("clients"), db.get("devis"), db.get("depenses"), db.get("services"), db.get("abonnements"), db.get("collaborateurs"), db.get("documents"), db.get("echeances"),
+      fetch(`${SUPABASE_URL}/rest/v1/categories_depenses?select=nom`, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }).then(r => r.ok ? r.json() : []),
     ]);
     setClients(Array.isArray(c) ? c : []);
     setDevisList(Array.isArray(d) ? d : []);
@@ -3457,9 +3464,8 @@ export default function App() {
                           {canDo("settings","modifier") && (
                             <button onClick={async () => {
                               if (!window.confirm(`Supprimer la catégorie "${cat}" ?`)) return;
-                              const newCats = categoriesDepenses.filter(c => c !== cat);
-                              setCategoriesDepenses(newCats);
-                              await db.delete("categories_depenses", null, { nom: cat });
+                              setCategoriesDepenses(categoriesDepenses.filter(c => c !== cat));
+                              await db.deleteWhere("categories_depenses", "nom", cat);
                             }} style={{ background: "none", border: "none", cursor: "pointer", color, fontSize: 14, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}>×</button>
                           )}
                         </div>
@@ -3475,10 +3481,9 @@ export default function App() {
                           if (e.key !== "Enter" || !newCatDepense.trim()) return;
                           const nom = newCatDepense.trim();
                           if (categoriesDepenses.includes(nom)) { alert("Cette catégorie existe déjà."); return; }
-                          const newCats = [...categoriesDepenses, nom];
-                          setCategoriesDepenses(newCats);
                           setNewCatDepense("");
                           await db.post("categories_depenses", { nom });
+                          loadAll();
                         }}
                         placeholder="Nouvelle catégorie... (Entrée pour valider)"
                         style={{ ...S.input, flex: 1 }}
@@ -3487,10 +3492,9 @@ export default function App() {
                         const nom = newCatDepense.trim();
                         if (!nom) return;
                         if (categoriesDepenses.includes(nom)) { alert("Cette catégorie existe déjà."); return; }
-                        const newCats = [...categoriesDepenses, nom];
-                        setCategoriesDepenses(newCats);
                         setNewCatDepense("");
                         await db.post("categories_depenses", { nom });
+                        loadAll();
                       }} style={S.primaryBtn}>Ajouter</button>
                     </div>
                   )}
