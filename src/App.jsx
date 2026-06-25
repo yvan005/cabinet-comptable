@@ -94,7 +94,17 @@ function LoginScreen({ onLogin }) {
       auth.saveSession(data);
       onLogin(data);
     } else {
-      setError(data.error_description || data.msg || "Email ou mot de passe incorrect.");
+      // Distinguer "utilisateur inexistant" vs "mauvais mot de passe"
+      const msg = data.error_description || data.msg || data.message || "";
+      if (msg.toLowerCase().includes("invalid login") || msg.toLowerCase().includes("user not found") || msg.toLowerCase().includes("no user")) {
+        setError("Aucun compte trouvé avec cet email. Vérifiez votre adresse ou contactez l'administrateur.");
+      } else if (msg.toLowerCase().includes("invalid password") || msg.toLowerCase().includes("wrong password")) {
+        setError("Mot de passe incorrect. Veuillez réessayer.");
+      } else if (msg.toLowerCase().includes("email not confirmed")) {
+        setError("Email non confirmé. Vérifiez votre boîte mail.");
+      } else {
+        setError("Identifiants incorrects. Vérifiez votre email et mot de passe.");
+      }
     }
     setLoading(false);
   };
@@ -2470,47 +2480,73 @@ export default function App() {
               };
 
 
+              const [addCollabTab, setAddCollabTab] = React.useState(0);
+              const TABS_COLLAB = ["👤 Informations", "🔐 Permissions"];
+
               return (
                 <div>
-                  {/* Modal ajout — même style que formulaire client */}
+                  {/* Modal ajout collaborateur avec onglets */}
                   {showAddCollab && (
-                    <Modal title="Nouveau collaborateur" onClose={() => setShowAddCollab(false)}>
-                      {[
-                        { label: "Nom complet *", key: "nom", type: "text", placeholder: "Ex: Jean Dupont" },
-                        { label: "Rôle / Poste", key: "role", type: "text", placeholder: "Ex: Expert-comptable" },
-                        { label: "Email", key: "email", type: "email", placeholder: "jean.dupont@cabinet.fr" },
-                        { label: "Téléphone", key: "telephone", type: "tel", placeholder: "+237 6XX XXX XXX" },
-                        { label: "Dossiers assignés", key: "dossiers", type: "number", placeholder: "0" },
-                      ].map(field => (
-                        <div key={field.key} style={S.formGroup}>
-                          <label style={S.label}>{field.label}</label>
-                          <input
-                            type={field.type}
-                            value={newCollab[field.key] || ""}
-                            onChange={e => setNewCollab(p => ({ ...p, [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value }))}
-                            placeholder={field.placeholder}
-                            style={S.input}
+                    <Modal title="Nouveau collaborateur" onClose={() => { setShowAddCollab(false); setAddCollabTab(0); }}>
+                      {/* Barre de navigation par onglets */}
+                      <div style={{ display: "flex", gap: 4, marginBottom: 20, background: "#f0f4fa", borderRadius: 10, padding: 4 }}>
+                        {TABS_COLLAB.map((tab, idx) => (
+                          <button key={idx} onClick={() => setAddCollabTab(idx)}
+                            style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600,
+                              background: addCollabTab === idx ? "#fff" : "transparent",
+                              color: addCollabTab === idx ? "#1a5c9e" : "#8da4c0",
+                              boxShadow: addCollabTab === idx ? "0 1px 4px rgba(0,30,80,0.1)" : "none",
+                              transition: "all 0.15s"
+                            }}>
+                            {tab}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Onglet 1 : Informations */}
+                      {addCollabTab === 0 && (<>
+                        {[
+                          { label: "Nom complet *", key: "nom", type: "text", placeholder: "Ex: Jean Dupont" },
+                          { label: "Rôle / Poste", key: "role", type: "text", placeholder: "Ex: Expert-comptable" },
+                          { label: "Email", key: "email", type: "email", placeholder: "jean.dupont@cabinet.fr" },
+                          { label: "Téléphone", key: "telephone", type: "tel", placeholder: "+237 6XX XXX XXX" },
+                          { label: "Dossiers assignés", key: "dossiers", type: "number", placeholder: "0" },
+                        ].map(field => (
+                          <div key={field.key} style={S.formGroup}>
+                            <label style={S.label}>{field.label}</label>
+                            <input
+                              type={field.type}
+                              value={newCollab[field.key] || ""}
+                              onChange={e => setNewCollab(p => ({ ...p, [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value }))}
+                              placeholder={field.placeholder}
+                              style={S.input}
+                            />
+                          </div>
+                        ))}
+                        <div style={S.formGroup}>
+                          <label style={S.label}>Statut</label>
+                          <select value={newCollab.statut || "CDI"} onChange={e => setNewCollab(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+                            {["Associé","CDI","CDD","Stage","Freelance"].map(s => <option key={s}>{s}</option>)}
+                          </select>
+                        </div>
+                        <div style={S.formGroup}>
+                          <label style={S.label}>Note</label>
+                          <textarea
+                            value={newCollab.note || ""}
+                            onChange={e => setNewCollab(p => ({ ...p, note: e.target.value }))}
+                            placeholder="Informations complémentaires..."
+                            rows={2}
+                            style={{ ...S.input, resize: "vertical" }}
                           />
                         </div>
-                      ))}
-                      <div style={S.formGroup}>
-                        <label style={S.label}>Statut</label>
-                        <select value={newCollab.statut || "CDI"} onChange={e => setNewCollab(p => ({ ...p, statut: e.target.value }))} style={S.select}>
-                          {["Associé","CDI","CDD","Stage","Freelance"].map(s => <option key={s}>{s}</option>)}
-                        </select>
-                      </div>
-                      <div style={S.formGroup}>
-                        <label style={S.label}>Note</label>
-                        <textarea
-                          value={newCollab.note || ""}
-                          onChange={e => setNewCollab(p => ({ ...p, note: e.target.value }))}
-                          placeholder="Informations complémentaires..."
-                          rows={2}
-                          style={{ ...S.input, resize: "vertical" }}
-                        />
-                      </div>
-                      <div style={S.formGroup}>
-                        <label style={S.label}>Permissions</label>
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+                          <button onClick={() => { setShowAddCollab(false); setAddCollabTab(0); }} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+                          <button onClick={() => setAddCollabTab(1)} style={{ ...S.primaryBtn, background: "#1a5c9e" }}>Suivant → Permissions</button>
+                        </div>
+                      </>)}
+
+                      {/* Onglet 2 : Permissions */}
+                      {addCollabTab === 1 && (<>
                         <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #e2eaf4" }}>
                           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                             <thead>
@@ -2519,7 +2555,7 @@ export default function App() {
                                 {ACTIONS_PERMS.map(a => (
                                   <th key={a} style={{ padding: "8px 8px", textAlign: "center", color: "#4a6d8c", fontWeight: 700, textTransform: "capitalize" }}>{a}</th>
                                 ))}
-                                <th style={{ padding: "8px 8px", textAlign: "center", color: "#4a6d8c", fontWeight: 700 }}>Tout</th>
+                                <th style={{ padding: "8px 8px", textAlign: "center", color: "#8e44ad", fontWeight: 700 }}>Tout</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -2536,6 +2572,7 @@ export default function App() {
                                             ...p,
                                             permissions: { ...p.permissions, [mod.id]: { ...(p.permissions?.[mod.id] || {}), [action]: !p.permissions?.[mod.id]?.[action] } }
                                           }))}
+                                          style={{ width: 15, height: 15, accentColor: "#1a5c9e", cursor: "pointer" }}
                                         />
                                       </td>
                                     ))}
@@ -2545,6 +2582,7 @@ export default function App() {
                                           ...p,
                                           permissions: { ...p.permissions, [mod.id]: Object.fromEntries(ACTIONS_PERMS.map(a => [a, !allChecked])) }
                                         }))}
+                                        style={{ width: 15, height: 15, accentColor: "#8e44ad", cursor: "pointer" }}
                                       />
                                     </td>
                                   </tr>
@@ -2553,11 +2591,11 @@ export default function App() {
                             </tbody>
                           </table>
                         </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
-                        <button onClick={() => setShowAddCollab(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
-                        <button onClick={saveCollab} disabled={collabSaving} style={{ ...S.primaryBtn, opacity: collabSaving ? 0.7 : 1 }}>{collabSaving ? "Enregistrement..." : "Enregistrer"}</button>
-                      </div>
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+                          <button onClick={() => setAddCollabTab(0)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>← Retour</button>
+                          <button onClick={saveCollab} disabled={collabSaving} style={{ ...S.primaryBtn, opacity: collabSaving ? 0.7 : 1 }}>{collabSaving ? "Enregistrement..." : "💾 Enregistrer"}</button>
+                        </div>
+                      </>)}
                     </Modal>
                   )}
                   {/* Modal édition — même style que formulaire client */}
