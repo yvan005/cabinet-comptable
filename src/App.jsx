@@ -717,7 +717,6 @@ export default function App() {
 
   const canSee = (module) => {
     if (!userPerms) return true; // admin
-    if (module === "dashboard" || module === "settings") return true; // toujours visibles
     return userPerms[module]?.voir === true;
   };
 
