@@ -3608,11 +3608,15 @@ export default function App() {
             {page === "settings" && canSee("settings") && (
               <div style={{ maxWidth: 680 }}>
                 <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
-                  <div style={S.cardHeader}><Icon d={ic.settings} size={16} stroke="#6b8aaa" /><span style={S.cardTitle}>Préférences</span></div>
+                  <div style={S.cardHeader}>
+                    <Icon d={ic.settings} size={16} stroke="#6b8aaa" />
+                    <span style={S.cardTitle}>Préférences</span>
+                    {!canDo("settings","modifier") && <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, background: "#f0f4fa", color: "#8da4c0", padding: "3px 8px", borderRadius: 6 }}>🔒 Lecture seule</span>}
+                  </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={S.formGroup}>
                       <label style={S.label}>Devise</label>
-                      <select style={S.select}>
+                      <select style={S.select} disabled={!canDo("settings","modifier")}>
                         <option>Franc CFA (XAF)</option>
                         <option>Dollar ($)</option>
                         <option>Euro (€)</option>
@@ -3620,7 +3624,7 @@ export default function App() {
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Taux de TVA par défaut</label>
-                      <select style={S.select}>
+                      <select style={S.select} disabled={!canDo("settings","modifier")}>
                         <option>19,25% (TVA Cameroun)</option>
                         <option>0% (Exonéré)</option>
                         <option>Suspension de TVA</option>
@@ -3628,7 +3632,7 @@ export default function App() {
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Référentiel comptable</label>
-                      <select style={S.select}>
+                      <select style={S.select} disabled={!canDo("settings","modifier")}>
                         <option>SYSCOHADA Révisé</option>
                         <option>SYSCOHADA</option>
                         <option>IFRS</option>
@@ -3636,22 +3640,24 @@ export default function App() {
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Exercice fiscal</label>
-                      <select style={S.select}>
+                      <select style={S.select} disabled={!canDo("settings","modifier")}>
                         <option>Janvier — Décembre</option>
                       </select>
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Langue</label>
-                      <select style={S.select}>
+                      <select style={S.select} disabled={!canDo("settings","modifier")}>
                         <option>Français</option>
                         <option>Anglais</option>
                         <option>Bilingue (FR / EN)</option>
                       </select>
                     </div>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                    <button style={S.primaryBtn}>Enregistrer</button>
-                  </div>
+                  {canDo("settings","modifier") && (
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                      <button style={S.primaryBtn}>Enregistrer</button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Section Catégories Dépenses */}
@@ -3777,6 +3783,7 @@ export default function App() {
                 </div>
 
                 {/* Section Administration */}
+                {canDo("settings","supprimer") && (
                 <div className="card-hover" style={{ ...S.card, marginTop: 16, borderLeft: "4px solid #c0392b" }}>
                   <div style={S.cardHeader}>
                     <Icon d={ic.trash} size={16} stroke="#c0392b" />
@@ -3861,6 +3868,7 @@ export default function App() {
                     Les devis <b>Payés</b> ne peuvent jamais être supprimés pour des raisons de traçabilité comptable.
                   </div>
                 </div>
+                )}
               </div>
             )}
 
