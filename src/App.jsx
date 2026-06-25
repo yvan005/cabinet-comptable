@@ -7,8 +7,10 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const db = {
   async get(table, params = "") {
     if (!SUPABASE_URL || !SUPABASE_KEY) { console.error("Variables Supabase manquantes"); return []; }
+    const session = auth.getSession();
+    const token = session?.access_token || SUPABASE_KEY;
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?order=created_at.desc${params}`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
     });
     if (!res.ok) return [];
     return res.json();
@@ -687,11 +689,15 @@ export default function App() {
   const loadUserPerms = useCallback(async () => {
     if (!session) return;
     const email = session.user?.email;
+    const token = session.access_token || SUPABASE_KEY;
     if (!email) { setUserPerms(null); return; }
 
-    // Requête directe : chercher cet email dans la table collaborateurs
-    const res = await db.get("collaborateurs", `&email=eq.${encodeURIComponent(email)}`);
-    const col = Array.isArray(res) ? res[0] : null;
+    // Requête directe avec le vrai token de l'utilisateur connecté
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/collaborateurs?email=eq.${encodeURIComponent(email)}&limit=1`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
+    });
+    const data = res.ok ? await res.json() : [];
+    const col = Array.isArray(data) ? data[0] : null;
 
     if (col) {
       // C'est un collaborateur → appliquer ses permissions
@@ -702,7 +708,7 @@ export default function App() {
       setUserPerms(null);
       setAccessRevoked(false);
     }
-  }, [session]); // ← Ne dépend PLUS de collaborateurs (évite la race condition)
+  }, [session]);
 
   useEffect(() => { loadUserPerms(); }, [loadUserPerms]);
 
