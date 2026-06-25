@@ -302,6 +302,7 @@ export default function App() {
 
   const [collaborateurs, setCollaborateurs] = useState([]);
   const [showAddCollab, setShowAddCollab] = useState(false);
+  const [addCollabTab, setAddCollabTab] = useState(0);
   const [showEditCollab, setShowEditCollab] = useState(false);
   const [editCollab, setEditCollab] = useState(null);
   const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "", permissions: {} });
@@ -2480,7 +2481,6 @@ export default function App() {
               };
 
 
-              const [addCollabTab, setAddCollabTab] = React.useState(0);
               const TABS_COLLAB = ["👤 Informations", "🔐 Permissions"];
 
               return (
