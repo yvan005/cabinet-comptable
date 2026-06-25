@@ -2449,13 +2449,34 @@ export default function App() {
               const ACTIONS_PERMS = ["voir", "ajouter", "modifier", "supprimer"];
 
               const saveCollab = async () => {
-                if (!newCollab.nom.trim()) return;
+                if (!newCollab.nom.trim()) { alert("Le nom est obligatoire."); return; }
                 setCollabSaving(true);
-                await db.post("collaborateurs", newCollab);
-                setShowAddCollab(false);
-                setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "", permissions: {} });
-                setCollabSaving(false);
-                loadAll();
+                try {
+                  const token = session?.access_token || SUPABASE_KEY;
+                  const res = await fetch(`${SUPABASE_URL}/rest/v1/collaborateurs`, {
+                    method: "POST",
+                    headers: {
+                      apikey: SUPABASE_KEY,
+                      Authorization: `Bearer ${token}`,
+                      "Content-Type": "application/json",
+                      Prefer: "return=representation"
+                    },
+                    body: JSON.stringify(newCollab)
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) {
+                    alert("Erreur Supabase : " + (data.message || data.error || res.status));
+                    return;
+                  }
+                  setShowAddCollab(false);
+                  setAddCollabTab(0);
+                  setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "", permissions: {} });
+                  loadAll();
+                } catch(e) {
+                  alert("Erreur réseau : " + e.message);
+                } finally {
+                  setCollabSaving(false);
+                }
               };
 
               const updateCollab = async () => {
