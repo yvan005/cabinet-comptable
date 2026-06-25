@@ -282,7 +282,7 @@ export default function App() {
   const [showAddCollab, setShowAddCollab] = useState(false);
   const [showEditCollab, setShowEditCollab] = useState(false);
   const [editCollab, setEditCollab] = useState(null);
-  const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
+  const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "", permissions: {} });
   const [collabSaving, setCollabSaving] = useState(false);
   const [showAccesCollab, setShowAccesCollab] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
@@ -2390,12 +2390,26 @@ export default function App() {
               const avatarColors = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22"];
               const getInitials = (nom) => nom.split(" ").map(w => w[0]).slice(0,2).join("").toUpperCase();
 
+              const MODULES_PERMS = [
+                { id: "clients", label: "Clients", emoji: "👥" },
+                { id: "devis", label: "Devis", emoji: "📄" },
+                { id: "depenses", label: "Dépenses", emoji: "💸" },
+                { id: "abonnements", label: "Abonnements", emoji: "🔄" },
+                { id: "documents", label: "Documents", emoji: "📁" },
+                { id: "rapports", label: "Rapports", emoji: "📈" },
+                { id: "collab", label: "Collaborateurs", emoji: "🤝" },
+                { id: "services", label: "Services", emoji: "🛠" },
+                { id: "echeances", label: "Échéances", emoji: "📅" },
+                { id: "settings", label: "Paramètres", emoji: "⚙️" },
+              ];
+              const ACTIONS_PERMS = ["voir", "ajouter", "modifier", "supprimer"];
+
               const saveCollab = async () => {
                 if (!newCollab.nom.trim()) return;
                 setCollabSaving(true);
                 await db.post("collaborateurs", newCollab);
                 setShowAddCollab(false);
-                setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
+                setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "", permissions: {} });
                 setCollabSaving(false);
                 loadAll();
               };
@@ -2461,6 +2475,51 @@ export default function App() {
                           rows={2}
                           style={{ ...S.input, resize: "vertical" }}
                         />
+                      </div>
+                      <div style={S.formGroup}>
+                        <label style={S.label}>Permissions</label>
+                        <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #e2eaf4" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                            <thead>
+                              <tr style={{ background: "#f5f8fc" }}>
+                                <th style={{ padding: "8px 12px", textAlign: "left", color: "#4a6d8c", fontWeight: 700 }}>Module</th>
+                                {ACTIONS_PERMS.map(a => (
+                                  <th key={a} style={{ padding: "8px 8px", textAlign: "center", color: "#4a6d8c", fontWeight: 700, textTransform: "capitalize" }}>{a}</th>
+                                ))}
+                                <th style={{ padding: "8px 8px", textAlign: "center", color: "#4a6d8c", fontWeight: 700 }}>Tout</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {MODULES_PERMS.map((mod, i) => {
+                                const allChecked = ACTIONS_PERMS.every(a => newCollab.permissions?.[mod.id]?.[a]);
+                                return (
+                                  <tr key={mod.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafbfd", borderTop: "1px solid #f0f4fa" }}>
+                                    <td style={{ padding: "7px 12px", fontWeight: 600, color: "#1e3a57" }}>{mod.emoji} {mod.label}</td>
+                                    {ACTIONS_PERMS.map(action => (
+                                      <td key={action} style={{ textAlign: "center", padding: "7px 8px" }}>
+                                        <input type="checkbox"
+                                          checked={newCollab.permissions?.[mod.id]?.[action] || false}
+                                          onChange={() => setNewCollab(p => ({
+                                            ...p,
+                                            permissions: { ...p.permissions, [mod.id]: { ...(p.permissions?.[mod.id] || {}), [action]: !p.permissions?.[mod.id]?.[action] } }
+                                          }))}
+                                        />
+                                      </td>
+                                    ))}
+                                    <td style={{ textAlign: "center", padding: "7px 8px" }}>
+                                      <input type="checkbox" checked={allChecked}
+                                        onChange={() => setNewCollab(p => ({
+                                          ...p,
+                                          permissions: { ...p.permissions, [mod.id]: Object.fromEntries(ACTIONS_PERMS.map(a => [a, !allChecked])) }
+                                        }))}
+                                      />
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
                         <button onClick={() => setShowAddCollab(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
