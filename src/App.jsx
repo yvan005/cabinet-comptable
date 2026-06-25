@@ -371,22 +371,34 @@ export default function App() {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Vérification sécurité : déconnecter si le collaborateur a été supprimé
-  // On recharge les perms après chaque loadAll pour détecter les révocations
-  useEffect(() => {
-    if (!session || !userPerms) return; // admin → rien à vérifier
-    // Recharger les permissions depuis Supabase pour détecter une révocation
+  // ── PERMISSIONS ──────────────────────────────────────────────────────────────
+  const ADMIN_EMAIL = "soumai@cga-cda.com";
+
+  // Charger les permissions du collaborateur connecté depuis Supabase
+  const loadUserPerms = useCallback(async () => {
+    if (!session) return;
+    if (session.user?.email === ADMIN_EMAIL) {
+      setUserPerms(null); // null = admin = accès total
+      return;
+    }
     const email = session.user?.email;
-    if (!email) return;
-    db.get("collaborateurs", `&email=eq.${encodeURIComponent(email)}`).then(res => {
-      const col = Array.isArray(res) ? res[0] : null;
-      if (!col) {
-        // Le collaborateur a été supprimé → déconnecter
-        auth.clearSession();
-        setSession(null);
-      }
-    });
-  }, [collaborateurs]); // se déclenche quand la liste est rechargée
+    const token = session.access_token || SUPABASE_KEY;
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/collaborateurs?email=eq.${encodeURIComponent(email)}&limit=1`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` } }
+    );
+    const data = res.ok ? await res.json() : [];
+    const col = Array.isArray(data) ? data[0] : null;
+    if (col) {
+      setUserPerms(col.permissions || {});
+    } else {
+      // Email inconnu et pas admin → déconnecter
+      auth.clearSession();
+      setSession(null);
+    }
+  }, [session]);
+
+  useEffect(() => { loadUserPerms(); }, [loadUserPerms]);
 
   // ── EXPORT EXCEL ──
   const exportExcel = async (data, colonnes, nomFichier) => {
@@ -415,17 +427,31 @@ export default function App() {
   const savePermissions = async () => {
     if (!permCollab) return;
     setPermSaving(true);
-    const result = await db.patch("collaborateurs", permCollab.id, { permissions: permCollab.permissions });
-    setPermSaving(false);
-    // Vérifier si le patch a réellement mis à jour une ligne
-    if (Array.isArray(result) && result.length > 0) {
+    try {
+      const token = session?.access_token || SUPABASE_KEY;
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/collaborateurs?id=eq.${permCollab.id}`, {
+        method: "PATCH",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify({ permissions: permCollab.permissions })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert("Erreur Supabase : " + (err.message || res.status));
+        return;
+      }
       setShowPermissions(false);
       setPermCollab(null);
-      loadAll();
-      // Recharger aussi les perms de l'utilisateur connecté au cas où c'est lui
-      loadUserPerms();
-    } else {
-      alert("Erreur : impossible d'enregistrer les permissions. Vérifiez les politiques RLS de la table collaborateurs dans Supabase (UPDATE doit être autorisé).");
+      await loadAll();
+      await loadUserPerms();
+    } catch(e) {
+      alert("Erreur réseau : " + e.message);
+    } finally {
+      setPermSaving(false);
     }
   };
 
@@ -684,43 +710,14 @@ export default function App() {
 
   const pageTitle = { abonnements: "Abonnements", dashboard: "Tableau de bord", clients: "Clients", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", depenses: "Dépenses", settings: "Paramètres", echeances: "Échéances fiscales" }[page] || "";
 
-  // Charger les permissions du collaborateur connecté
-  // On fait UNIQUEMENT une requête directe Supabase, sans dépendre du state local
-  const loadUserPerms = useCallback(async () => {
-    if (!session) return;
-    const email = session.user?.email;
-    const token = session.access_token || SUPABASE_KEY;
-    if (!email) { setUserPerms(null); return; }
-
-    // Requête directe avec le vrai token de l'utilisateur connecté
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/collaborateurs?email=eq.${encodeURIComponent(email)}&limit=1`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
-    });
-    const data = res.ok ? await res.json() : [];
-    const col = Array.isArray(data) ? data[0] : null;
-
-    if (col) {
-      // C'est un collaborateur → appliquer ses permissions
-      setUserPerms(col.permissions || {});
-      setAccessRevoked(false);
-    } else {
-      // Email absent de collaborateurs → c'est l'admin (accès total)
-      setUserPerms(null);
-      setAccessRevoked(false);
-    }
-  }, [session]);
-
-  useEffect(() => { loadUserPerms(); }, [loadUserPerms]);
-
   const canDo = (module, action) => {
-    if (!userPerms) return true; // admin — tout autorisé
+    if (!userPerms) return true; // admin (null) → tout autorisé
     return userPerms[module]?.[action] === true;
   };
 
   const canSee = (module) => {
     if (!userPerms) return true; // admin
-    // Dashboard et Paramètres toujours visibles pour tout collaborateur connecté
-    if (module === "dashboard" || module === "settings") return true;
+    if (module === "dashboard" || module === "settings") return true; // toujours visibles
     return userPerms[module]?.voir === true;
   };
 
