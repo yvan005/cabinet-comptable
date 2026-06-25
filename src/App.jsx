@@ -891,7 +891,7 @@ export default function App() {
           {loading ? <Spinner /> : <>
 
             {/* ── DASHBOARD ── */}
-            {page === "dashboard" && (() => {
+            {page === "dashboard" && canSee("dashboard") && (() => {
               const now = new Date();
               const annee = now.getFullYear();
               const moisNoms = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
@@ -1369,7 +1369,7 @@ export default function App() {
             })()}
 
             {/* ── CLIENTS ── */}
-            {page === "clients" && (
+            {page === "clients" && canSee("clients") && (
               <div>
                 <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", marginBottom: 14, gap: 10 }}>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -1461,7 +1461,7 @@ export default function App() {
             )}
 
 {/* ── DEVIS ── */}
-            {page === "devis" && (() => {
+            {page === "devis" && canSee("devis") && (() => {
               // Build missions list from real services + defaults
               const DEFAULTS = [
                 { nom: "Conseils et stratégies financiers", groupe: "Assistance Comptable" },
@@ -1758,7 +1758,7 @@ export default function App() {
 
 
             {/* ── RAPPORTS ── */}
-            {page === "rapports" && (() => {
+            {page === "rapports" && canSee("rapports") && (() => {
               const now = new Date();
               const annee = now.getFullYear();
               const moisNoms = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
@@ -2424,7 +2424,7 @@ export default function App() {
               </div>
             )}
 
-            {page === "collab" && (() => {
+            {page === "collab" && canSee("collab") && (() => {
               const statutColors = {
                 "Associé":  { bg: "#e8f0fb", color: "#1a5c9e" },
                 "CDI":      { bg: "#e8f5ee", color: "#1a7a4a" },
@@ -2436,6 +2436,7 @@ export default function App() {
               const getInitials = (nom) => nom.split(" ").map(w => w[0]).slice(0,2).join("").toUpperCase();
 
               const MODULES_PERMS = [
+                { id: "dashboard", label: "Tableau de bord", emoji: "📊" },
                 { id: "clients", label: "Clients", emoji: "👥" },
                 { id: "devis", label: "Devis", emoji: "📄" },
                 { id: "depenses", label: "Dépenses", emoji: "💸" },
@@ -2773,7 +2774,7 @@ export default function App() {
             })()}
 
             {/* ── DOCUMENTS ── */}
-            {page === "documents" && (() => {
+            {page === "documents" && canSee("documents") && (() => {
               const categories = ["Tous", ...categoriesDocs];
               const extColor = (nom) => {
                 const ext = nom?.split(".").pop()?.toLowerCase();
@@ -2965,7 +2966,7 @@ export default function App() {
 
 
             {/* ── ABONNEMENTS ── */}
-            {page === "abonnements" && (() => {
+            {page === "abonnements" && canSee("abonnements") && (() => {
               const actifs = abonnements.filter(a => a.statut === "Actif");
               const suspendus = abonnements.filter(a => a.statut === "Suspendu");
               const resilies = abonnements.filter(a => a.statut === "Résilié");
@@ -3111,7 +3112,7 @@ export default function App() {
 
 
             {/* ── SERVICES ── */}
-            {page === "services" && (() => {
+            {page === "services" && canSee("services") && (() => {
               const GROUPES = ["Assistance Comptable", "Assistance Fiscale", "Assistance Sociale", "Assistance Juridique"];
               const groupColors = {
                 "Assistance Comptable": { color: "#1a5c9e", bg: "#e8f0fb", icon: ic.folder },
@@ -3242,7 +3243,7 @@ export default function App() {
 
 
             {/* ── DÉPENSES ── */}
-            {page === "depenses" && (
+            {page === "depenses" && canSee("depenses") && (
               <div>
                 {/* Période selector */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
@@ -3451,7 +3452,7 @@ export default function App() {
               </Modal>
             )}
 
-            {page === "echeances" && (() => {
+            {page === "echeances" && canSee("echeances") && (() => {
               const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
               const joursNoms = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
               const statutColor = { "À faire": "#c17f2a", "En cours": "#1a5c9e", "Fait": "#1a7a4a", "En retard": "#c0392b" };
@@ -3604,7 +3605,7 @@ export default function App() {
             })()}
 
             {/* ── PARAMÈTRES ── */}
-            {page === "settings" && (
+            {page === "settings" && canSee("settings") && (
               <div style={{ maxWidth: 680 }}>
                 <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
                   <div style={S.cardHeader}><Icon d={ic.settings} size={16} stroke="#6b8aaa" /><span style={S.cardTitle}>Préférences</span></div>
