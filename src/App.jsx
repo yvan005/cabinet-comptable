@@ -2226,7 +2226,6 @@ export default function App() {
                 { id: "services", label: "🛠 Services" },
                 { id: "documents", label: "📁 Documents" },
                 { id: "collab", label: "👤 Collaborateurs" },
-                { id: "documents", label: "📁 Documents" },
                 { id: "settings", label: "⚙️ Paramètres" },
               ];
               const actions = ["voir", "ajouter", "modifier", "supprimer"];
@@ -2261,9 +2260,30 @@ export default function App() {
                 });
               };
 
+              const collabsAvecPerms = collaborateurs;
+              const currentIndex = collabsAvecPerms.findIndex(c => c.id === permCollab.id);
+              const hasPrev = currentIndex > 0;
+              const hasNext = currentIndex < collabsAvecPerms.length - 1;
+              const goToCollab = (idx) => { const c = collabsAvecPerms[idx]; if (c) setPermCollab({ ...c, permissions: c.permissions || {} }); };
+
               return (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(10,30,60,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-                  <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 600, boxShadow: "0 8px 40px rgba(0,30,80,.18)", maxHeight: "90vh", overflowY: "auto" }}>
+                  <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 600, boxShadow: "0 8px 40px rgba(0,30,80,.18)", maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+
+                    {/* Barre de navigation */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderBottom: "1px solid #e2eaf4", background: "#f5f8fc", borderRadius: "16px 16px 0 0", flexShrink: 0 }}>
+                      <button onClick={() => goToCollab(currentIndex - 1)} disabled={!hasPrev}
+                        style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: hasPrev ? "#fff" : "#f0f4fa", color: hasPrev ? "#1a5c9e" : "#b0c4d8", cursor: hasPrev ? "pointer" : "default", fontSize: 12, fontWeight: 600 }}>
+                        ← Précédent
+                      </button>
+                      <span style={{ fontSize: 12, color: "#6b8aaa", fontWeight: 600 }}>{currentIndex + 1} / {collabsAvecPerms.length}</span>
+                      <button onClick={() => goToCollab(currentIndex + 1)} disabled={!hasNext}
+                        style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: hasNext ? "#fff" : "#f0f4fa", color: hasNext ? "#1a5c9e" : "#b0c4d8", cursor: hasNext ? "pointer" : "default", fontSize: 12, fontWeight: 600 }}>
+                        Suivant →
+                      </button>
+                    </div>
+
+                    <div style={{ padding: 24, overflowY: "auto", flex: 1 }}>
                     {/* Header */}
                     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
                       <div style={{ width: 42, height: 42, borderRadius: "50%", background: "#1a5c9e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15 }}>
@@ -2323,6 +2343,7 @@ export default function App() {
                         style={{ ...S.primaryBtn, opacity: permSaving ? 0.7 : 1 }}>
                         {permSaving ? "Enregistrement..." : "💾 Enregistrer"}
                       </button>
+                    </div>
                     </div>
                   </div>
                 </div>
