@@ -282,7 +282,7 @@ export default function App() {
   const [showAddCollab, setShowAddCollab] = useState(false);
   const [showEditCollab, setShowEditCollab] = useState(false);
   const [editCollab, setEditCollab] = useState(null);
-  const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "", permissions: {} });
+  const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
   const [collabSaving, setCollabSaving] = useState(false);
   const [showAccesCollab, setShowAccesCollab] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
@@ -2226,6 +2226,7 @@ export default function App() {
                 { id: "services", label: "🛠 Services" },
                 { id: "documents", label: "📁 Documents" },
                 { id: "collab", label: "👤 Collaborateurs" },
+                { id: "documents", label: "📁 Documents" },
                 { id: "settings", label: "⚙️ Paramètres" },
               ];
               const actions = ["voir", "ajouter", "modifier", "supprimer"];
@@ -2260,30 +2261,9 @@ export default function App() {
                 });
               };
 
-              const collabsAvecPerms = collaborateurs;
-              const currentIndex = collabsAvecPerms.findIndex(c => c.id === permCollab.id);
-              const hasPrev = currentIndex > 0;
-              const hasNext = currentIndex < collabsAvecPerms.length - 1;
-              const goToCollab = (idx) => { const c = collabsAvecPerms[idx]; if (c) setPermCollab({ ...c, permissions: c.permissions || {} }); };
-
               return (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(10,30,60,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-                  <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 600, boxShadow: "0 8px 40px rgba(0,30,80,.18)", maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-
-                    {/* Barre de navigation */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderBottom: "1px solid #e2eaf4", background: "#f5f8fc", borderRadius: "16px 16px 0 0", flexShrink: 0 }}>
-                      <button onClick={() => goToCollab(currentIndex - 1)} disabled={!hasPrev}
-                        style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: hasPrev ? "#fff" : "#f0f4fa", color: hasPrev ? "#1a5c9e" : "#b0c4d8", cursor: hasPrev ? "pointer" : "default", fontSize: 12, fontWeight: 600 }}>
-                        ← Précédent
-                      </button>
-                      <span style={{ fontSize: 12, color: "#6b8aaa", fontWeight: 600 }}>{currentIndex + 1} / {collabsAvecPerms.length}</span>
-                      <button onClick={() => goToCollab(currentIndex + 1)} disabled={!hasNext}
-                        style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: hasNext ? "#fff" : "#f0f4fa", color: hasNext ? "#1a5c9e" : "#b0c4d8", cursor: hasNext ? "pointer" : "default", fontSize: 12, fontWeight: 600 }}>
-                        Suivant →
-                      </button>
-                    </div>
-
-                    <div style={{ padding: 24, overflowY: "auto", flex: 1 }}>
+                  <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 600, boxShadow: "0 8px 40px rgba(0,30,80,.18)", maxHeight: "90vh", overflowY: "auto" }}>
                     {/* Header */}
                     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
                       <div style={{ width: 42, height: 42, borderRadius: "50%", background: "#1a5c9e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15 }}>
@@ -2343,7 +2323,6 @@ export default function App() {
                         style={{ ...S.primaryBtn, opacity: permSaving ? 0.7 : 1 }}>
                         {permSaving ? "Enregistrement..." : "💾 Enregistrer"}
                       </button>
-                    </div>
                     </div>
                   </div>
                 </div>
@@ -2411,26 +2390,12 @@ export default function App() {
               const avatarColors = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22"];
               const getInitials = (nom) => nom.split(" ").map(w => w[0]).slice(0,2).join("").toUpperCase();
 
-              const MODULES_PERMS = [
-                { id: "clients", label: "Clients", emoji: "👥" },
-                { id: "devis", label: "Devis", emoji: "📄" },
-                { id: "depenses", label: "Dépenses", emoji: "💸" },
-                { id: "abonnements", label: "Abonnements", emoji: "🔄" },
-                { id: "documents", label: "Documents", emoji: "📁" },
-                { id: "rapports", label: "Rapports", emoji: "📈" },
-                { id: "collab", label: "Collaborateurs", emoji: "🤝" },
-                { id: "services", label: "Services", emoji: "🛠" },
-                { id: "echeances", label: "Échéances", emoji: "📅" },
-                { id: "settings", label: "Paramètres", emoji: "⚙️" },
-              ];
-              const ACTIONS_PERMS = ["voir", "ajouter", "modifier", "supprimer"];
-
               const saveCollab = async () => {
                 if (!newCollab.nom.trim()) return;
                 setCollabSaving(true);
                 await db.post("collaborateurs", newCollab);
                 setShowAddCollab(false);
-                setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "", permissions: {} });
+                setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
                 setCollabSaving(false);
                 loadAll();
               };
@@ -2496,51 +2461,6 @@ export default function App() {
                           rows={2}
                           style={{ ...S.input, resize: "vertical" }}
                         />
-                      </div>
-                      <div style={S.formGroup}>
-                        <label style={S.label}>Permissions</label>
-                        <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #e2eaf4" }}>
-                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                            <thead>
-                              <tr style={{ background: "#f5f8fc" }}>
-                                <th style={{ padding: "8px 12px", textAlign: "left", color: "#4a6d8c", fontWeight: 700 }}>Module</th>
-                                {ACTIONS_PERMS.map(a => (
-                                  <th key={a} style={{ padding: "8px 8px", textAlign: "center", color: "#4a6d8c", fontWeight: 700, textTransform: "capitalize" }}>{a}</th>
-                                ))}
-                                <th style={{ padding: "8px 8px", textAlign: "center", color: "#4a6d8c", fontWeight: 700 }}>Tout</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {MODULES_PERMS.map((mod, i) => {
-                                const allChecked = ACTIONS_PERMS.every(a => newCollab.permissions?.[mod.id]?.[a]);
-                                return (
-                                  <tr key={mod.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafbfd", borderTop: "1px solid #f0f4fa" }}>
-                                    <td style={{ padding: "7px 12px", fontWeight: 600, color: "#1e3a57" }}>{mod.emoji} {mod.label}</td>
-                                    {ACTIONS_PERMS.map(action => (
-                                      <td key={action} style={{ textAlign: "center", padding: "7px 8px" }}>
-                                        <input type="checkbox"
-                                          checked={newCollab.permissions?.[mod.id]?.[action] || false}
-                                          onChange={() => setNewCollab(p => ({
-                                            ...p,
-                                            permissions: { ...p.permissions, [mod.id]: { ...(p.permissions?.[mod.id] || {}), [action]: !p.permissions?.[mod.id]?.[action] } }
-                                          }))}
-                                        />
-                                      </td>
-                                    ))}
-                                    <td style={{ textAlign: "center", padding: "7px 8px" }}>
-                                      <input type="checkbox" checked={allChecked}
-                                        onChange={() => setNewCollab(p => ({
-                                          ...p,
-                                          permissions: { ...p.permissions, [mod.id]: Object.fromEntries(ACTIONS_PERMS.map(a => [a, !allChecked])) }
-                                        }))}
-                                      />
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
                       </div>
                       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
                         <button onClick={() => setShowAddCollab(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
@@ -4538,7 +4458,7 @@ const S = {
   input: { padding: "9px 12px", borderRadius: 8, border: "1px solid #87CEEB", fontSize: 13, color: "#1e3a57", background: "#ffffff", outline: "none", fontFamily: "inherit" },
   select: { padding: "9px 12px", borderRadius: 8, border: "1px solid #87CEEB", fontSize: 13, color: "#1e3a57", background: "#ffffff", outline: "none" },
   overlay: { position: "fixed", inset: 0, background: "rgba(15,39,68,.5)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, overflowY: "auto", padding: "20px 12px" },
-  modal: { background: "#fff", borderRadius: 16, padding: "24px 28px", width: "min(520px, 95vw)", maxWidth: "95vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)", boxSizing: "border-box", margin: "auto" },
+  modal: { background: "#fff", borderRadius: 16, padding: "24px 28px", width: "min(520px, 95vw)", maxWidth: "95vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)", overflowX: "hidden", boxSizing: "border-box", margin: "auto" },
   modalHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   modalTitle: { fontSize: 16, fontWeight: 700, color: "#1e3a57" },
 };
