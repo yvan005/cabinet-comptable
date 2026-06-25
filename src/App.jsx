@@ -14,25 +14,35 @@ const db = {
     return res.json();
   },
   async post(table, body) {
+    const session = auth.getSession();
+    const token = session?.access_token || SUPABASE_KEY;
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
       method: "POST",
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json", Prefer: "return=representation" },
       body: JSON.stringify(body)
     });
-    return res.json();
+    return res.json().catch(() => ({}));
   },
   async patch(table, id, body) {
+    const session = auth.getSession();
+    const token = session?.access_token || SUPABASE_KEY;
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
       method: "PATCH",
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json", Prefer: "return=representation" },
       body: JSON.stringify(body)
     });
-    return res.json();
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error(`PATCH ${table} failed:`, res.status, err);
+    }
+    return res.json().catch(() => ({}));
   },
   async delete(table, id) {
+    const session = auth.getSession();
+    const token = session?.access_token || SUPABASE_KEY;
     await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
       method: "DELETE",
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
     });
   },
   async deleteWhere(table, col, val) {
@@ -403,11 +413,18 @@ export default function App() {
   const savePermissions = async () => {
     if (!permCollab) return;
     setPermSaving(true);
-    await db.patch("collaborateurs", permCollab.id, { permissions: permCollab.permissions });
+    const result = await db.patch("collaborateurs", permCollab.id, { permissions: permCollab.permissions });
     setPermSaving(false);
-    setShowPermissions(false);
-    setPermCollab(null);
-    loadAll();
+    // Vérifier si le patch a réellement mis à jour une ligne
+    if (Array.isArray(result) && result.length > 0) {
+      setShowPermissions(false);
+      setPermCollab(null);
+      loadAll();
+      // Recharger aussi les perms de l'utilisateur connecté au cas où c'est lui
+      loadUserPerms();
+    } else {
+      alert("Erreur : impossible d'enregistrer les permissions. Vérifiez les politiques RLS de la table collaborateurs dans Supabase (UPDATE doit être autorisé).");
+    }
   };
 
   const createAcces = async () => {
