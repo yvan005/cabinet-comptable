@@ -76,7 +76,15 @@ const auth = {
     try { return JSON.parse(localStorage.getItem("sb_session") || "null"); } catch { return null; }
   },
   saveSession(session) { localStorage.setItem("sb_session", JSON.stringify(session)); },
-  clearSession() { localStorage.removeItem("sb_session"); }
+  clearSession() { localStorage.removeItem("sb_session"); },
+  async refreshSession(refreshToken) {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    });
+    return res.json();
+  }
 };
 
 // ── LOGIN SCREEN ──────────────────────────────────────────────────────────────
@@ -394,6 +402,33 @@ export default function App() {
     const interval = setInterval(ping, 5 * 24 * 60 * 60 * 1000); // toutes les 5 jours
     return () => clearInterval(interval);
   }, []);
+
+  // ── REFRESH AUTOMATIQUE DU TOKEN JWT ─────────────────────────────────────────
+  useEffect(() => {
+    if (!session) return;
+    const refreshIfNeeded = async () => {
+      const currentSession = auth.getSession();
+      if (!currentSession?.refresh_token) return;
+      // expires_at est en secondes (timestamp Unix)
+      const expiresAt = currentSession.expires_at * 1000;
+      const now = Date.now();
+      const cinqMinutes = 5 * 60 * 1000;
+      if (expiresAt - now < cinqMinutes) {
+        const newSession = await auth.refreshSession(currentSession.refresh_token);
+        if (newSession?.access_token) {
+          auth.saveSession(newSession);
+          setSession(newSession);
+        } else {
+          // Refresh token expiré → déconnecter proprement
+          auth.clearSession();
+          setSession(null);
+        }
+      }
+    };
+    refreshIfNeeded(); // vérification immédiate
+    const interval = setInterval(refreshIfNeeded, 4 * 60 * 1000); // toutes les 4 minutes
+    return () => clearInterval(interval);
+  }, [session]);
 
   // ── PERMISSIONS ──────────────────────────────────────────────────────────────
   const ADMIN_EMAIL = "soumai@cga-cda.com";
