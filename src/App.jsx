@@ -383,6 +383,18 @@ export default function App() {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
+  // ── PING SUPABASE (évite la mise en pause automatique) ────────────────────
+  useEffect(() => {
+    const ping = () => {
+      fetch(`${SUPABASE_URL}/rest/v1/clients?limit=1`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      }).catch(() => {});
+    };
+    ping(); // ping immédiat au démarrage
+    const interval = setInterval(ping, 5 * 24 * 60 * 60 * 1000); // toutes les 5 jours
+    return () => clearInterval(interval);
+  }, []);
+
   // ── PERMISSIONS ──────────────────────────────────────────────────────────────
   const ADMIN_EMAIL = "soumai@cga-cda.com";
 
