@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 
 // ── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://egnhdnuquirsngwokwmy.supabase.co";
-const SUPABASE_KEY = "sb_publishable_fBzLhJdEDbP0DGRvfZXy0Q_yo3OMpIz";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbmhkbnVxdWlyc25nd29rd215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNjc2NjEsImV4cCI6MjA5NDk0MzY2MX0.bt-hct6Ke5g1GuxdMgkRl23-RUersCVD2_mkpuIX4i0";
 // ⚠️ La clé service_role a été retirée d'ici : elle vit désormais uniquement
 // côté serveur, dans la variable d'environnement SUPABASE_SERVICE_ROLE_KEY
 // de l'Edge Function "delete-collaborator". Ne jamais la remettre dans ce fichier.
@@ -55,6 +55,29 @@ const db = {
       method: "DELETE",
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
     });
+  }
+};
+
+// Le bucket "documents" est désormais privé : on ne peut plus ouvrir
+// doc.url directement, il faut générer une URL signée et temporaire
+// à chaque ouverture, avec le token de l'utilisateur connecté.
+const storage = {
+  async getSignedUrl(path, expiresIn = 3600) {
+    const session = auth.getSession();
+    const token = session?.access_token || SUPABASE_KEY;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/documents/${path}`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ expiresIn })
+    });
+    const data = await res.json().catch(() => ({}));
+    return data.signedURL ? `${SUPABASE_URL}/storage/v1${data.signedURL}` : null;
+  },
+  async openDoc(doc) {
+    if (!doc?.storage_path) { alert("Document sans fichier associé (ancien document uploadé avant la migration du bucket)."); return; }
+    const url = await this.getSignedUrl(doc.storage_path);
+    if (url) window.open(url, "_blank", "noopener,noreferrer");
+    else alert("Impossible d'ouvrir ce document (accès refusé ou fichier introuvable).");
   }
 };
 
@@ -2851,15 +2874,13 @@ export default function App() {
                     const err = await uploadRes.json();
                     throw new Error(err.message || "Upload échoué");
                   }
-                  // 2. URL publique
-                  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/documents/${fileName}`;
-                  // 3. Sauvegarder la métadonnée en base
+                  // 2. Sauvegarder la métadonnée en base (plus d'URL publique :
+                  //    le bucket est privé, l'URL est générée à la demande via storage.openDoc)
                   await db.post("documents", {
                     nom: file.name,
                     type: newDocType,
                     client: newDocClient,
                     taille: file.size,
-                    url: publicUrl,
                     storage_path: fileName,
                   });
                   setShowAddDoc(false);
@@ -2994,12 +3015,12 @@ export default function App() {
                           <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0 }}>{formatSize(d.taille)}</div>
                           {!isMobile && <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0 }}>{d.created_at ? new Date(d.created_at).toLocaleDateString("fr-FR") : "—"}</div>}
                           <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                            {d.url && (
-                              <a href={d.url} target="_blank" rel="noreferrer"
-                                style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}
+                            {d.storage_path && (
+                              <button onClick={() => storage.openDoc(d)}
+                                style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                                 title="Télécharger">
                                 <Icon d={ic.download} size={13} stroke="#1a5c9e" />
-                              </a>
+                              </button>
                             )}
                             {canDo("documents","supprimer") && <button onClick={() => deleteDoc(d)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>}
                           </div>
@@ -4146,7 +4167,7 @@ export default function App() {
                             <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nom}</div>
                             <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.type} · {d.created_at ? new Date(d.created_at).toLocaleDateString("fr-FR") : "—"}</div>
                           </div>
-                          {d.url && <a href={d.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, fontWeight: 700, color: "#1a5c9e", textDecoration: "none", background: "#e8f0fb", padding: "3px 8px", borderRadius: 6 }}>Ouvrir</a>}
+                          {d.storage_path && <button onClick={() => storage.openDoc(d)} style={{ fontSize: 11, fontWeight: 700, color: "#1a5c9e", border: "none", cursor: "pointer", background: "#e8f0fb", padding: "3px 8px", borderRadius: 6 }}>Ouvrir</button>}
                         </div>
                       ))}
                     </div>
