@@ -3,7 +3,9 @@ import { useState, useEffect, useCallback } from "react";
 // ── SUPABASE CONFIG ──────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://egnhdnuquirsngwokwmy.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbmhkbnVxdWlyc25nd29rd215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNjc2NjEsImV4cCI6MjA5NDk0MzY2MX0.bt-hct6Ke5g1GuxdMgkRl23-RUersCVD2_mkpuIX4i0";
-const SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbmhkbnVxdWlyc25nd29rd215Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3OTM2NzY2MSwiZXhwIjoyMDk0OTQzNjYxfQ.rkHjZNnzvX_dZdSgnO3QvippcCHBouD_G_kGc9zSh64";
+// ⚠️ La clé service_role a été retirée d'ici : elle vit désormais uniquement
+// côté serveur, dans la variable d'environnement SUPABASE_SERVICE_ROLE_KEY
+// de l'Edge Function "delete-collaborator". Ne jamais la remettre dans ce fichier.
 
 const db = {
   async get(table, params = "") {
@@ -2545,21 +2547,19 @@ export default function App() {
                   // 1. Supprimer dans la table collaborateurs
                   await db.delete("collaborateurs", id);
 
-                  // 2. Supprimer le compte Auth Supabase si l'email existe
+                  // 2. Supprimer le compte Auth Supabase via l'Edge Function sécurisée
+                  // (la clé service_role reste côté serveur, jamais exposée ici)
                   if (colToDelete?.email) {
-                    // Trouver le user_id Auth à partir de l'email
-                    const listRes = await fetch(
-                      `${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(colToDelete.email)}`,
-                      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
-                    );
-                    const listData = listRes.ok ? await listRes.json() : null;
-                    const authUser = listData?.users?.[0];
-                    if (authUser?.id) {
-                      await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${authUser.id}`, {
-                        method: "DELETE",
-                        headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` }
-                      });
-                    }
+                    const currentSession = auth.getSession();
+                    await fetch(`${SUPABASE_URL}/functions/v1/delete-collaborator`, {
+                      method: "POST",
+                      headers: {
+                        apikey: SUPABASE_KEY,
+                        Authorization: `Bearer ${currentSession?.access_token || SUPABASE_KEY}`,
+                        "Content-Type": "application/json"
+                      },
+                      body: JSON.stringify({ email: colToDelete.email })
+                    });
                   }
                 } catch(e) {
                   console.error("Erreur suppression:", e);
