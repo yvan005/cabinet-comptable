@@ -275,18 +275,20 @@ export default function App() {
     if (accesPassword.length < 6) { setAccesMsg({ type: "error", text: "Le mot de passe doit faire au moins 6 caractères." }); return; }
     setAcesSaving(true); setAccesMsg(null);
     try {
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      // Passe par l'Edge Function sécurisée (réservée à l'admin) plutôt que
+      // par l'endpoint public /auth/v1/signup.
+      const token = auth.getSession()?.access_token || SUPABASE_KEY;
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-collaborator`, {
         method: "POST",
-        headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ email: accesEmail, password: accesPassword })
       });
       const data = await res.json();
-      if (data.id || data.user?.id) {
+      if (data.success) {
         setAccesMsg({ type: "success", text: `✅ Accès créé pour ${accesEmail}` });
         setTimeout(() => { setShowAccesCollab(false); setAccesEmail(""); setAccesPassword(""); setAccesMsg(null); }, 2000);
       } else {
-        const msg = data.msg || data.error_description || data.message || "Erreur lors de la création.";
-        setAccesMsg({ type: "error", text: msg });
+        setAccesMsg({ type: "error", text: data.error || "Erreur lors de la création." });
       }
     } catch (err) {
       setAccesMsg({ type: "error", text: "Erreur réseau : " + err.message });

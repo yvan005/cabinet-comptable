@@ -108,8 +108,9 @@ export default function App() {
     setDocuments(Array.isArray(docs) ? docs : []);
     setEcheances(Array.isArray(ech) ? ech : []);
     try {
+      const catToken = auth.getSession()?.access_token || SUPABASE_KEY;
       const catsRes = await fetch(`${SUPABASE_URL}/rest/v1/categories_depenses?select=nom`, {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${catToken}` }
       });
       if (catsRes.ok) {
         const cats = await catsRes.json();
@@ -125,8 +126,9 @@ export default function App() {
       }
     } catch (e) { /* table absente ou erreur reseau - on garde les DEFAULT_CATS */ }
     try {
+      const docCatToken = auth.getSession()?.access_token || SUPABASE_KEY;
       const docsRes = await fetch(`${SUPABASE_URL}/rest/v1/categories_documents?select=nom`, {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${docCatToken}` }
       });
       if (docsRes.ok) {
         const cats = await docsRes.json();
@@ -147,8 +149,9 @@ export default function App() {
   // ── PING SUPABASE (évite la mise en pause automatique) ────────────────────
   useEffect(() => {
     const ping = () => {
+      const token = auth.getSession()?.access_token || SUPABASE_KEY;
       fetch(`${SUPABASE_URL}/rest/v1/clients?limit=1`, {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
       }).catch(() => {});
     };
     ping(); // ping immédiat au démarrage
@@ -2593,10 +2596,13 @@ export default function App() {
                 setDocUploading(true);
                 try {
                   // 1. Upload dans Supabase Storage
+                  // Important : token de SESSION de l'utilisateur (pas la clé publique),
+                  // sinon les policies RLS "authenticated" rejettent la requête.
                   const fileName = `${Date.now()}_${file.name}`;
+                  const uploadToken = auth.getSession()?.access_token || SUPABASE_KEY;
                   const uploadRes = await fetch(
                     `${SUPABASE_URL}/storage/v1/object/documents/${fileName}`,
-                    { method: "POST", headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": file.type }, body: file }
+                    { method: "POST", headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${uploadToken}`, "Content-Type": file.type }, body: file }
                   );
                   if (!uploadRes.ok) {
                     const err = await uploadRes.json();
@@ -2625,9 +2631,10 @@ export default function App() {
 
               const deleteDoc = async (doc) => {
                 if (!window.confirm(`Supprimer "${doc.nom}" ?`)) return;
-                // Supprimer du storage
+                // Supprimer du storage (token de session, même raison que pour l'upload)
+                const deleteToken = auth.getSession()?.access_token || SUPABASE_KEY;
                 await fetch(`${SUPABASE_URL}/storage/v1/object/documents/${doc.storage_path}`, {
-                  method: "DELETE", headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+                  method: "DELETE", headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${deleteToken}` }
                 });
                 // Supprimer la métadonnée
                 await db.delete("documents", doc.id);
