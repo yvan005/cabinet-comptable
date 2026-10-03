@@ -1,13 +1,223 @@
 import { useState, useEffect, useCallback } from "react";
-import { SUPABASE_URL, SUPABASE_KEY, db, auth, storage } from "./lib/supabase";
-import { ic } from "./lib/icons";
-import Icon from "./components/Icon";
-import Spinner from "./components/Spinner";
-import Modal from "./components/Modal";
-import LoginScreen from "./components/LoginScreen";
-import useIsMobile from "./hooks/useIsMobile";
-import { S } from "./styles";
 
+// ── SUPABASE CONFIG ──────────────────────────────────────────────────────────
+const SUPABASE_URL = "https://egnhdnuquirsngwokwmy.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVnbmhkbnVxdWlyc25nd29rd215Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNjc2NjEsImV4cCI6MjA5NDk0MzY2MX0.bt-hct6Ke5g1GuxdMgkRl23-RUersCVD2_mkpuIX4i0";
+
+const db = {
+  async get(table, params = "") {
+    if (!SUPABASE_URL || !SUPABASE_KEY) { console.error("Variables Supabase manquantes"); return []; }
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?order=created_at.desc${params}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
+    if (!res.ok) return [];
+    return res.json();
+  },
+  async post(table, body) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
+      body: JSON.stringify(body)
+    });
+    return res.json();
+  },
+  async patch(table, id, body) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: "PATCH",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json", Prefer: "return=representation" },
+      body: JSON.stringify(body)
+    });
+    return res.json();
+  },
+  async delete(table, id) {
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: "DELETE",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    });
+  }
+};
+
+// ── AUTH ─────────────────────────────────────────────────────────────────────
+const auth = {
+  async login(email, password) {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    return res.json();
+  },
+  async logout(token) {
+    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
+    });
+  },
+  getSession() {
+    try { return JSON.parse(localStorage.getItem("sb_session") || "null"); } catch { return null; }
+  },
+  saveSession(session) { localStorage.setItem("sb_session", JSON.stringify(session)); },
+  clearSession() { localStorage.removeItem("sb_session"); }
+};
+
+// ── LOGIN SCREEN ──────────────────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showPass, setShowPass] = useState(false);
+
+  const handleLogin = async () => {
+    if (!email || !password) { setError("Veuillez remplir tous les champs."); return; }
+    setLoading(true); setError("");
+    const data = await auth.login(email, password);
+    if (data.access_token) {
+      auth.saveSession(data);
+      onLogin(data);
+    } else {
+      setError(data.error_description || data.msg || "Email ou mot de passe incorrect.");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ height: "100vh", width: "100vw", overflow: "hidden", background: "linear-gradient(135deg,#0f2744 0%,#1a4a7a 50%,#0f2744 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ width: "100%", maxWidth: 420 }}>
+        {/* Logo / titre */}
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ margin: "0 auto 16px", width: 90, height: 90, borderRadius: "50%", overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.3)", border: "3px solid rgba(255,255,255,0.2)" }}>
+            <img src="data:image/jpeg;base64,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" alt="CGA-CDA" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </div>
+          <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 800, margin: 0, lineHeight: 1.3, textAlign: "center" }}>Centre de Gestion Agréé<br/>Centrale Des Associés</h1>
+          <p style={{ color: "#7eb3e8", fontSize: 13, margin: "6px 0 0", textAlign: "center" }}>Connectez-vous pour accéder à votre espace</p>
+        </div>
+
+        {/* Carte login */}
+        <div style={{ background: "#fff", borderRadius: 20, padding: 32, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "#4a6d8c", display: "block", marginBottom: 6 }}>Adresse email</label>
+            <input
+              type="email" value={email} onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleLogin()}
+              placeholder="votre@email.com"
+              style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #87CEEB", fontSize: 14, color: "#1e3a57", outline: "none", boxSizing: "border-box", background: "#f8fbff" }}
+            />
+          </div>
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: "#4a6d8c", display: "block", marginBottom: 6 }}>Mot de passe</label>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleLogin()}
+                placeholder="••••••••"
+                style={{ width: "100%", padding: "11px 40px 11px 14px", borderRadius: 10, border: "1.5px solid #87CEEB", fontSize: 14, color: "#1e3a57", outline: "none", boxSizing: "border-box", background: "#f8fbff" }}
+              />
+              <button onClick={() => setShowPass(!showPass)}
+                style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#8da4c0", fontSize: 13 }}>
+                {showPass ? "🙈" : "👁️"}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div style={{ padding: "10px 14px", borderRadius: 9, background: "#fff0f0", border: "1px solid #fcc", color: "#c0392b", fontSize: 13, marginBottom: 16 }}>
+              ⚠️ {error}
+            </div>
+          )}
+
+          <button onClick={handleLogin} disabled={loading}
+            style={{ width: "100%", padding: "13px", borderRadius: 11, background: loading ? "#93b8d8" : "linear-gradient(135deg,#2e7fcf,#1a5c9e)", color: "#fff", border: "none", fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 14px rgba(26,92,158,0.35)", transition: "all 0.2s" }}>
+            {loading ? "Connexion en cours..." : "Se connecter →"}
+          </button>
+
+          <p style={{ textAlign: "center", fontSize: 12, color: "#8da4c0", marginTop: 20, marginBottom: 0 }}>
+            Accès réservé aux membres du cabinet
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── ICONS ────────────────────────────────────────────────────────────────────
+const Icon = ({ d, size = 18, stroke = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <path d={d} />
+  </svg>
+);
+const ic = {
+  dashboard: "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10",
+  clients:   "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M9 11a4 4 0 100-8 4 4 0 000 8 M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75",
+  calendar:  "M8 2v4 M16 2v4 M3 10h18 M21 8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V8z",
+  message:   "M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z",
+  devis:     "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8",
+  bell:      "M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 01-3.46 0",
+  search:    "M21 21l-4.35-4.35 M17 11A6 6 0 105 11a6 6 0 0012 0z",
+  plus:      "M12 5v14 M5 12h14",
+  check:     "M20 6L9 17l-5-5",
+  alert:     "M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z M12 9v4 M12 17h.01",
+  trend:     "M23 6l-9.5 9.5-5-5L1 18 M17 6h6v6",
+  send:      "M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z",
+  trash:     "M3 6h18 M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6 M10 11v6 M14 11v6 M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2",
+  close:     "M18 6L6 18 M6 6l12 12",
+  folder:    "M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z",
+  menu:      "M3 12h18 M3 6h18 M3 18h18",
+  rapports:  "M18 20V10 M12 20V4 M6 20v-6",
+  collab:    "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8 M16 3.13a4 4 0 010 7.75 M21 21v-2a4 4 0 00-3-3.87",
+  docs:      "M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z M13 2v7h7",
+  depenses:  "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M12 6v6l4 2 M8 13h8 M8 17h8",
+  service:   "M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z M3.27 6.96L12 12.01l8.73-5.05 M12 22.08V12",
+  eye:       "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 100 6 3 3 0 000-6z",
+  abonnement: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z M8 12h8 M12 8v8",
+  download:  "M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3",
+  search:    "M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z",
+  calendar:  "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
+  edit:      "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z",
+  settings:  "M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z",
+};
+
+
+// ── RESPONSIVE HOOK ──────────────────────────────────────────────────────────
+const useIsMobile = () => {
+  const getIsMobile = () => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth <= 768 ||
+      /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  };
+  const [isMobile, setIsMobile] = useState(getIsMobile);
+  useEffect(() => {
+    const handler = () => setIsMobile(getIsMobile());
+    window.addEventListener("resize", handler);
+    // Force re-check after mount (fixes mobile initial render)
+    setTimeout(() => setIsMobile(getIsMobile()), 100);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isMobile;
+};
+
+// ── SPINNER ──────────────────────────────────────────────────────────────────
+const Spinner = () => (
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 40 }}>
+    <div style={{ width: 32, height: 32, border: "3px solid #e2eaf4", borderTop: "3px solid #1a5c9e", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </div>
+);
+
+// ── MODAL ────────────────────────────────────────────────────────────────────
+const Modal = ({ title, onClose, children }) => (
+  <div style={S.overlay}>
+    <div style={S.modal}>
+      <div style={S.modalHeader}>
+        <span style={S.modalTitle}>{title}</span>
+        <button onClick={onClose} style={S.iconBtn}><Icon d={ic.close} size={18} stroke="#4a6d8c" /></button>
+      </div>
+      {children}
+    </div>
+  </div>
+);
+
+// ── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const isMobile = useIsMobile();
   const [session, setSession] = useState(() => auth.getSession());
@@ -34,12 +244,6 @@ export default function App() {
   const [depenses, setDepenses] = useState([]);
   const [showAddDepense, setShowAddDepense] = useState(false);
   const [newDepense, setNewDepense] = useState({ libelle: "", montant: "", categorie: "Fournitures", date: new Date().toISOString().split("T")[0], note: "" });
-  const DEFAULT_CATS = ["Fournitures", "Loyer", "Salaires", "Transport", "Informatique", "Communication", "Honoraires", "Autres"];
-  const [categoriesDepenses, setCategoriesDepenses] = useState(DEFAULT_CATS);
-  const DEFAULT_CATS_DOCS = ["Bilan", "Contrat", "Liasse", "Courrier", "Rapport", "Autre"];
-  const [categoriesDocs, setCategoriesDocs] = useState(DEFAULT_CATS_DOCS);
-  const [newCatDoc, setNewCatDoc] = useState("");
-  const [newCatDepense, setNewCatDepense] = useState("");
   const [depensePeriode, setDepensePeriode] = useState("jour");
   const [services, setServices] = useState([]);
   const [showAddService, setShowAddService] = useState(false);
@@ -64,10 +268,9 @@ export default function App() {
 
   const [collaborateurs, setCollaborateurs] = useState([]);
   const [showAddCollab, setShowAddCollab] = useState(false);
-  const [addCollabTab, setAddCollabTab] = useState(0);
   const [showEditCollab, setShowEditCollab] = useState(false);
   const [editCollab, setEditCollab] = useState(null);
-  const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "", permissions: {} });
+  const [newCollab, setNewCollab] = useState({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
   const [collabSaving, setCollabSaving] = useState(false);
   const [showAccesCollab, setShowAccesCollab] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
@@ -107,110 +310,31 @@ export default function App() {
     setCollaborateurs(Array.isArray(col) ? col : []);
     setDocuments(Array.isArray(docs) ? docs : []);
     setEcheances(Array.isArray(ech) ? ech : []);
-    try {
-      const catsRes = await fetch(`${SUPABASE_URL}/rest/v1/categories_depenses?select=nom`, {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-      });
-      if (catsRes.ok) {
-        const cats = await catsRes.json();
-        if (Array.isArray(cats) && cats.length > 0) {
-          // Table remplie -> utiliser la DB comme source de vérité
-          setCategoriesDepenses(cats.map(c => c.nom).filter(Boolean));
-        } else if (Array.isArray(cats) && cats.length === 0) {
-          // Table vide -> insérer les DEFAULT_CATS automatiquement
-          const defaults = ["Fournitures","Loyer","Salaires","Transport","Informatique","Communication","Honoraires","Autres"];
-          await Promise.all(defaults.map(nom => db.post("categories_depenses", { nom })));
-          setCategoriesDepenses(defaults);
-        }
-      }
-    } catch (e) { /* table absente ou erreur reseau - on garde les DEFAULT_CATS */ }
-    try {
-      const docsRes = await fetch(`${SUPABASE_URL}/rest/v1/categories_documents?select=nom`, {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-      });
-      if (docsRes.ok) {
-        const cats = await docsRes.json();
-        if (Array.isArray(cats) && cats.length > 0) {
-          setCategoriesDocs(cats.map(c => c.nom).filter(Boolean));
-        } else if (Array.isArray(cats) && cats.length === 0) {
-          const defaults = ["Bilan", "Contrat", "Liasse", "Courrier", "Rapport", "Autre"];
-          await Promise.all(defaults.map(nom => db.post("categories_documents", { nom })));
-          setCategoriesDocs(defaults);
-        }
-      }
-    } catch (e) { /* table absente - on garde les DEFAULT_CATS_DOCS */ }
     setLoading(false);
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // ── PING SUPABASE (évite la mise en pause automatique) ────────────────────
+  // Vérification sécurité : déconnecter si le collaborateur a été supprimé
   useEffect(() => {
-    const ping = () => {
-      fetch(`${SUPABASE_URL}/rest/v1/clients?limit=1`, {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-      }).catch(() => {});
-    };
-    ping(); // ping immédiat au démarrage
-    const interval = setInterval(ping, 5 * 24 * 60 * 60 * 1000); // toutes les 5 jours
-    return () => clearInterval(interval);
-  }, []);
-
-  // ── REFRESH AUTOMATIQUE DU TOKEN JWT ─────────────────────────────────────────
-  useEffect(() => {
-    if (!session) return;
-    const refreshIfNeeded = async () => {
-      const currentSession = auth.getSession();
-      if (!currentSession?.refresh_token) return;
-      // expires_at est en secondes (timestamp Unix)
-      const expiresAt = currentSession.expires_at * 1000;
-      const now = Date.now();
-      const cinqMinutes = 5 * 60 * 1000;
-      if (expiresAt - now < cinqMinutes) {
-        const newSession = await auth.refreshSession(currentSession.refresh_token);
-        if (newSession?.access_token) {
-          auth.saveSession(newSession);
-          setSession(newSession);
-        } else {
-          // Refresh token expiré → déconnecter proprement
-          auth.clearSession();
-          setSession(null);
-        }
-      }
-    };
-    refreshIfNeeded(); // vérification immédiate
-    const interval = setInterval(refreshIfNeeded, 4 * 60 * 1000); // toutes les 4 minutes
-    return () => clearInterval(interval);
-  }, [session]);
-
-  // ── PERMISSIONS ──────────────────────────────────────────────────────────────
-  const ADMIN_EMAIL = "soumai@cga-cda.com";
-
-  // Charger les permissions du collaborateur connecté depuis Supabase
-  const loadUserPerms = useCallback(async () => {
-    if (!session) return;
-    if (session.user?.email === ADMIN_EMAIL) {
-      setUserPerms(null); // null = admin = accès total
-      return;
-    }
+    if (!session || collaborateurs.length === 0) return;
     const email = session.user?.email;
-    const token = session.access_token || SUPABASE_KEY;
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/collaborateurs?email=eq.${encodeURIComponent(email)}&limit=1`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` } }
-    );
-    const data = res.ok ? await res.json() : [];
-    const col = Array.isArray(data) ? data[0] : null;
-    if (col) {
-      setUserPerms(col.permissions || {});
-    } else {
-      // Email inconnu et pas admin → déconnecter
-      auth.clearSession();
-      setSession(null);
+    // Vérifier si cet email était un collaborateur connu
+    // On stocke les emails vus pour détecter les suppressions
+    const emailsCollabs = collaborateurs.map(c => c.email).filter(Boolean);
+    const emailDejaVu = sessionStorage.getItem("collab_emails_vus");
+    if (emailDejaVu) {
+      const vus = JSON.parse(emailDejaVu);
+      // Si l'email était connu comme collaborateur mais n'existe plus → déconnecter
+      if (vus.includes(email) && !emailsCollabs.includes(email)) {
+        auth.clearSession();
+        setSession(null);
+        return;
+      }
     }
-  }, [session]);
-
-  useEffect(() => { loadUserPerms(); }, [loadUserPerms]);
+    // Mémoriser les emails des collaborateurs actuels
+    sessionStorage.setItem("collab_emails_vus", JSON.stringify(emailsCollabs));
+  }, [collaborateurs, session]);
 
   // ── EXPORT EXCEL ──
   const exportExcel = async (data, colonnes, nomFichier) => {
@@ -239,32 +363,11 @@ export default function App() {
   const savePermissions = async () => {
     if (!permCollab) return;
     setPermSaving(true);
-    try {
-      const token = session?.access_token || SUPABASE_KEY;
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/collaborateurs?id=eq.${permCollab.id}`, {
-        method: "PATCH",
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          Prefer: "return=representation"
-        },
-        body: JSON.stringify({ permissions: permCollab.permissions })
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        alert("Erreur Supabase : " + (err.message || res.status));
-        return;
-      }
-      setShowPermissions(false);
-      setPermCollab(null);
-      await loadAll();
-      await loadUserPerms();
-    } catch(e) {
-      alert("Erreur réseau : " + e.message);
-    } finally {
-      setPermSaving(false);
-    }
+    await db.patch("collaborateurs", permCollab.id, { permissions: permCollab.permissions });
+    setPermSaving(false);
+    setShowPermissions(false);
+    setPermCollab(null);
+    loadAll();
   };
 
   const createAcces = async () => {
@@ -509,26 +612,55 @@ export default function App() {
   const navItems = [
     { id: "dashboard",    label: "Tableau de bord",  icon: ic.dashboard },
     { id: "clients",      label: "Clients",           icon: ic.clients },
-    { id: "devis",        label: "Devis",             icon: ic.devis },
     { id: "abonnements",  label: "Abonnements",       icon: ic.abonnement },
-    { id: "echeances",    label: "Échéances",          icon: ic.calendar },
-    { id: "rapports",     label: "Rapports",          icon: ic.rapports },
-    { id: "depenses",     label: "Dépenses",          icon: ic.depenses },
+    { id: "devis",        label: "Devis",             icon: ic.devis },
     { id: "services",     label: "Services",          icon: ic.service },
-    { id: "documents",    label: "Documents",         icon: ic.docs },
+    { id: "depenses",     label: "Dépenses",          icon: ic.depenses },
+    { id: "rapports",     label: "Rapports",          icon: ic.rapports },
     { id: "collab",       label: "Collaborateurs",    icon: ic.collab },
+    { id: "documents",    label: "Documents",         icon: ic.docs },
+    { id: "echeances",    label: "Échéances",          icon: ic.calendar },
     { id: "settings",     label: "Paramètres",        icon: ic.settings },
   ];
 
   const pageTitle = { abonnements: "Abonnements", dashboard: "Tableau de bord", clients: "Clients", devis: "Devis", rapports: "Rapports", collab: "Collaborateurs", documents: "Documents", services: "Services", depenses: "Dépenses", settings: "Paramètres", echeances: "Échéances fiscales" }[page] || "";
 
+  // Charger les permissions du collaborateur connecté
+  const loadUserPerms = useCallback(async () => {
+    if (!session) return;
+    const email = session.user?.email;
+    // Vérifier d'abord dans Supabase directement (pas dans le state local)
+    const res = await db.get("collaborateurs", `&email=eq.${encodeURIComponent(email)}`);
+    const col = Array.isArray(res) ? res[0] : null;
+    if (col) {
+      setUserPerms(col.permissions || {});
+      setAccessRevoked(false);
+    } else {
+      // Email non trouvé dans collaborateurs → vérifier si c'est l'admin
+      // L'admin est le compte dont l'email n'est dans aucun collaborateur
+      // Si collaborateurs est chargé et non vide, c'est un compte révoqué
+      if (collaborateurs.length > 0) {
+        // Email absent de la liste → accès révoqué sauf si admin reconnu
+        const isKnownCollab = collaborateurs.some(c => c.email === email);
+        if (!isKnownCollab && collaborateurs.length > 0) {
+          setUserPerms(null); // Traité comme admin si email inconnu
+        }
+      } else {
+        setUserPerms(null); // admin
+      }
+      setAccessRevoked(false);
+    }
+  }, [session, collaborateurs]);
+
+  useEffect(() => { loadUserPerms(); }, [loadUserPerms]);
+
   const canDo = (module, action) => {
-    if (!userPerms) return true; // admin (null) → tout autorisé
+    if (!userPerms) return true; // admin — tout autorisé
     return userPerms[module]?.[action] === true;
   };
 
   const canSee = (module) => {
-    if (!userPerms) return true; // admin
+    if (!userPerms) return true;
     return userPerms[module]?.voir === true;
   };
 
@@ -637,6 +769,74 @@ export default function App() {
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            {/* Cloche notifications */}
+            {(() => {
+              const now = new Date();
+              const notifs = [
+                ...echeances.filter(e => {
+                  if (e.statut === "Fait") return false;
+                  const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
+                  return days >= 0 && days <= 7;
+                }).map(e => ({ id: "ech_"+e.id, emoji: "📅", title: `Échéance dans ${Math.round((new Date(e.date_echeance)-now)/86400000)}j`, sub: `${e.client} — ${e.type}`, color: "#c0392b", action: () => { navigate("echeances"); setShowNotifs(false); } })),
+                ...abonnements.filter(a => {
+                  if (a.statut !== "Actif" || !a.prochaine_echeance) return false;
+                  const days = Math.round((new Date(a.prochaine_echeance) - now) / 86400000);
+                  return days >= 0 && days <= 30;
+                }).map(a => ({ id: "abo_"+a.id, emoji: "🔄", title: `Abonnement à renouveler dans ${Math.round((new Date(a.prochaine_echeance)-now)/86400000)}j`, sub: `${a.client} — ${a.service}`, color: "#c17f2a", action: () => { navigate("abonnements"); setShowNotifs(false); } })),
+                ...devisList.filter(d => {
+                  if (d.statut !== "Enregistré" && d.statut !== "Envoyé") return false;
+                  const days = Math.round((now - new Date(d.date || d.created_at)) / 86400000);
+                  return days >= 14;
+                }).map(d => ({ id: "dev_"+d.id, emoji: "📄", title: `Devis en attente depuis ${Math.round((now-new Date(d.date||d.created_at))/86400000)}j`, sub: `${d.client} — ${(d.total_ttc||0).toLocaleString("fr-FR")} FCFA`, color: "#1a5c9e", action: () => { navigate("devis"); setShowNotifs(false); } })),
+              ];
+              const count = notifs.length;
+              return (
+                <div style={{ position: "relative" }}>
+                  <button onClick={() => setShowNotifs(s => !s)}
+                    style={{ position: "relative", background: showNotifs ? "#e8f0fb" : "none", border: showNotifs ? "1px solid #c8ddf5" : "none", borderRadius: 8, cursor: "pointer", padding: 7, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon d={ic.bell} size={18} stroke={count > 0 ? "#c0392b" : "#6b8aaa"} />
+                    {count > 0 && (
+                      <span style={{ position: "absolute", top: 2, right: 2, width: 16, height: 16, borderRadius: "50%", background: "#c0392b", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {count > 9 ? "9+" : count}
+                      </span>
+                    )}
+                  </button>
+                  {/* Panneau notifications */}
+                  {showNotifs && (
+                    <div style={{ position: "absolute", top: 44, right: 0, width: 320, background: "#fff", borderRadius: 14, boxShadow: "0 8px 32px rgba(0,30,80,0.15)", border: "1px solid #e2eaf4", zIndex: 200, overflow: "hidden" }}>
+                      <div style={{ padding: "14px 16px", borderBottom: "1px solid #f0f4fa", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: "#1e3a57" }}>Notifications</span>
+                        {count > 0 && <span style={{ fontSize: 11, fontWeight: 700, background: "#fff0f0", color: "#c0392b", padding: "2px 8px", borderRadius: 10 }}>{count} nouvelle{count > 1 ? "s" : ""}</span>}
+                      </div>
+                      {notifs.length === 0 ? (
+                        <div style={{ padding: 24, textAlign: "center" }}>
+                          <div style={{ fontSize: 28, marginBottom: 8 }}>✅</div>
+                          <div style={{ fontSize: 13, color: "#8da4c0" }}>Aucune notification</div>
+                        </div>
+                      ) : (
+                        <div style={{ maxHeight: 360, overflowY: "auto" }}>
+                          {notifs.map((n, i) => (
+                            <div key={n.id} onClick={n.action} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid #f0f4fa", cursor: "pointer", background: "#fff" }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#f5f8fc"}
+                              onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
+                              <div style={{ width: 36, height: 36, borderRadius: 9, background: n.color + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{n.emoji}</div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#1e3a57", lineHeight: 1.3 }}>{n.title}</div>
+                                <div style={{ fontSize: 11, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.sub}</div>
+                              </div>
+                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: n.color, flexShrink: 0 }} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div style={{ padding: "10px 16px", borderTop: "1px solid #f0f4fa", textAlign: "center" }}>
+                        <button onClick={() => setShowNotifs(false)} style={{ fontSize: 12, color: "#8da4c0", background: "none", border: "none", cursor: "pointer" }}>Fermer</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             {/* Bouton recherche */}
             <button onClick={() => { setShowSearch(s => !s); setSearchQuery(""); setShowNotifs(false); }}
               style={{ background: showSearch ? "#e8f0fb" : "none", border: showSearch ? "1px solid #c8ddf5" : "none", borderRadius: 8, cursor: "pointer", padding: 7, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -691,7 +891,7 @@ export default function App() {
           {loading ? <Spinner /> : <>
 
             {/* ── DASHBOARD ── */}
-            {page === "dashboard" && canSee("dashboard") && (() => {
+            {page === "dashboard" && (() => {
               const now = new Date();
               const annee = now.getFullYear();
               const moisNoms = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
@@ -771,87 +971,11 @@ export default function App() {
                 { label: "En attente", value: montantEnAttente > 0 ? (montantEnAttente / 1000).toFixed(0) + "k FCFA" : "0 FCFA", delta: `${devisEnAttente} devis à encaisser`, color: "#c17f2a", icon: ic.alert, bg: "#fff8e6" },
               ];
 
-              // ── Échéances urgentes (pour score + actions) ──
-              const echUrgentes = echeances.filter(e => {
-                if (e.statut === "Fait") return false;
-                const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
-                return days >= -7 && days <= 7;
-              });
-
-              // ── Devis en attente depuis > 7j ──
-              const devisEnAttenteLong = devisList.filter(d => {
-                if (d.statut !== "Enregistré" && d.statut !== "Envoyé") return false;
-                return Math.round((now - new Date(d.date || d.created_at)) / 86400000) >= 7;
-              });
-
-              // ── Score santé cabinet ──
-              const scoreOk = [
-                clientsActifs > 0,
-                mrr > 0,
-                devisEnAttente === 0,
-                totalCA > depensesTotal,
-                echUrgentes.length === 0,
-              ].filter(Boolean).length;
-              const scorePct = Math.round((scoreOk / 5) * 100);
-              const scoreColor = scorePct >= 80 ? "#1a7a4a" : scorePct >= 50 ? "#c17f2a" : "#c0392b";
-              const scoreLabel = scorePct >= 80 ? "Excellent" : scorePct >= 60 ? "Bon" : scorePct >= 40 ? "À surveiller" : "Attention requise";
-
-              // ── Actions prioritaires ──
-              const actionsPrio = [
-                ...devisEnAttenteLong.map(d => ({
-                  emoji: "📄", color: "#1a5c9e", bg: "#e8f0fb",
-                  titre: `Devis en attente — ${d.client}`,
-                  detail: `Depuis ${Math.round((now - new Date(d.date || d.created_at)) / 86400000)}j · ${(d.total_ttc||0).toLocaleString("fr-FR")} FCFA`,
-                  action: () => navigate("devis"), cta: "Voir →",
-                })),
-                ...echUrgentes.map(e => {
-                  const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
-                  return {
-                    emoji: days < 0 ? "🔴" : "🟡", color: days < 0 ? "#c0392b" : "#c17f2a", bg: days < 0 ? "#fff0f0" : "#fff8e6",
-                    titre: `${e.type} — ${e.client}`,
-                    detail: days < 0 ? `En retard de ${Math.abs(days)}j` : days === 0 ? "Aujourd'hui !" : `Dans ${days}j`,
-                    action: () => navigate("echeances"), cta: "Traiter →",
-                  };
-                }),
-                ...abonnements.filter(a => {
-                  if (a.statut !== "Actif" || !a.prochaine_echeance) return false;
-                  return Math.round((new Date(a.prochaine_echeance) - now) / 86400000) <= 5;
-                }).map(a => ({
-                  emoji: "🔄", color: "#8e44ad", bg: "#f5eefb",
-                  titre: `Abonnement à renouveler — ${a.client}`,
-                  detail: `${a.service} · ${(a.montant||0).toLocaleString("fr-FR")} FCFA`,
-                  action: () => navigate("abonnements"), cta: "Gérer →",
-                })),
-              ].slice(0, 6);
-
               return (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-                  {/* ── BANNIÈRE ACTIONS PRIORITAIRES ── */}
-                  {actionsPrio.length > 0 && (
-                    <div style={{ background: "linear-gradient(135deg,#1e3a57,#1a5c9e)", borderRadius: 16, padding: isMobile ? "12px" : "16px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                        <span style={{ fontSize: 16 }}>⚡</span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>Actions prioritaires</span>
-                        <span style={{ marginLeft: "auto", background: "#c0392b", color: "#fff", fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 20 }}>{actionsPrio.length}</span>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                        {actionsPrio.map((a, i) => (
-                          <div key={i} onClick={a.action} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.08)", borderRadius: 10, padding: isMobile ? "10px 10px" : "10px 12px", cursor: "pointer" }}>
-                            <span style={{ fontSize: isMobile ? 16 : 18, flexShrink: 0 }}>{a.emoji}</span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: isMobile ? 11 : 12, fontWeight: 600, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.titre}</div>
-                              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 1 }}>{a.detail}</div>
-                            </div>
-                            <button onClick={e => { e.stopPropagation(); a.action(); }} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, padding: isMobile ? "4px 8px" : "4px 10px", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>{a.cta}</button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   {/* ── KPI CARDS ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(5,1fr)", gap: isMobile ? 10 : 14 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: isMobile ? 10 : 14 }}>
                     {kpiCards.map((k, i) => (
                       <div key={i} className="card-hover" style={{ background: "#fff", borderRadius: 14, padding: isMobile ? "14px" : "18px 20px", boxShadow: "0 1px 4px rgba(0,30,80,.07)", borderTop: `3px solid ${k.color}`, display: "flex", flexDirection: "column", gap: 4 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
@@ -864,20 +988,6 @@ export default function App() {
                         <div style={{ fontSize: 11, color: "#8da4c0" }}>{k.delta}</div>
                       </div>
                     ))}
-                    {/* Score santé */}
-                    <div className="card-hover" style={{ background: "#fff", borderRadius: 14, padding: isMobile ? "14px" : "18px 20px", boxShadow: "0 1px 4px rgba(0,30,80,.07)", borderTop: `3px solid ${scoreColor}`, display: "flex", flexDirection: "column", gap: 4 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 9, background: scoreColor + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
-                          {scorePct >= 80 ? "🏆" : scorePct >= 50 ? "📊" : "⚠️"}
-                        </div>
-                      </div>
-                      <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: scoreColor, lineHeight: 1.1 }}>{scorePct}%</div>
-                      <div style={{ fontSize: isMobile ? 11 : 12, color: "#6b8aaa", fontWeight: 600 }}>Santé cabinet</div>
-                      <div style={{ height: 4, background: "#f0f4fa", borderRadius: 2, overflow: "hidden", marginTop: 2 }}>
-                        <div style={{ width: `${scorePct}%`, height: "100%", background: scoreColor, borderRadius: 2, transition: "width 0.8s ease" }} />
-                      </div>
-                      <div style={{ fontSize: 11, color: scoreColor, fontWeight: 600 }}>{scoreLabel}</div>
-                    </div>
                   </div>
 
                   {/* ── ROW 2 : Graphiques ── */}
@@ -992,34 +1102,29 @@ export default function App() {
 
                     if (echSoon.length === 0) return null;
                     return (
-                      <div className="card-hover" style={{ ...S.card, padding: isMobile ? "12px" : "18px 20px", overflow: "hidden" }}>
+                      <div className="card-hover" style={{ ...S.card, gridColumn: "1 / -1" }}>
                         <div style={S.cardHeader}>
                           <Icon d={ic.calendar} size={16} stroke="#1a5c9e" />
-                          <span style={{ ...S.cardTitle, fontSize: isMobile ? 12 : 13 }}>Échéances fiscales à venir</span>
-                          <button onClick={() => navigate("echeances")} style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#e8f0fb", color: "#1a5c9e", padding: "3px 8px", borderRadius: 6, border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>Voir →</button>
+                          <span style={S.cardTitle}>Échéances fiscales à venir</span>
+                          <button onClick={() => navigate("echeances")} style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#e8f0fb", color: "#1a5c9e", padding: "3px 8px", borderRadius: 6, border: "none", cursor: "pointer" }}>Voir tout →</button>
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "0 24px" }}>
                           {echSoon.map((e, i) => {
                             const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
                             const isLate = days < 0;
                             const isUrgent = days >= 0 && days <= 7;
-                            const pct = isLate ? 100 : Math.max(0, Math.round((1 - days / 30) * 100));
-                            const barColor = isLate ? "#c0392b" : isUrgent ? "#c17f2a" : "#1a5c9e";
                             return (
-                              <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: isMobile ? "10px 0" : "14px 0", borderBottom: "1px solid #f0f4fa", minWidth: 0 }}>
-                                <div style={{ width: 28, height: 28, borderRadius: 7, background: isLate ? "#fff0f0" : isUrgent ? "#fff8e6" : "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
+                              <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: "1px solid #f0f4fa" }}>
+                                <div style={{ width: 30, height: 30, borderRadius: 8, background: isLate ? "#fff0f0" : isUrgent ? "#fff8e6" : "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
                                   {isLate ? "🔴" : isUrgent ? "🟡" : "📅"}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 11, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.client}</div>
-                                  <div style={{ fontSize: 10, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 3 }}>{e.type}</div>
-                                  <div style={{ height: 3, background: "#f0f4fa", borderRadius: 2, overflow: "hidden" }}>
-                                    <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 2, transition: "width 0.6s ease" }} />
-                                  </div>
+                                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.client}</div>
+                                  <div style={{ fontSize: 11, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.type}</div>
                                 </div>
-                                <div style={{ textAlign: "right", flexShrink: 0, minWidth: 44 }}>
-                                  <div style={{ fontSize: 12, fontWeight: 800, color: isLate ? "#c0392b" : isUrgent ? "#c17f2a" : "#1a5c9e" }}>
-                                    {isLate ? `+${Math.abs(days)}j` : days === 0 ? "⚡Auj." : `J-${days}`}
+                                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: isLate ? "#c0392b" : isUrgent ? "#c17f2a" : "#1a5c9e" }}>
+                                    {isLate ? `J+${Math.abs(days)}` : days === 0 ? "Aujourd'hui" : `J-${days}`}
                                   </div>
                                   <div style={{ fontSize: 10, color: "#8da4c0" }}>{new Date(e.date_echeance).toLocaleDateString("fr-FR")}</div>
                                 </div>
@@ -1031,34 +1136,34 @@ export default function App() {
                     );
                   })()}
 
-                  {/* ── ROW 3 : Abonnements + Activité récente ── */}
+                  {/* ── ROW 3 : Top clients + Activité récente ── */}
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
 
                     {/* Alertes abonnements */}
-                    <div className="card-hover" style={{ ...S.card, padding: isMobile ? "12px" : "18px 20px", overflow: "hidden" }}>
+                    <div className="card-hover" style={S.card}>
                       <div style={S.cardHeader}>
                         <Icon d={ic.alert} size={16} stroke="#c0392b" />
-                        <span style={{ ...S.cardTitle, fontSize: isMobile ? 12 : 13 }}>Abonnements à renouveler</span>
-                        {abosSoon.length > 0 && <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, background: "#fff0f0", color: "#c0392b", padding: "2px 7px", borderRadius: 6, whiteSpace: "nowrap" }}>{abosSoon.length} / 30j</span>}
+                        <span style={S.cardTitle}>Abonnements à renouveler</span>
+                        {abosSoon.length > 0 && <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, background: "#fff0f0", color: "#c0392b", padding: "3px 8px", borderRadius: 6 }}>{abosSoon.length} dans 30j</span>}
                       </div>
                       {abosSoon.length === 0 ? (
                         <div style={S.empty}>✅ Aucune échéance dans les 30 prochains jours</div>
                       ) : (
-                        <div style={{ display: "flex", flexDirection: "column" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                           {abosSoon.map((a, i) => {
                             const days = Math.round((new Date(a.prochaine_echeance) - now) / 86400000);
                             return (
-                              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: isMobile ? "9px 0" : "10px 0", borderBottom: i < abosSoon.length - 1 ? "1px solid #f0f4fa" : "none", minWidth: 0 }}>
-                                <div style={{ width: 28, height: 28, borderRadius: 7, background: days <= 7 ? "#fff0f0" : "#fff8e6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
+                              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < abosSoon.length - 1 ? "1px solid #f0f4fa" : "none" }}>
+                                <div style={{ width: 30, height: 30, borderRadius: 8, background: days <= 7 ? "#fff0f0" : "#fff8e6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
                                   {days <= 7 ? "🔴" : "🟡"}
                                 </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: 11, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.client}</div>
-                                  <div style={{ fontSize: 10, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.service}</div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{a.client}</div>
+                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{a.service}</div>
                                 </div>
                                 <div style={{ textAlign: "right", flexShrink: 0 }}>
                                   <div style={{ fontSize: 12, fontWeight: 700, color: days <= 7 ? "#c0392b" : "#c17f2a" }}>J-{days}</div>
-                                  <div style={{ fontSize: 10, color: "#8da4c0" }}>{(a.montant || 0).toLocaleString("fr-FR")} F</div>
+                                  <div style={{ fontSize: 11, color: "#8da4c0" }}>{(a.montant || 0).toLocaleString("fr-FR")} FCFA</div>
                                 </div>
                               </div>
                             );
@@ -1068,25 +1173,25 @@ export default function App() {
                     </div>
 
                     {/* Activité récente */}
-                    <div className="card-hover" style={{ ...S.card, padding: isMobile ? "12px" : "18px 20px", overflow: "hidden" }}>
+                    <div className="card-hover" style={S.card}>
                       <div style={S.cardHeader}>
                         <Icon d={ic.bell} size={16} stroke="#c17f2a" />
-                        <span style={{ ...S.cardTitle, fontSize: isMobile ? 12 : 13 }}>Activité récente</span>
+                        <span style={S.cardTitle}>Activité récente</span>
                       </div>
                       {activiteRecente.length === 0 ? (
                         <div style={S.empty}>Aucune activité récente</div>
                       ) : (
-                        <div style={{ display: "flex", flexDirection: "column" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                           {activiteRecente.map((item, i) => (
-                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: isMobile ? "9px 0" : "10px 0", borderBottom: i < activiteRecente.length - 1 ? "1px solid #f0f4fa" : "none", minWidth: 0 }}>
-                              <div style={{ width: 28, height: 28, borderRadius: 7, background: item.color + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>{item.emoji}</div>
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: i < activiteRecente.length - 1 ? "1px solid #f0f4fa" : "none" }}>
+                              <div style={{ width: 30, height: 30, borderRadius: 8, background: item.color + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>{item.emoji}</div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 11, fontWeight: 500, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</div>
+                                <div style={{ fontSize: 12, fontWeight: 500, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</div>
                                 <div style={{ fontSize: 10, color: "#8da4c0" }}>{item.date ? new Date(item.date).toLocaleDateString("fr-FR") : "—"}</div>
                               </div>
                               {item.montant !== null && item.montant !== undefined ? (
-                                <div style={{ fontSize: 11, fontWeight: 700, color: item.montant > 0 ? "#1a7a4a" : "#c0392b", flexShrink: 0, whiteSpace: "nowrap" }}>
-                                  {item.montant > 0 ? "+" : ""}{Math.abs(item.montant / 1000).toFixed(0)}k F
+                                <div style={{ fontSize: 12, fontWeight: 700, color: item.montant > 0 ? "#1a7a4a" : "#c0392b", flexShrink: 0 }}>
+                                  {item.montant > 0 ? "+" : ""}{Math.abs(item.montant).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
                                 </div>
                               ) : null}
                             </div>
@@ -1114,10 +1219,10 @@ export default function App() {
                               <div style={{ width: 24, height: 24, borderRadius: "50%", background: ["linear-gradient(135deg,#f6c90e,#e8a400)","#e8e8e8","#cd7f32","#e8f0fb"][i] || "#e8f0fb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: i === 0 ? "#7a5000" : "#6b8aaa", flexShrink: 0 }}>
                                 {i + 1}
                               </div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3, gap: 6 }}>
-                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nom}</span>
-                                  <span style={{ fontSize: 11, fontWeight: 700, color: "#1a5c9e", flexShrink: 0 }}>{(ca/1000).toFixed(0)}k</span>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{nom}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: "#1a5c9e" }}>{ca.toLocaleString("fr-FR")} FCFA</span>
                                 </div>
                                 <div style={{ height: 5, background: "#f0f4fa", borderRadius: 3, overflow: "hidden" }}>
                                   <div style={{ width: `${(ca / maxTopCA) * 100}%`, height: "100%", background: i === 0 ? "linear-gradient(90deg,#f6c90e,#e8a400)" : "#c8ddf5", borderRadius: 3 }} />
@@ -1169,18 +1274,18 @@ export default function App() {
             })()}
 
             {/* ── CLIENTS ── */}
-            {page === "clients" && canSee("clients") && (
+            {page === "clients" && (
               <div>
-                <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", marginBottom: 14, gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {["Tous", "Actif", "En attente", "Inactif"].map(f => (
                       <button key={f} onClick={() => setClientFilter(f)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: clientFilter === f ? "#1a5c9e" : "#fff", color: clientFilter === f ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12, fontWeight: 500 }}>{f}</button>
                     ))}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f5f8fc", border: "1px solid #87CEEB", borderRadius: 8, padding: "7px 14px", flex: isMobile ? 1 : "unset" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f5f8fc", border: "1px solid #87CEEB", borderRadius: 8, padding: "7px 14px" }}>
                       <Icon d={ic.search} size={15} stroke="#8da4c0" />
-                      <input placeholder="Rechercher un client…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#1e3a57", width: isMobile ? "100%" : 160 }} />
+                      <input placeholder="Rechercher un client…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ border: "none", background: "transparent", outline: "none", fontSize: 13, color: "#1e3a57", width: 160 }} />
                     </div>
                     {canDo("clients","modifier") && <button onClick={() => exportExcel(clients, [
                       { label: "Raison sociale", value: r => r.nom, width: 30 },
@@ -1206,18 +1311,18 @@ export default function App() {
                       <div key={c.id} style={{ ...S.card, padding: "14px 16px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                           <div style={{ width: 36, height: 36, borderRadius: 9, background: "linear-gradient(135deg,#2e7fcf,#1a5c9e)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>{c.nom?.charAt(0) || "?"}</div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 700, fontSize: 13, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.nom}</div>
-                            <div style={{ fontSize: 11, color: "#6b8aaa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.secteur}</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>{c.nom}</div>
+                            <div style={{ fontSize: 12, color: "#6b8aaa" }}>{c.secteur}</div>
                           </div>
-                          <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 20, flexShrink: 0, background: c.statut === "Actif" ? "#e8f5ee" : c.statut === "En attente" ? "#fff8e6" : "#f5f5f5", color: c.statut === "Actif" ? "#1a7a4a" : c.statut === "En attente" ? "#c17f2a" : "#8a9aac" }}>{c.statut}</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20, background: c.statut === "Actif" ? "#e8f5ee" : c.statut === "En attente" ? "#fff8e6" : "#f5f5f5", color: c.statut === "Actif" ? "#1a7a4a" : c.statut === "En attente" ? "#c17f2a" : "#8a9aac" }}>{c.statut}</span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div style={{ minWidth: 0, overflow: "hidden" }}>
-                            <span style={{ fontSize: 11, color: "#8da4c0" }}>CA : </span>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{c.ca}</span>
+                          <div>
+                            <span style={{ fontSize: 12, color: "#8da4c0" }}>CA : </span>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57" }}>{c.ca}</span>
                           </div>
-                          <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                          <div style={{ display: "flex", gap: 6 }}>
                             <button onClick={() => setViewClient(c)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                               <Icon d={ic.eye} size={14} stroke="#1a5c9e" />
                             </button>
@@ -1261,7 +1366,7 @@ export default function App() {
             )}
 
 {/* ── DEVIS ── */}
-            {page === "devis" && canSee("devis") && (() => {
+            {page === "devis" && (() => {
               // Build missions list from real services + defaults
               const DEFAULTS = [
                 { nom: "Conseils et stratégies financiers", groupe: "Assistance Comptable" },
@@ -1406,13 +1511,13 @@ export default function App() {
                             )}
                           </div>
                           <div style={{ flex: 1.2, fontSize: 11, color: "#6b8aaa", display: isMobile ? "none" : "block" }}>{line.groupe || "—"}</div>
-                          <div style={{ width: isMobile ? 50 : 60 }}>
+                          <div style={{ width: 60 }}>
                             <input type="number" min={1} value={line.qty} onChange={e => updateLine(i, "qty", parseInt(e.target.value) || 1)} style={{ ...S.select, width: "100%", textAlign: "center", padding: "8px 4px" }} />
                           </div>
-                          <div style={{ width: isMobile ? 90 : 130 }}>
-                            <input type="number" value={line.tarif || 0} onChange={e => updateLine(i, "tarif", parseFloat(e.target.value) || 0)} style={{ ...S.select, width: "100%", textAlign: "right", padding: "8px 6px", fontSize: isMobile ? 12 : 13 }} />
+                          <div style={{ width: 130 }}>
+                            <input type="number" value={line.tarif || 0} onChange={e => updateLine(i, "tarif", parseFloat(e.target.value) || 0)} style={{ ...S.select, width: "100%", textAlign: "right", padding: "8px 6px" }} />
                           </div>
-                          <div style={{ width: isMobile ? 90 : 130, textAlign: "right", fontSize: isMobile ? 12 : 13, fontWeight: 700, color: "#1a5c9e" }}>{((line.tarif || 0) * line.qty).toLocaleString("fr-FR")} FCFA</div>
+                          <div style={{ width: 130, textAlign: "right", fontSize: 13, fontWeight: 700, color: "#1a5c9e" }}>{((line.tarif || 0) * line.qty).toLocaleString("fr-FR")} FCFA</div>
                           <button onClick={() => removeLine(i)} style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid #e2eaf4", background: "#fff", cursor: "pointer", color: "#c0392b", fontSize: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
                         </div>
                       ))}
@@ -1558,7 +1663,7 @@ export default function App() {
 
 
             {/* ── RAPPORTS ── */}
-            {page === "rapports" && canSee("rapports") && (() => {
+            {page === "rapports" && (() => {
               const now = new Date();
               const annee = now.getFullYear();
               const moisNoms = ["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"];
@@ -2042,14 +2147,14 @@ export default function App() {
               const modules = [
                 { id: "dashboard", label: "📊 Dashboard" },
                 { id: "clients", label: "👥 Clients" },
-                { id: "devis", label: "📄 Devis" },
                 { id: "abonnements", label: "🔄 Abonnements" },
-                { id: "echeances", label: "📅 Échéances fiscales" },
-                { id: "rapports", label: "📈 Rapports" },
-                { id: "depenses", label: "💸 Dépenses" },
+                { id: "devis", label: "📄 Devis" },
                 { id: "services", label: "🛠 Services" },
-                { id: "documents", label: "📁 Documents" },
+                { id: "depenses", label: "💸 Dépenses" },
+                { id: "rapports", label: "📈 Rapports" },
+                { id: "echeances", label: "📅 Échéances fiscales" },
                 { id: "collab", label: "👤 Collaborateurs" },
+                { id: "documents", label: "📁 Documents" },
                 { id: "settings", label: "⚙️ Paramètres" },
               ];
               const actions = ["voir", "ajouter", "modifier", "supprimer"];
@@ -2084,30 +2189,9 @@ export default function App() {
                 });
               };
 
-              const collabsAvecPerms = collaborateurs;
-              const currentIndex = collabsAvecPerms.findIndex(c => c.id === permCollab.id);
-              const hasPrev = currentIndex > 0;
-              const hasNext = currentIndex < collabsAvecPerms.length - 1;
-              const goToCollab = (idx) => { const c = collabsAvecPerms[idx]; if (c) setPermCollab({ ...c, permissions: c.permissions || {} }); };
-
               return (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(10,30,60,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-                  <div style={{ background: "#fff", borderRadius: 16, width: "100%", maxWidth: 600, boxShadow: "0 8px 40px rgba(0,30,80,.18)", maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-
-                    {/* Barre de navigation */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 20px", borderBottom: "1px solid #e2eaf4", background: "#f5f8fc", borderRadius: "16px 16px 0 0", flexShrink: 0 }}>
-                      <button onClick={() => goToCollab(currentIndex - 1)} disabled={!hasPrev}
-                        style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: hasPrev ? "#fff" : "#f0f4fa", color: hasPrev ? "#1a5c9e" : "#b0c4d8", cursor: hasPrev ? "pointer" : "default", fontSize: 12, fontWeight: 600 }}>
-                        ← Précédent
-                      </button>
-                      <span style={{ fontSize: 12, color: "#6b8aaa", fontWeight: 600 }}>{currentIndex + 1} / {collabsAvecPerms.length}</span>
-                      <button onClick={() => goToCollab(currentIndex + 1)} disabled={!hasNext}
-                        style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: hasNext ? "#fff" : "#f0f4fa", color: hasNext ? "#1a5c9e" : "#b0c4d8", cursor: hasNext ? "pointer" : "default", fontSize: 12, fontWeight: 600 }}>
-                        Suivant →
-                      </button>
-                    </div>
-
-                    <div style={{ padding: 24, overflowY: "auto", flex: 1 }}>
+                  <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "100%", maxWidth: 600, boxShadow: "0 8px 40px rgba(0,30,80,.18)", maxHeight: "90vh", overflowY: "auto" }}>
                     {/* Header */}
                     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
                       <div style={{ width: 42, height: 42, borderRadius: "50%", background: "#1a5c9e", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15 }}>
@@ -2168,7 +2252,6 @@ export default function App() {
                         {permSaving ? "Enregistrement..." : "💾 Enregistrer"}
                       </button>
                     </div>
-                    </div>
                   </div>
                 </div>
               );
@@ -2224,7 +2307,7 @@ export default function App() {
               </div>
             )}
 
-            {page === "collab" && canSee("collab") && (() => {
+            {page === "collab" && (() => {
               const statutColors = {
                 "Associé":  { bg: "#e8f0fb", color: "#1a5c9e" },
                 "CDI":      { bg: "#e8f5ee", color: "#1a7a4a" },
@@ -2235,50 +2318,14 @@ export default function App() {
               const avatarColors = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22"];
               const getInitials = (nom) => nom.split(" ").map(w => w[0]).slice(0,2).join("").toUpperCase();
 
-              const MODULES_PERMS = [
-                { id: "dashboard", label: "Tableau de bord", emoji: "📊" },
-                { id: "clients", label: "Clients", emoji: "👥" },
-                { id: "devis", label: "Devis", emoji: "📄" },
-                { id: "depenses", label: "Dépenses", emoji: "💸" },
-                { id: "abonnements", label: "Abonnements", emoji: "🔄" },
-                { id: "documents", label: "Documents", emoji: "📁" },
-                { id: "rapports", label: "Rapports", emoji: "📈" },
-                { id: "collab", label: "Collaborateurs", emoji: "🤝" },
-                { id: "services", label: "Services", emoji: "🛠" },
-                { id: "echeances", label: "Échéances", emoji: "📅" },
-                { id: "settings", label: "Paramètres", emoji: "⚙️" },
-              ];
-              const ACTIONS_PERMS = ["voir", "ajouter", "modifier", "supprimer"];
-
               const saveCollab = async () => {
-                if (!newCollab.nom.trim()) { alert("Le nom est obligatoire."); return; }
+                if (!newCollab.nom.trim()) return;
                 setCollabSaving(true);
-                try {
-                  const token = session?.access_token || SUPABASE_KEY;
-                  const res = await fetch(`${SUPABASE_URL}/rest/v1/collaborateurs`, {
-                    method: "POST",
-                    headers: {
-                      apikey: SUPABASE_KEY,
-                      Authorization: `Bearer ${token}`,
-                      "Content-Type": "application/json",
-                      Prefer: "return=representation"
-                    },
-                    body: JSON.stringify(newCollab)
-                  });
-                  const data = await res.json().catch(() => ({}));
-                  if (!res.ok) {
-                    alert("Erreur Supabase : " + (data.message || data.error || res.status));
-                    return;
-                  }
-                  setShowAddCollab(false);
-                  setAddCollabTab(0);
-                  setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "", permissions: {} });
-                  loadAll();
-                } catch(e) {
-                  alert("Erreur réseau : " + e.message);
-                } finally {
-                  setCollabSaving(false);
-                }
+                await db.post("collaborateurs", newCollab);
+                setShowAddCollab(false);
+                setNewCollab({ nom: "", role: "", email: "", telephone: "", statut: "CDI", dossiers: 0, note: "" });
+                setCollabSaving(false);
+                loadAll();
               };
 
               const updateCollab = async () => {
@@ -2293,30 +2340,9 @@ export default function App() {
 
               const deleteCollab = async (id) => {
                 if (!window.confirm("Supprimer ce collaborateur ? Son accès à l'application sera immédiatement révoqué.")) return;
+                // Si c'est le collaborateur connecté, le déconnecter
                 const colToDelete = collaborateurs.find(c => c.id === id);
-                try {
-                  // 1. Supprimer dans la table collaborateurs
-                  await db.delete("collaborateurs", id);
-
-                  // 2. Supprimer le compte Auth Supabase via l'Edge Function sécurisée
-                  // (la clé service_role reste côté serveur, jamais exposée ici)
-                  if (colToDelete?.email) {
-                    const currentSession = auth.getSession();
-                    await fetch(`${SUPABASE_URL}/functions/v1/delete-collaborator`, {
-                      method: "POST",
-                      headers: {
-                        apikey: SUPABASE_KEY,
-                        Authorization: `Bearer ${currentSession?.access_token || SUPABASE_KEY}`,
-                        "Content-Type": "application/json"
-                      },
-                      body: JSON.stringify({ email: colToDelete.email })
-                    });
-                  }
-                } catch(e) {
-                  console.error("Erreur suppression:", e);
-                }
-
-                // 3. Si c'est le collaborateur connecté, le déconnecter
+                await db.delete("collaborateurs", id);
                 if (colToDelete?.email === session?.user?.email) {
                   auth.clearSession();
                   setSession(null);
@@ -2325,121 +2351,49 @@ export default function App() {
               };
 
 
-              const TABS_COLLAB = ["👤 Informations", "🔐 Permissions"];
-
               return (
                 <div>
-                  {/* Modal ajout collaborateur avec onglets */}
+                  {/* Modal ajout — même style que formulaire client */}
                   {showAddCollab && (
-                    <Modal title="Nouveau collaborateur" onClose={() => { setShowAddCollab(false); setAddCollabTab(0); }}>
-                      {/* Barre de navigation par onglets */}
-                      <div style={{ display: "flex", gap: 4, marginBottom: 20, background: "#f0f4fa", borderRadius: 10, padding: 4 }}>
-                        {TABS_COLLAB.map((tab, idx) => (
-                          <button key={idx} onClick={() => setAddCollabTab(idx)}
-                            style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600,
-                              background: addCollabTab === idx ? "#fff" : "transparent",
-                              color: addCollabTab === idx ? "#1a5c9e" : "#8da4c0",
-                              boxShadow: addCollabTab === idx ? "0 1px 4px rgba(0,30,80,0.1)" : "none",
-                              transition: "all 0.15s"
-                            }}>
-                            {tab}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Onglet 1 : Informations */}
-                      {addCollabTab === 0 && (<>
-                        {[
-                          { label: "Nom complet *", key: "nom", type: "text", placeholder: "Ex: Jean Dupont" },
-                          { label: "Rôle / Poste", key: "role", type: "text", placeholder: "Ex: Expert-comptable" },
-                          { label: "Email", key: "email", type: "email", placeholder: "jean.dupont@cabinet.fr" },
-                          { label: "Téléphone", key: "telephone", type: "tel", placeholder: "+237 6XX XXX XXX" },
-                          { label: "Dossiers assignés", key: "dossiers", type: "number", placeholder: "0" },
-                        ].map(field => (
-                          <div key={field.key} style={S.formGroup}>
-                            <label style={S.label}>{field.label}</label>
-                            <input
-                              type={field.type}
-                              value={newCollab[field.key] || ""}
-                              onChange={e => setNewCollab(p => ({ ...p, [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value }))}
-                              placeholder={field.placeholder}
-                              style={S.input}
-                            />
-                          </div>
-                        ))}
-                        <div style={S.formGroup}>
-                          <label style={S.label}>Statut</label>
-                          <select value={newCollab.statut || "CDI"} onChange={e => setNewCollab(p => ({ ...p, statut: e.target.value }))} style={S.select}>
-                            {["Associé","CDI","CDD","Stage","Freelance"].map(s => <option key={s}>{s}</option>)}
-                          </select>
-                        </div>
-                        <div style={S.formGroup}>
-                          <label style={S.label}>Note</label>
-                          <textarea
-                            value={newCollab.note || ""}
-                            onChange={e => setNewCollab(p => ({ ...p, note: e.target.value }))}
-                            placeholder="Informations complémentaires..."
-                            rows={2}
-                            style={{ ...S.input, resize: "vertical" }}
+                    <Modal title="Nouveau collaborateur" onClose={() => setShowAddCollab(false)}>
+                      {[
+                        { label: "Nom complet *", key: "nom", type: "text", placeholder: "Ex: Jean Dupont" },
+                        { label: "Rôle / Poste", key: "role", type: "text", placeholder: "Ex: Expert-comptable" },
+                        { label: "Email", key: "email", type: "email", placeholder: "jean.dupont@cabinet.fr" },
+                        { label: "Téléphone", key: "telephone", type: "tel", placeholder: "+237 6XX XXX XXX" },
+                        { label: "Dossiers assignés", key: "dossiers", type: "number", placeholder: "0" },
+                      ].map(field => (
+                        <div key={field.key} style={S.formGroup}>
+                          <label style={S.label}>{field.label}</label>
+                          <input
+                            type={field.type}
+                            value={newCollab[field.key] || ""}
+                            onChange={e => setNewCollab(p => ({ ...p, [field.key]: field.type === "number" ? Number(e.target.value) : e.target.value }))}
+                            placeholder={field.placeholder}
+                            style={S.input}
                           />
                         </div>
-                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
-                          <button onClick={() => { setShowAddCollab(false); setAddCollabTab(0); }} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
-                          <button onClick={() => setAddCollabTab(1)} style={{ ...S.primaryBtn, background: "#1a5c9e" }}>Suivant → Permissions</button>
-                        </div>
-                      </>)}
-
-                      {/* Onglet 2 : Permissions */}
-                      {addCollabTab === 1 && (<>
-                        <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #e2eaf4" }}>
-                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                            <thead>
-                              <tr style={{ background: "#f5f8fc" }}>
-                                <th style={{ padding: "8px 12px", textAlign: "left", color: "#4a6d8c", fontWeight: 700 }}>Module</th>
-                                {ACTIONS_PERMS.map(a => (
-                                  <th key={a} style={{ padding: "8px 8px", textAlign: "center", color: "#4a6d8c", fontWeight: 700, textTransform: "capitalize" }}>{a}</th>
-                                ))}
-                                <th style={{ padding: "8px 8px", textAlign: "center", color: "#8e44ad", fontWeight: 700 }}>Tout</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {MODULES_PERMS.map((mod, i) => {
-                                const allChecked = ACTIONS_PERMS.every(a => newCollab.permissions?.[mod.id]?.[a]);
-                                return (
-                                  <tr key={mod.id} style={{ background: i % 2 === 0 ? "#fff" : "#fafbfd", borderTop: "1px solid #f0f4fa" }}>
-                                    <td style={{ padding: "7px 12px", fontWeight: 600, color: "#1e3a57" }}>{mod.emoji} {mod.label}</td>
-                                    {ACTIONS_PERMS.map(action => (
-                                      <td key={action} style={{ textAlign: "center", padding: "7px 8px" }}>
-                                        <input type="checkbox"
-                                          checked={newCollab.permissions?.[mod.id]?.[action] || false}
-                                          onChange={() => setNewCollab(p => ({
-                                            ...p,
-                                            permissions: { ...p.permissions, [mod.id]: { ...(p.permissions?.[mod.id] || {}), [action]: !p.permissions?.[mod.id]?.[action] } }
-                                          }))}
-                                          style={{ width: 15, height: 15, accentColor: "#1a5c9e", cursor: "pointer" }}
-                                        />
-                                      </td>
-                                    ))}
-                                    <td style={{ textAlign: "center", padding: "7px 8px" }}>
-                                      <input type="checkbox" checked={allChecked}
-                                        onChange={() => setNewCollab(p => ({
-                                          ...p,
-                                          permissions: { ...p.permissions, [mod.id]: Object.fromEntries(ACTIONS_PERMS.map(a => [a, !allChecked])) }
-                                        }))}
-                                        style={{ width: 15, height: 15, accentColor: "#8e44ad", cursor: "pointer" }}
-                                      />
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
-                          <button onClick={() => setAddCollabTab(0)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>← Retour</button>
-                          <button onClick={saveCollab} disabled={collabSaving} style={{ ...S.primaryBtn, opacity: collabSaving ? 0.7 : 1 }}>{collabSaving ? "Enregistrement..." : "💾 Enregistrer"}</button>
-                        </div>
-                      </>)}
+                      ))}
+                      <div style={S.formGroup}>
+                        <label style={S.label}>Statut</label>
+                        <select value={newCollab.statut || "CDI"} onChange={e => setNewCollab(p => ({ ...p, statut: e.target.value }))} style={S.select}>
+                          {["Associé","CDI","CDD","Stage","Freelance"].map(s => <option key={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div style={S.formGroup}>
+                        <label style={S.label}>Note</label>
+                        <textarea
+                          value={newCollab.note || ""}
+                          onChange={e => setNewCollab(p => ({ ...p, note: e.target.value }))}
+                          placeholder="Informations complémentaires..."
+                          rows={2}
+                          style={{ ...S.input, resize: "vertical" }}
+                        />
+                      </div>
+                      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+                        <button onClick={() => setShowAddCollab(false)} style={{ padding: "9px 16px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Annuler</button>
+                        <button onClick={saveCollab} disabled={collabSaving} style={{ ...S.primaryBtn, opacity: collabSaving ? 0.7 : 1 }}>{collabSaving ? "Enregistrement..." : "Enregistrer"}</button>
+                      </div>
                     </Modal>
                   )}
                   {/* Modal édition — même style que formulaire client */}
@@ -2521,36 +2475,36 @@ export default function App() {
                         const sc = statutColors[c.statut] || statutColors["CDI"];
                         const avatarColor = avatarColors[i % avatarColors.length];
                         return (
-                          <div key={c.id} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12, overflow: "hidden", minWidth: 0 }}>
-                            {/* Avatar + infos + actions sur la même ligne */}
+                          <div key={c.id} className="card-hover" style={{ ...S.card, display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
+                            {/* Actions */}
+                            <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6 }}>
+                              {canDo("collab","modifier") && <button onClick={() => { setPermCollab({ ...c, permissions: c.permissions || {} }); setShowPermissions(true); }}
+                                title="Gérer les permissions" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
+                                🔒
+                              </button>}
+                              {canDo("collab","modifier") && <button onClick={() => { setAccesCollab(c); setAccesEmail(c.email || ""); setAccesPassword(""); setAccesMsg(null); setShowAccesCollab(true); }}
+                                title="Créer un accès" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
+                                🔑
+                              </button>}
+                              {canDo("collab","modifier") && <button onClick={() => { setEditCollab({ ...c }); setShowEditCollab(true); }}
+                                style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <Icon d={ic.edit} size={12} stroke="#4a6d8c" />
+                              </button>}
+                              {canDo("collab","supprimer") && <button onClick={() => deleteCollab(c.id)} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={12} stroke="#c0392b" /></button>}
+                            </div>
+                            {/* Avatar + infos */}
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                               <div style={{ width: 46, height: 46, borderRadius: "50%", background: avatarColor, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
                                 {getInitials(c.nom)}
                               </div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.nom}</div>
-                                <div style={{ fontSize: 12, color: "#6b8aaa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.role || "—"}</div>
-                              </div>
-                              {/* Actions inline */}
-                              <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                                {canDo("collab","modifier") && <button onClick={() => { setPermCollab({ ...c, permissions: c.permissions || {} }); setShowPermissions(true); }}
-                                  title="Gérer les permissions" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
-                                  🔒
-                                </button>}
-                                {canDo("collab","modifier") && <button onClick={() => { setAccesCollab(c); setAccesEmail(c.email || ""); setAccesPassword(""); setAccesMsg(null); setShowAccesCollab(true); }}
-                                  title="Créer un accès" style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #d4ecd4", background: "#f0faf0", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>
-                                  🔑
-                                </button>}
-                                {canDo("collab","modifier") && <button onClick={() => { setEditCollab({ ...c }); setShowEditCollab(true); }}
-                                  style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                  <Icon d={ic.edit} size={12} stroke="#4a6d8c" />
-                                </button>}
-                                {canDo("collab","supprimer") && <button onClick={() => deleteCollab(c.id)} style={{ width: 28, height: 28, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={12} stroke="#c0392b" /></button>}
+                              <div style={{ paddingRight: 60 }}>
+                                <div style={{ fontWeight: 700, fontSize: 14, color: "#1e3a57" }}>{c.nom}</div>
+                                <div style={{ fontSize: 12, color: "#6b8aaa" }}>{c.role || "—"}</div>
                               </div>
                             </div>
                             {/* Contact */}
-                            <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-                              {c.email && <div style={{ fontSize: 12, color: "#8da4c0", display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}><span style={{ flexShrink: 0 }}>📧</span><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.email}</span></div>}
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                              {c.email && <div style={{ fontSize: 12, color: "#8da4c0", display: "flex", alignItems: "center", gap: 6 }}>📧 {c.email}</div>}
                               {c.telephone && <div style={{ fontSize: 12, color: "#8da4c0", display: "flex", alignItems: "center", gap: 6 }}>📞 {c.telephone}</div>}
                             </div>
                             {/* Note */}
@@ -2572,8 +2526,8 @@ export default function App() {
             })()}
 
             {/* ── DOCUMENTS ── */}
-            {page === "documents" && canSee("documents") && (() => {
-              const categories = ["Tous", ...categoriesDocs];
+            {page === "documents" && (() => {
+              const categories = ["Tous", "Bilan", "Contrat", "Liasse", "Courrier", "Rapport", "Autre"];
               const extColor = (nom) => {
                 const ext = nom?.split(".").pop()?.toLowerCase();
                 if (ext === "pdf") return "#c0392b";
@@ -2602,13 +2556,15 @@ export default function App() {
                     const err = await uploadRes.json();
                     throw new Error(err.message || "Upload échoué");
                   }
-                  // 2. Sauvegarder la métadonnée en base (plus d'URL publique :
-                  //    le bucket est privé, l'URL est générée à la demande via storage.openDoc)
+                  // 2. URL publique
+                  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/documents/${fileName}`;
+                  // 3. Sauvegarder la métadonnée en base
                   await db.post("documents", {
                     nom: file.name,
                     type: newDocType,
                     client: newDocClient,
                     taille: file.size,
+                    url: publicUrl,
                     storage_path: fileName,
                   });
                   setShowAddDoc(false);
@@ -2652,7 +2608,7 @@ export default function App() {
                       <div style={S.formGroup}>
                         <label style={S.label}>Catégorie</label>
                         <select value={newDocType} onChange={e => setNewDocType(e.target.value)} style={S.select}>
-                          {categoriesDocs.map(t => <option key={t}>{t}</option>)}
+                          {["Bilan","Contrat","Liasse","Courrier","Rapport","Autre"].map(t => <option key={t}>{t}</option>)}
                         </select>
                       </div>
                       <div style={S.formGroup}>
@@ -2741,14 +2697,14 @@ export default function App() {
                           </div>
                           <div style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "#f0f4fa", color: "#4a6d8c", flexShrink: 0 }}>{d.type || "—"}</div>
                           <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0 }}>{formatSize(d.taille)}</div>
-                          {!isMobile && <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0 }}>{d.created_at ? new Date(d.created_at).toLocaleDateString("fr-FR") : "—"}</div>}
+                          <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0, minWidth: 80 }}>{d.created_at ? new Date(d.created_at).toLocaleDateString("fr-FR") : "—"}</div>
                           <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                            {d.storage_path && (
-                              <button onClick={() => storage.openDoc(d)}
-                                style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                            {d.url && (
+                              <a href={d.url} target="_blank" rel="noreferrer"
+                                style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #e2eaf4", background: "#f5f8fc", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}
                                 title="Télécharger">
                                 <Icon d={ic.download} size={13} stroke="#1a5c9e" />
-                              </button>
+                              </a>
                             )}
                             {canDo("documents","supprimer") && <button onClick={() => deleteDoc(d)} style={{ width: 30, height: 30, borderRadius: 7, border: "1px solid #fde8e8", background: "#fff5f5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon d={ic.trash} size={13} stroke="#c0392b" /></button>}
                           </div>
@@ -2762,7 +2718,7 @@ export default function App() {
 
 
             {/* ── ABONNEMENTS ── */}
-            {page === "abonnements" && canSee("abonnements") && (() => {
+            {page === "abonnements" && (() => {
               const actifs = abonnements.filter(a => a.statut === "Actif");
               const suspendus = abonnements.filter(a => a.statut === "Suspendu");
               const resilies = abonnements.filter(a => a.statut === "Résilié");
@@ -2895,7 +2851,7 @@ export default function App() {
                               <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
                                 <div style={{ width: mrr > 0 ? (mrrFreq/mrr*100) + "%" : "0%", height: "100%", background: "linear-gradient(90deg,#2e7fcf,#1a5c9e)", borderRadius: 4 }} />
                               </div>
-                              <div style={{ minWidth: isMobile ? 80 : 130, fontSize: isMobile ? 11 : 12, fontWeight: 700, color: "#1e3a57", textAlign: "right", flexShrink: 0 }}>{Math.round(mrrFreq).toLocaleString("fr-FR")} FCFA/mois</div>
+                              <div style={{ width: 130, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{Math.round(mrrFreq).toLocaleString("fr-FR")} FCFA/mois</div>
                             </div>
                           );
                         })}
@@ -2908,7 +2864,7 @@ export default function App() {
 
 
             {/* ── SERVICES ── */}
-            {page === "services" && canSee("services") && (() => {
+            {page === "services" && (() => {
               const GROUPES = ["Assistance Comptable", "Assistance Fiscale", "Assistance Sociale", "Assistance Juridique"];
               const groupColors = {
                 "Assistance Comptable": { color: "#1a5c9e", bg: "#e8f0fb", icon: ic.folder },
@@ -3039,13 +2995,13 @@ export default function App() {
 
 
             {/* ── DÉPENSES ── */}
-            {page === "depenses" && canSee("depenses") && (
+            {page === "depenses" && (
               <div>
                 {/* Période selector */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {[["jour", "Aujourd’hui"], ["semestre", "Semestre"], ["annee", "Année"], ["tout", "Tout"]].map(([val, label]) => (
-                      <button key={val} onClick={() => setDepensePeriode(val)} style={{ padding: isMobile ? "6px 10px" : "7px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: depensePeriode === val ? "#1a5c9e" : "#fff", color: depensePeriode === val ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: isMobile ? 11 : 12, fontWeight: 500, whiteSpace: "nowrap" }}>{label}</button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {[["jour", "Aujourd’hui"], ["semestre", "Ce semestre"], ["annee", "Cette année"], ["tout", "Tout"]].map(([val, label]) => (
+                      <button key={val} onClick={() => setDepensePeriode(val)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #e2eaf4", background: depensePeriode === val ? "#1a5c9e" : "#fff", color: depensePeriode === val ? "#fff" : "#4a6d8c", cursor: "pointer", fontSize: 12, fontWeight: 500 }}>{label}</button>
                     ))}
                   </div>
                   {canDo("depenses","modifier") && <button onClick={() => exportExcel(depenses, [
@@ -3099,12 +3055,12 @@ export default function App() {
                       <div style={S.cardHeader}><Icon d={ic.trend} size={16} stroke="#1a5c9e" /><span style={S.cardTitle}>Répartition par catégorie</span></div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         {Object.entries(cats).sort((a,b) => b[1]-a[1]).map(([cat, montant]) => (
-                          <div key={cat} style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12 }}>
-                            <div style={{ width: isMobile ? 70 : 100, fontSize: isMobile ? 10 : 12, color: "#4a6d8c", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat}</div>
+                          <div key={cat} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ width: 100, fontSize: 12, color: "#4a6d8c", flexShrink: 0 }}>{cat}</div>
                             <div style={{ flex: 1, height: 8, background: "#f0f4fa", borderRadius: 4, overflow: "hidden" }}>
                               <div style={{ width: `${total ? (montant/total*100) : 0}%`, height: "100%", background: catColors[cat] || "#1a5c9e", borderRadius: 4 }} />
                             </div>
-                            <div style={{ minWidth: isMobile ? 80 : 120, fontSize: isMobile ? 11 : 12, fontWeight: 700, color: "#1e3a57", textAlign: "right", flexShrink: 0 }}>{montant.toLocaleString("fr-FR")} FCFA</div>
+                            <div style={{ width: 120, fontSize: 12, fontWeight: 700, color: "#1e3a57", textAlign: "right" }}>{montant.toLocaleString("fr-FR")} FCFA</div>
                           </div>
                         ))}
                       </div>
@@ -3117,8 +3073,7 @@ export default function App() {
                   <div style={S.cardHeader}><Icon d={ic.depenses} size={16} stroke="#c0392b" /><span style={S.cardTitle}>Liste des dépenses — {{"jour": "Aujourd’hui", "semestre": "Ce semestre", "annee": "Cette année", "tout": "Tout"}[depensePeriode]}</span></div>
                   {filterDepenses(depensePeriode).length === 0 && <div style={S.empty}>Aucune dépense enregistrée pour cette période</div>}
                   {filterDepenses(depensePeriode).map((d, i) => {
-                    const PALETTE = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22","#7f8c8d","#16a085","#d35400","#8e44ad","#2c3e50"];
-                    const catColors = Object.fromEntries(categoriesDepenses.map((c, i) => [c, PALETTE[i % PALETTE.length]]));
+                    const catColors = { Fournitures: "#1a5c9e", Loyer: "#1a7a4a", Salaires: "#c17f2a", Transport: "#8e44ad", Informatique: "#c0392b", Communication: "#2980b9", Honoraires: "#e67e22", Autres: "#7f8c8d" };
                     const color = catColors[d.categorie] || "#6b8aaa";
                     return (
                       <div key={d.id} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #f0f4fa", flexWrap: isMobile ? "wrap" : "nowrap" }}>
@@ -3248,7 +3203,7 @@ export default function App() {
               </Modal>
             )}
 
-            {page === "echeances" && canSee("echeances") && (() => {
+            {page === "echeances" && (() => {
               const moisNoms = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
               const joursNoms = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
               const statutColor = { "À faire": "#c17f2a", "En cours": "#1a5c9e", "Fait": "#1a7a4a", "En retard": "#c0392b" };
@@ -3298,17 +3253,16 @@ export default function App() {
                   </div>
 
                   {/* Navigation mois */}
-                  <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", marginBottom: 14, gap: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <button onClick={() => { if (echeanceMois === 0) { setEcheanceMois(11); setEcheanceAnnee(y => y - 1); } else setEcheanceMois(m => m - 1); }}
                         style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #e2eaf4", background: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 16 }}>‹</button>
-                      <span style={{ fontSize: isMobile ? 13 : 15, fontWeight: 800, color: "#1e3a57", flex: 1, textAlign: "center" }}>{moisNoms[echeanceMois]} {echeanceAnnee}</span>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: "#1e3a57", minWidth: 160, textAlign: "center" }}>{moisNoms[echeanceMois]} {echeanceAnnee}</span>
                       <button onClick={() => { if (echeanceMois === 11) { setEcheanceMois(0); setEcheanceAnnee(y => y + 1); } else setEcheanceMois(m => m + 1); }}
                         style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #e2eaf4", background: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 16 }}>›</button>
                       <button onClick={() => { setEcheanceMois(now.getMonth()); setEcheanceAnnee(now.getFullYear()); }}
-                        style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: "#f5f8fc", color: "#4a6d8c", cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}>Aujourd'hui</button>
+                        style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #e2eaf4", background: "#f5f8fc", color: "#4a6d8c", cursor: "pointer", fontSize: 12 }}>Aujourd'hui</button>
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
                     {canDo("echeances","modifier") && <button onClick={() => exportExcel(echeances, [
                       { label: "Client", value: r => r.client, width: 30 },
                       { label: "Type", value: r => r.type, width: 35 },
@@ -3319,38 +3273,33 @@ export default function App() {
                     ], "echeances")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 9, background: "#e8f5ee", color: "#1a7a4a", border: "1px solid #c3e6cb", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
                       📥 Excel
                     </button>}
-                    {canDo("echeances","ajouter") && <button onClick={() => setShowAddEcheance(true)} style={{ ...S.primaryBtn, flex: isMobile ? 1 : "unset" }}>
+{canDo("echeances","ajouter") && <button onClick={() => setShowAddEcheance(true)} style={S.primaryBtn}>
                       <Icon d={ic.plus} size={14} stroke="#fff" /> Nouvelle échéance
                     </button>}
-                    </div>
                   </div>
 
                   {/* Calendrier */}
-                  <div className="card-hover" style={{ ...S.card, marginBottom: 16, overflow: "hidden", padding: isMobile ? "12px 8px" : "18px 20px" }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: isMobile ? 0 : 1, marginBottom: 4 }}>
+                  <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 1, marginBottom: 4 }}>
                       {joursNoms.map(j => (
-                        <div key={j} style={{ textAlign: "center", fontSize: isMobile ? 9 : 11, fontWeight: 700, color: "#8da4c0", padding: isMobile ? "4px 0" : "6px 0", overflow: "hidden" }}>{j}</div>
+                        <div key={j} style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: "#8da4c0", padding: "6px 0" }}>{j}</div>
                       ))}
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: isMobile ? 1 : 2 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
                       {jours.map((jour, i) => {
                         const estMoisCourant = jour.getMonth() === echeanceMois;
                         const estAujourdhui = jour.toDateString() === now.toDateString();
                         const echsJour = getEcheancesJour(jour);
                         return (
-                          <div key={i} style={{ minHeight: isMobile ? 34 : 70, borderRadius: isMobile ? 4 : 8, background: estAujourdhui ? "#e8f0fb" : estMoisCourant ? "#fff" : "#f9fafc", border: estAujourdhui ? "2px solid #1a5c9e" : "1px solid #f0f4fa", padding: isMobile ? 2 : 4, overflow: "hidden", boxSizing: "border-box" }}>
-                            <div style={{ fontSize: isMobile ? 9 : 11, fontWeight: estAujourdhui ? 800 : 500, color: estAujourdhui ? "#1a5c9e" : estMoisCourant ? "#1e3a57" : "#c0cfe0", textAlign: "right", marginBottom: 1, lineHeight: 1 }}>{jour.getDate()}</div>
-                            {!isMobile && echsJour.slice(0, 2).map((e, ei) => (
+                          <div key={i} style={{ minHeight: isMobile ? 44 : 70, borderRadius: 8, background: estAujourdhui ? "#e8f0fb" : estMoisCourant ? "#fff" : "#f9fafc", border: estAujourdhui ? "2px solid #1a5c9e" : "1px solid #f0f4fa", padding: 4 }}>
+                            <div style={{ fontSize: 11, fontWeight: estAujourdhui ? 800 : 500, color: estAujourdhui ? "#1a5c9e" : estMoisCourant ? "#1e3a57" : "#c0cfe0", textAlign: "right", marginBottom: 2 }}>{jour.getDate()}</div>
+                            {echsJour.slice(0, 2).map((e, ei) => (
                               <div key={ei} onClick={() => setViewEcheance(e)}
                                 style={{ fontSize: 9, fontWeight: 600, padding: "2px 4px", borderRadius: 3, background: statutColor[e.statut] || "#1a5c9e", color: "#fff", marginBottom: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: "pointer" }}>
                                 {e.client}
                               </div>
                             ))}
-                            {isMobile && echsJour.length > 0 && (
-                              <div onClick={() => setViewEcheance(echsJour[0])} style={{ width: "100%", height: 4, borderRadius: 2, background: statutColor[echsJour[0].statut] || "#1a5c9e", cursor: "pointer" }} />
-                            )}
-                            {!isMobile && echsJour.length > 2 && <div style={{ fontSize: 9, color: "#8da4c0", textAlign: "center" }}>+{echsJour.length - 2}</div>}
-                            {isMobile && echsJour.length > 1 && <div style={{ fontSize: 8, color: "#8da4c0", textAlign: "center", lineHeight: 1 }}>+{echsJour.length - 1}</div>}
+                            {echsJour.length > 2 && <div style={{ fontSize: 9, color: "#8da4c0", textAlign: "center" }}>+{echsJour.length - 2}</div>}
                           </div>
                         );
                       })}
@@ -3368,21 +3317,21 @@ export default function App() {
                       {echeancesDuMois.sort((a, b) => new Date(a.date_echeance) - new Date(b.date_echeance)).map((e, i) => {
                         const days = Math.round((new Date(e.date_echeance) - now) / 86400000);
                         return (
-                          <div key={e.id} onClick={() => setViewEcheance(e)} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderBottom: i < echeancesDuMois.length - 1 ? "1px solid #f0f4fa" : "none", cursor: "pointer" }}>
-                            <div style={{ width: 34, height: 34, borderRadius: 9, background: (statutColor[e.statut] || "#1a5c9e") + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              <span style={{ fontSize: 15 }}>{e.statut === "Fait" ? "✅" : e.statut === "En retard" ? "🔴" : e.statut === "En cours" ? "🔵" : "⏳"}</span>
+                          <div key={e.id} onClick={() => setViewEcheance(e)} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: i < echeancesDuMois.length - 1 ? "1px solid #f0f4fa" : "none", cursor: "pointer" }}>
+                            <div style={{ width: 36, height: 36, borderRadius: 9, background: (statutColor[e.statut] || "#1a5c9e") + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <span style={{ fontSize: 16 }}>{e.statut === "Fait" ? "✅" : e.statut === "En retard" ? "🔴" : e.statut === "En cours" ? "🔵" : "⏳"}</span>
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.client}</div>
-                              <div style={{ fontSize: 10, color: "#8da4c0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.type}</div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: "#1e3a57" }}>{e.client}</div>
+                              <div style={{ fontSize: 11, color: "#8da4c0" }}>{e.type}</div>
                             </div>
                             <div style={{ textAlign: "right", flexShrink: 0 }}>
                               <div style={{ fontSize: 12, fontWeight: 700, color: days < 0 ? "#c0392b" : days <= 7 ? "#c17f2a" : "#1a7a4a" }}>
-                                {days < 0 ? `+${Math.abs(days)}j` : days === 0 ? "⚡Auj." : `J-${days}`}
+                                {days < 0 ? `J+${Math.abs(days)}` : days === 0 ? "Aujourd'hui" : `J-${days}`}
                               </div>
                               <div style={{ fontSize: 10, color: "#8da4c0" }}>{new Date(e.date_echeance).toLocaleDateString("fr-FR")}</div>
                             </div>
-                            {!isMobile && <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: (prioriteColor[e.priorite] || "#1a5c9e") + "18", color: prioriteColor[e.priorite] || "#1a5c9e", flexShrink: 0 }}>{e.priorite}</span>}
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: (prioriteColor[e.priorite] || "#1a5c9e") + "18", color: prioriteColor[e.priorite] || "#1a5c9e", flexShrink: 0 }}>{e.priorite}</span>
                           </div>
                         );
                       })}
@@ -3401,18 +3350,14 @@ export default function App() {
             })()}
 
             {/* ── PARAMÈTRES ── */}
-            {page === "settings" && canSee("settings") && (
+            {page === "settings" && (
               <div style={{ maxWidth: 680 }}>
                 <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
-                  <div style={S.cardHeader}>
-                    <Icon d={ic.settings} size={16} stroke="#6b8aaa" />
-                    <span style={S.cardTitle}>Préférences</span>
-                    {!canDo("settings","modifier") && <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, background: "#f0f4fa", color: "#8da4c0", padding: "3px 8px", borderRadius: 6 }}>🔒 Lecture seule</span>}
-                  </div>
+                  <div style={S.cardHeader}><Icon d={ic.settings} size={16} stroke="#6b8aaa" /><span style={S.cardTitle}>Préférences</span></div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={S.formGroup}>
                       <label style={S.label}>Devise</label>
-                      <select style={S.select} disabled={!canDo("settings","modifier")}>
+                      <select style={S.select}>
                         <option>Franc CFA (XAF)</option>
                         <option>Dollar ($)</option>
                         <option>Euro (€)</option>
@@ -3420,7 +3365,7 @@ export default function App() {
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Taux de TVA par défaut</label>
-                      <select style={S.select} disabled={!canDo("settings","modifier")}>
+                      <select style={S.select}>
                         <option>19,25% (TVA Cameroun)</option>
                         <option>0% (Exonéré)</option>
                         <option>Suspension de TVA</option>
@@ -3428,7 +3373,7 @@ export default function App() {
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Référentiel comptable</label>
-                      <select style={S.select} disabled={!canDo("settings","modifier")}>
+                      <select style={S.select}>
                         <option>SYSCOHADA Révisé</option>
                         <option>SYSCOHADA</option>
                         <option>IFRS</option>
@@ -3436,150 +3381,25 @@ export default function App() {
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Exercice fiscal</label>
-                      <select style={S.select} disabled={!canDo("settings","modifier")}>
+                      <select style={S.select}>
                         <option>Janvier — Décembre</option>
                       </select>
                     </div>
                     <div style={S.formGroup}>
                       <label style={S.label}>Langue</label>
-                      <select style={S.select} disabled={!canDo("settings","modifier")}>
+                      <select style={S.select}>
                         <option>Français</option>
                         <option>Anglais</option>
                         <option>Bilingue (FR / EN)</option>
                       </select>
                     </div>
                   </div>
-                  {canDo("settings","modifier") && (
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                      <button style={S.primaryBtn}>Enregistrer</button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Section Catégories Dépenses */}
-                <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
-                  <div style={S.cardHeader}>
-                    <span style={{ fontSize: 16 }}>💸</span>
-                    <span style={S.cardTitle}>Catégories de dépenses</span>
-                    <span style={{ marginLeft: "auto", fontSize: 11, background: "#e8f0fb", color: "#1a5c9e", padding: "2px 8px", borderRadius: 10, fontWeight: 700 }}>{categoriesDepenses.length} catégorie{categoriesDepenses.length > 1 ? "s" : ""}</span>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                    <button style={S.primaryBtn}>Enregistrer</button>
                   </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-                    {categoriesDepenses.map((cat, i) => {
-                      const PALETTE = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22","#7f8c8d","#16a085","#d35400","#8e44ad","#2c3e50"];
-                      const color = PALETTE[i % PALETTE.length];
-                      return (
-                        <div key={cat} style={{ display: "flex", alignItems: "center", gap: 6, background: color + "18", border: `1px solid ${color}44`, borderRadius: 20, padding: "5px 12px" }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color }}>{cat}</span>
-                          {canDo("settings","modifier") && (
-                            <button onClick={async () => {
-                              if (!window.confirm(`Supprimer la catégorie "${cat}" ?`)) return;
-                              setCategoriesDepenses(categoriesDepenses.filter(c => c !== cat));
-                              await db.deleteWhere("categories_depenses", "nom", cat);
-                            }} style={{ background: "none", border: "none", cursor: "pointer", color, fontSize: 14, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}>×</button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {canDo("settings","modifier") && (
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <input
-                        value={newCatDepense}
-                        onChange={e => setNewCatDepense(e.target.value)}
-                        onKeyDown={async e => {
-                          if (e.key !== "Enter" || !newCatDepense.trim()) return;
-                          const nom = newCatDepense.trim();
-                          setNewCatDepense("");
-                          const result = await db.post("categories_depenses", { nom });
-                          if (result && (result.error || result.code)) {
-                            if (result.code === "23505") { alert("Cette catégorie existe déjà."); }
-                            else { alert("Erreur : " + (result.message || result.error)); }
-                            return;
-                          }
-                          loadAll();
-                        }}
-                        placeholder="Nouvelle catégorie... (Entrée pour valider)"
-                        style={{ ...S.input, flex: 1 }}
-                      />
-                      <button onClick={async () => {
-                        const nom = newCatDepense.trim();
-                        if (!nom) return;
-                        setNewCatDepense("");
-                        const result = await db.post("categories_depenses", { nom });
-                        if (result && (result.error || result.code)) {
-                          if (result.code === "23505") { alert("Cette catégorie existe déjà."); }
-                          else { alert("Erreur : " + (result.message || result.error)); }
-                          return;
-                        }
-                        loadAll();
-                      }} style={S.primaryBtn}>Ajouter</button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Section Catégories Documents */}
-                <div className="card-hover" style={{ ...S.card, marginBottom: 16 }}>
-                  <div style={S.cardHeader}>
-                    <span style={{ fontSize: 16 }}>📁</span>
-                    <span style={S.cardTitle}>Catégories de documents</span>
-                    <span style={{ marginLeft: "auto", fontSize: 11, background: "#e8f0fb", color: "#1a5c9e", padding: "2px 8px", borderRadius: 10, fontWeight: 700 }}>{categoriesDocs.length} catégorie{categoriesDocs.length > 1 ? "s" : ""}</span>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-                    {categoriesDocs.map((cat, i) => {
-                      const PALETTE = ["#1a5c9e","#1a7a4a","#c17f2a","#8e44ad","#c0392b","#2980b9","#e67e22","#7f8c8d","#16a085","#d35400"];
-                      const color = PALETTE[i % PALETTE.length];
-                      return (
-                        <div key={cat} style={{ display: "flex", alignItems: "center", gap: 6, background: color + "18", border: `1px solid ${color}44`, borderRadius: 20, padding: "5px 12px" }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color }}>{cat}</span>
-                          {canDo("settings","modifier") && (
-                            <button onClick={async () => {
-                              if (!window.confirm(`Supprimer la catégorie "${cat}" ?`)) return;
-                              setCategoriesDocs(categoriesDocs.filter(c => c !== cat));
-                              await db.deleteWhere("categories_documents", "nom", cat);
-                            }} style={{ background: "none", border: "none", cursor: "pointer", color, fontSize: 14, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}>×</button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {canDo("settings","modifier") && (
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <input
-                        value={newCatDoc}
-                        onChange={e => setNewCatDoc(e.target.value)}
-                        onKeyDown={async e => {
-                          if (e.key !== "Enter" || !newCatDoc.trim()) return;
-                          const nom = newCatDoc.trim();
-                          setNewCatDoc("");
-                          const result = await db.post("categories_documents", { nom });
-                          if (result && (result.error || result.code)) {
-                            if (result.code === "23505") { alert("Cette catégorie existe déjà."); }
-                            else { alert("Erreur : " + (result.message || result.error)); }
-                            return;
-                          }
-                          loadAll();
-                        }}
-                        placeholder="Nouvelle catégorie... (Entrée pour valider)"
-                        style={{ ...S.input, flex: 1 }}
-                      />
-                      <button onClick={async () => {
-                        const nom = newCatDoc.trim();
-                        if (!nom) return;
-                        setNewCatDoc("");
-                        const result = await db.post("categories_documents", { nom });
-                        if (result && (result.error || result.code)) {
-                          if (result.code === "23505") { alert("Cette catégorie existe déjà."); }
-                          else { alert("Erreur : " + (result.message || result.error)); }
-                          return;
-                        }
-                        loadAll();
-                      }} style={S.primaryBtn}>Ajouter</button>
-                    </div>
-                  )}
                 </div>
 
                 {/* Section Administration */}
-                {canDo("settings","supprimer") && (
                 <div className="card-hover" style={{ ...S.card, marginTop: 16, borderLeft: "4px solid #c0392b" }}>
                   <div style={S.cardHeader}>
                     <Icon d={ic.trash} size={16} stroke="#c0392b" />
@@ -3664,7 +3484,6 @@ export default function App() {
                     Les devis <b>Payés</b> ne peuvent jamais être supprimés pour des raisons de traçabilité comptable.
                   </div>
                 </div>
-                )}
               </div>
             )}
 
@@ -3688,8 +3507,8 @@ export default function App() {
       {/* MODALS */}
       {/* MODAL VISUALISATION CLIENT */}
       {viewClient && (
-        <Modal title="Fiche client" onClose={() => { setViewClient(null); setClientTab(0); }}>
-          <div style={{ paddingRight: 4, maxHeight: "70vh", overflowY: "auto" }}>
+        <Modal title="Fiche client" onClose={() => setViewClient(null)}>
+          <div style={{ paddingRight: 4 }}>
 
             {/* Entête */}
             <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, background: "linear-gradient(135deg,#e8f0fb,#f0f6ff)", marginBottom: 16 }}>
@@ -3701,97 +3520,37 @@ export default function App() {
               </div>
             </div>
 
-            {/* Onglets */}
-            <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "2px solid #f0f4fa", paddingBottom: 0 }}>
-              {[{ label: "📋 Fiche", idx: 0 }, { label: "🕘 Historique", idx: 1 }].map(t => (
-                <button key={t.idx} onClick={() => setClientTab(t.idx)} style={{ padding: "7px 16px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: clientTab === t.idx ? "#1a5c9e" : "transparent", color: clientTab === t.idx ? "#fff" : "#6b8aaa", marginBottom: -2, borderBottom: clientTab === t.idx ? "2px solid #1a5c9e" : "2px solid transparent" }}>
-                  {t.label}
-                </button>
+            {/* Identification */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+              {[
+                { label: "NIU", value: viewClient.nif },
+                { label: "N° RCCM", value: viewClient.rccm },
+                { label: "N° Récépissé", value: viewClient.numero_recepisse },
+                { label: "CA estimé", value: viewClient.ca ? Number(viewClient.ca).toLocaleString("fr-FR") + " FCFA/an" : null },
+                { label: "N° Patente", value: viewClient.patente },
+                { label: "Date de création", value: viewClient.date_creation ? new Date(viewClient.date_creation).toLocaleDateString("fr-FR") : null },
+                { label: "Date clôture", value: viewClient.date_cloture },
+              ].filter(f => f.value).map((f, i) => (
+                <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
+                  <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
+                  <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
+                </div>
               ))}
             </div>
 
-            {/* ── ONGLET FICHE ── */}
-            {clientTab === 0 && <>
-              {/* Identification */}
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📋 Identification</div>
+            {/* Localisation */}
+            {(viewClient.region || viewClient.adresse) && <>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#1a7a4a", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f5ee" }}>📍 Localisation</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
                 {[
-                  { label: "NIU", value: viewClient.nif },
-                  { label: "N° RCCM", value: viewClient.rccm },
-                  { label: "N° Récépissé", value: viewClient.numero_recepisse },
-                  { label: "CA estimé", value: viewClient.ca ? Number(viewClient.ca).toLocaleString("fr-FR") + " FCFA/an" : null },
-                  { label: "N° Patente", value: viewClient.patente },
-                  { label: "Date de création", value: viewClient.date_creation ? new Date(viewClient.date_creation).toLocaleDateString("fr-FR") : null },
-                  { label: "Date clôture", value: viewClient.date_cloture },
-                ].filter(f => f.value).map((f, i) => (
-                  <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                    <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                    <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Localisation */}
-              {(viewClient.region || viewClient.adresse) && <>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#1a7a4a", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f5ee" }}>📍 Localisation</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-                  {[
-                    { label: "Région", value: viewClient.region },
-                    { label: "Département", value: viewClient.departement },
-                    { label: "Arrondissement", value: viewClient.arrondissement },
-                    { label: "Adresse", value: viewClient.adresse },
-                    { label: "Téléphone", value: viewClient.telephone },
-                    { label: "Email", value: viewClient.email },
-                    { label: "Site web", value: viewClient.site_web },
-                  ].filter(f => f.value).map((f, i) => (
-                    <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                      <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                      <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
-                    </div>
-                  ))}
-                </div>
-              </>}
-
-              {/* Représentant légal */}
-              {viewClient.dirigeant && <>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "#8e44ad", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #f5eefb" }}>👤 Représentant légal</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-                  {[
-                    { label: "Dirigeant", value: viewClient.dirigeant },
-                    { label: "Téléphone", value: viewClient.tel_dirigeant },
-                    { label: "Email", value: viewClient.email_dirigeant },
-                  ].filter(f => f.value).map((f, i) => (
-                    <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                      <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                      <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
-                    </div>
-                  ))}
-                </div>
-              </>}
-
-              {/* Fiscalité */}
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📊 Fiscalité & Comptabilité</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-                {[
-                  { label: "Régime fiscal", value: viewClient.regime_fiscal },
-                  { label: "Centre des impôts", value: viewClient.centre_impots },
-                  { label: "TVA", value: viewClient.tva },
-                  { label: "Référentiel", value: viewClient.referentiel },
-                  { label: "Banque", value: viewClient.banque },
-                ].filter(f => f.value).map((f, i) => (
-                  <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
-                    <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
-                    <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Suivi cabinet */}
-              <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>🏢 Suivi cabinet</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {[
-                  { label: "Responsable", value: viewClient.responsable },
-                  { label: "Date d'entrée", value: viewClient.date_entree ? new Date(viewClient.date_entree).toLocaleDateString("fr-FR") : null },
+                  { label: "Région", value: viewClient.region },
+                  { label: "Département", value: viewClient.departement },
+                  { label: "Arrondissement", value: viewClient.arrondissement },
+                  { label: "Adresse", value: viewClient.adresse },
+                  { label: "Téléphone", value: viewClient.telephone },
+                  { label: "Email", value: viewClient.email },
+                  { label: "Site web", value: viewClient.site_web },
                 ].filter(f => f.value).map((f, i) => (
                   <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
                     <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
@@ -3801,119 +3560,57 @@ export default function App() {
               </div>
             </>}
 
-            {/* ── ONGLET HISTORIQUE ── */}
-            {clientTab === 1 && (() => {
-              const nom = viewClient.nom;
-              const clientDevis = devisList.filter(d => d.client === nom).sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at));
-              const clientAbos = abonnements.filter(a => a.client === nom);
-              const clientEch = echeances.filter(e => e.client === nom).sort((a, b) => new Date(b.date_echeance) - new Date(a.date_echeance));
-              const clientDocs = documents.filter(d => d.client === nom).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-              const caTotal = clientDevis.filter(d => d.statut === "Payé").reduce((s, d) => s + (d.total_ttc || 0), 0);
-              const sc = { "Payé": "#1a7a4a", "Enregistré": "#1a5c9e", "Envoyé": "#8e44ad", "Brouillon": "#c17f2a", "Annulé": "#c0392b" };
-
-              return (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-                  {/* KPIs rapides */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
-                    {[
-                      { label: "CA encaissé", value: caTotal.toLocaleString("fr-FR") + " FCFA", color: "#1a7a4a", bg: "#e8f5ee" },
-                      { label: "Devis", value: clientDevis.length, color: "#1a5c9e", bg: "#e8f0fb" },
-                      { label: "Abonnements", value: clientAbos.length, color: "#8e44ad", bg: "#f5eefb" },
-                      { label: "Documents", value: clientDocs.length, color: "#c17f2a", bg: "#fff8e6" },
-                    ].map((k, i) => (
-                      <div key={i} style={{ background: k.bg, borderRadius: 10, padding: "10px 12px", textAlign: "center" }}>
-                        <div style={{ fontSize: 15, fontWeight: 800, color: k.color }}>{k.value}</div>
-                        <div style={{ fontSize: 10, color: "#6b8aaa", fontWeight: 600, marginTop: 2 }}>{k.label}</div>
-                      </div>
-                    ))}
+            {/* Représentant légal */}
+            {viewClient.dirigeant && <>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#8e44ad", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #f5eefb" }}>👤 Représentant légal</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                {[
+                  { label: "Dirigeant", value: viewClient.dirigeant },
+                  { label: "Téléphone", value: viewClient.tel_dirigeant },
+                  { label: "Email", value: viewClient.email_dirigeant },
+                ].filter(f => f.value).map((f, i) => (
+                  <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
+                    <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
+                    <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
                   </div>
+                ))}
+              </div>
+            </>}
 
-                  {/* Devis */}
-                  {clientDevis.length > 0 && <>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>📄 Devis</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 10, overflow: "hidden", border: "1px solid #f0f4fa" }}>
-                      {clientDevis.map((d, i) => (
-                        <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: i % 2 === 0 ? "#fff" : "#fafcff", borderBottom: i < clientDevis.length - 1 ? "1px solid #f0f4fa" : "none" }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: (sc[d.statut] || "#ccc") + "18", color: sc[d.statut] || "#666", flexShrink: 0 }}>{d.statut}</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57" }}>{d.numero || "—"}</div>
-                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.date ? new Date(d.date).toLocaleDateString("fr-FR") : "—"}</div>
-                          </div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: sc[d.statut] || "#1e3a57", flexShrink: 0 }}>{(d.total_ttc || 0).toLocaleString("fr-FR")} FCFA</div>
-                        </div>
-                      ))}
-                    </div>
-                  </>}
-
-                  {/* Abonnements */}
-                  {clientAbos.length > 0 && <>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: "#8e44ad", textTransform: "uppercase", letterSpacing: 1, paddingBottom: 6, borderBottom: "2px solid #f5eefb" }}>🔄 Abonnements</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 10, overflow: "hidden", border: "1px solid #f0f4fa" }}>
-                      {clientAbos.map((a, i) => (
-                        <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: i % 2 === 0 ? "#fff" : "#fdf8ff", borderBottom: i < clientAbos.length - 1 ? "1px solid #f0f4fa" : "none" }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: a.statut === "Actif" ? "#e8f5ee" : "#fff0f0", color: a.statut === "Actif" ? "#1a7a4a" : "#c0392b", flexShrink: 0 }}>{a.statut}</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.service}</div>
-                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{a.frequence} · depuis {a.date_debut ? new Date(a.date_debut).toLocaleDateString("fr-FR") : "—"}</div>
-                          </div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: "#8e44ad", flexShrink: 0 }}>{(a.montant || 0).toLocaleString("fr-FR")} FCFA</div>
-                        </div>
-                      ))}
-                    </div>
-                  </>}
-
-                  {/* Échéances */}
-                  {clientEch.length > 0 && <>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: "#c0392b", textTransform: "uppercase", letterSpacing: 1, paddingBottom: 6, borderBottom: "2px solid #fff0f0" }}>📅 Échéances fiscales</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 10, overflow: "hidden", border: "1px solid #f0f4fa" }}>
-                      {clientEch.map((e, i) => {
-                        const days = Math.round((new Date(e.date_echeance) - new Date()) / 86400000);
-                        const isLate = e.statut !== "Fait" && days < 0;
-                        return (
-                          <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: i % 2 === 0 ? "#fff" : "#fffafa", borderBottom: i < clientEch.length - 1 ? "1px solid #f0f4fa" : "none" }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: e.statut === "Fait" ? "#e8f5ee" : isLate ? "#fff0f0" : "#fff8e6", color: e.statut === "Fait" ? "#1a7a4a" : isLate ? "#c0392b" : "#c17f2a", flexShrink: 0 }}>{e.statut}</span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.type}</div>
-                              <div style={{ fontSize: 11, color: "#8da4c0" }}>{e.date_echeance ? new Date(e.date_echeance).toLocaleDateString("fr-FR") : "—"}</div>
-                            </div>
-                            {e.statut !== "Fait" && <div style={{ fontSize: 12, fontWeight: 700, color: isLate ? "#c0392b" : "#c17f2a", flexShrink: 0 }}>{isLate ? `+${Math.abs(days)}j` : `J-${days}`}</div>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>}
-
-                  {/* Documents */}
-                  {clientDocs.length > 0 && <>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📎 Documents</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 10, overflow: "hidden", border: "1px solid #f0f4fa" }}>
-                      {clientDocs.map((d, i) => (
-                        <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: i % 2 === 0 ? "#fff" : "#fffdf5", borderBottom: i < clientDocs.length - 1 ? "1px solid #f0f4fa" : "none" }}>
-                          <span style={{ fontSize: 16 }}>📄</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nom}</div>
-                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.type} · {d.created_at ? new Date(d.created_at).toLocaleDateString("fr-FR") : "—"}</div>
-                          </div>
-                          {d.storage_path && <button onClick={() => storage.openDoc(d)} style={{ fontSize: 11, fontWeight: 700, color: "#1a5c9e", border: "none", cursor: "pointer", background: "#e8f0fb", padding: "3px 8px", borderRadius: 6 }}>Ouvrir</button>}
-                        </div>
-                      ))}
-                    </div>
-                  </>}
-
-                  {clientDevis.length === 0 && clientAbos.length === 0 && clientEch.length === 0 && clientDocs.length === 0 && (
-                    <div style={{ textAlign: "center", padding: 32, color: "#8da4c0", fontSize: 13 }}>
-                      <div style={{ fontSize: 32, marginBottom: 8 }}>📭</div>
-                      Aucune activité enregistrée pour ce client
-                    </div>
-                  )}
+            {/* Fiscalité */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#c17f2a", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #fff8e6" }}>📊 Fiscalité & Comptabilité</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+              {[
+                { label: "Régime fiscal", value: viewClient.regime_fiscal },
+                { label: "Centre des impôts", value: viewClient.centre_impots },
+                { label: "TVA", value: viewClient.tva },
+                { label: "Référentiel", value: viewClient.referentiel },
+                { label: "Banque", value: viewClient.banque },
+              ].filter(f => f.value).map((f, i) => (
+                <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
+                  <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
+                  <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
                 </div>
-              );
-            })()}
+              ))}
+            </div>
 
+            {/* Suivi cabinet */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#1a5c9e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10, paddingBottom: 6, borderBottom: "2px solid #e8f0fb" }}>🏢 Suivi cabinet</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {[
+                { label: "Responsable", value: viewClient.responsable },
+                { label: "Date d'entrée", value: viewClient.date_entree ? new Date(viewClient.date_entree).toLocaleDateString("fr-FR") : null },
+
+              ].filter(f => f.value).map((f, i) => (
+                <div key={i} style={{ background: "#f5f8fc", borderRadius: 8, padding: "8px 12px" }}>
+                  <div style={{ fontSize: 10, color: "#8da4c0", fontWeight: 600 }}>{f.label}</div>
+                  <div style={{ fontSize: 13, color: "#1e3a57", fontWeight: 600, marginTop: 2 }}>{f.value}</div>
+                </div>
+              ))}
+            </div>
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-            <button onClick={() => { setViewClient(null); setClientTab(0); }} style={{ padding: "9px 20px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Fermer</button>
+            <button onClick={() => setViewClient(null)} style={{ padding: "9px 20px", borderRadius: 9, background: "#f0f4fa", color: "#4a6d8c", border: "1px solid #e2eaf4", cursor: "pointer", fontSize: 13 }}>Fermer</button>
           </div>
         </Modal>
       )}
@@ -4407,7 +4104,7 @@ CGA-CDA — Centre de Gestion Agréé | NIU : M072116419497J<br/>
           <div style={S.formGroup}>
             <label style={S.label}>Catégorie</label>
             <select value={newDepense.categorie} onChange={e => setNewDepense(p => ({ ...p, categorie: e.target.value }))} style={S.select}>
-              {categoriesDepenses.map(c => <option key={c}>{c}</option>)}
+              {["Fournitures", "Loyer", "Salaires", "Transport", "Informatique", "Communication", "Honoraires", "Autres"].map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div style={S.formGroup}>
@@ -4425,3 +4122,20 @@ CGA-CDA — Centre de Gestion Agréé | NIU : M072116419497J<br/>
     </div>
   );
 }
+
+const S = {
+  card: { background: "#fff", borderRadius: 12, padding: "18px 20px", boxShadow: "0 1px 3px rgba(0,30,80,.06)" },
+  cardHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 14 },
+  cardTitle: { fontSize: 14, fontWeight: 700, color: "#1e3a57" },
+  empty: { fontSize: 13, color: "#8da4c0", padding: "12px 0", textAlign: "center" },
+  primaryBtn: { display: "flex", alignItems: "center", gap: 7, padding: "9px 18px", borderRadius: 9, background: "#1a5c9e", color: "#fff", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600 },
+  iconBtn: { background: "none", border: "none", cursor: "pointer", padding: 6 },
+  formGroup: { flex: 1, display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 },
+  label: { fontSize: 12, fontWeight: 600, color: "#4a6d8c" },
+  input: { padding: "9px 12px", borderRadius: 8, border: "1px solid #87CEEB", fontSize: 13, color: "#1e3a57", background: "#ffffff", outline: "none", fontFamily: "inherit" },
+  select: { padding: "9px 12px", borderRadius: 8, border: "1px solid #87CEEB", fontSize: 13, color: "#1e3a57", background: "#ffffff", outline: "none" },
+  overlay: { position: "fixed", inset: 0, background: "rgba(15,39,68,.5)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 1000, overflowY: "auto", padding: "20px 12px" },
+  modal: { background: "#fff", borderRadius: 16, padding: "24px 28px", width: "min(520px, 95vw)", maxWidth: "95vw", boxShadow: "0 20px 60px rgba(0,0,0,.2)", overflowX: "hidden", boxSizing: "border-box", margin: "auto" },
+  modalHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  modalTitle: { fontSize: 16, fontWeight: 700, color: "#1e3a57" },
+};
