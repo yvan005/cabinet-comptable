@@ -88,6 +88,23 @@ export default function App() {
   const [echeanceAnnee, setEcheanceAnnee] = useState(new Date().getFullYear());
   const [viewEcheance, setViewEcheance] = useState(null);
   const [showAddDoc, setShowAddDoc] = useState(false);
+  const [showChangePwd, setShowChangePwd] = useState(false);
+  const [newPwd1, setNewPwd1] = useState("");
+  const [newPwd2, setNewPwd2] = useState("");
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [pwdMsg, setPwdMsg] = useState(null);
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const changeMyPassword = async () => {
+    setPwdMsg(null);
+    if (newPwd1.length < 6) { setPwdMsg({ type: "error", text: "Le mot de passe doit faire au moins 6 caractères." }); return; }
+    if (newPwd1 !== newPwd2) { setPwdMsg({ type: "error", text: "Les deux mots de passe ne correspondent pas." }); return; }
+    setPwdSaving(true);
+    const { error } = await auth.updatePassword(newPwd1);
+    setPwdSaving(false);
+    if (error) { setPwdMsg({ type: "error", text: error.message }); return; }
+    setPwdMsg({ type: "success", text: "✅ Mot de passe mis à jour." });
+    setTimeout(() => { setShowChangePwd(false); setNewPwd1(""); setNewPwd2(""); setPwdMsg(null); }, 1500);
+  };
   const [docFilter, setDocFilter] = useState("Tous");
   const [newDocClient, setNewDocClient] = useState("");
   const [newDocType, setNewDocType] = useState("Autre");
@@ -602,6 +619,13 @@ export default function App() {
               <div style={{ fontSize: 10, color: "#6b8aaa" }}>Connecté</div>
             </div>
           </div>
+          <button onClick={() => { setShowChangePwd(true); setNewPwd1(""); setNewPwd2(""); setPwdMsg(null); }}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#b8cbe0", cursor: "pointer", fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 11H5a2 2 0 00-2 2v6a2 2 0 002 2h14a2 2 0 002-2v-6a2 2 0 00-2-2z M7 11V7a5 5 0 0110 0v4" />
+            </svg>
+            Changer mon mot de passe
+          </button>
           <button onClick={async () => { await auth.logout(session?.access_token); auth.clearSession(); setSession(null); }}
             style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, background: "rgba(192,57,43,0.12)", border: "1px solid rgba(192,57,43,0.25)", color: "#e87c6e", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -611,6 +635,44 @@ export default function App() {
           </button>
         </div>
       </aside>
+
+      {showChangePwd && (
+        <Modal title="Changer mon mot de passe" onClose={() => setShowChangePwd(false)}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "4px 0" }}>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#4a6d8c", display: "block", marginBottom: 4 }}>Nouveau mot de passe</label>
+              <div style={{ position: "relative" }}>
+                <input type={showNewPwd ? "text" : "password"} value={newPwd1} onChange={e => setNewPwd1(e.target.value)}
+                  style={{ width: "100%", padding: "9px 40px 9px 12px", borderRadius: 8, border: "1px solid #dde6f0", fontSize: 13, boxSizing: "border-box" }} />
+                <button type="button" onClick={() => setShowNewPwd(!showNewPwd)}
+                  style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#8da4c0", fontSize: 13 }}>
+                  {showNewPwd ? "🙈" : "👁️"}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "#4a6d8c", display: "block", marginBottom: 4 }}>Confirmer le mot de passe</label>
+              <div style={{ position: "relative" }}>
+                <input type={showNewPwd ? "text" : "password"} value={newPwd2} onChange={e => setNewPwd2(e.target.value)}
+                  style={{ width: "100%", padding: "9px 40px 9px 12px", borderRadius: 8, border: "1px solid #dde6f0", fontSize: 13, boxSizing: "border-box" }} />
+                <button type="button" onClick={() => setShowNewPwd(!showNewPwd)}
+                  style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#8da4c0", fontSize: 13 }}>
+                  {showNewPwd ? "🙈" : "👁️"}
+                </button>
+              </div>
+            </div>
+            {pwdMsg && (
+              <div style={{ fontSize: 12, fontWeight: 600, padding: "8px 10px", borderRadius: 8, background: pwdMsg.type === "error" ? "#fdeeee" : "#eaf7ee", color: pwdMsg.type === "error" ? "#c0392b" : "#1a7a4a" }}>
+                {pwdMsg.text}
+              </div>
+            )}
+            <button onClick={changeMyPassword} disabled={pwdSaving || !newPwd1 || !newPwd2}
+              style={{ width: "100%", padding: "10px 0", borderRadius: 8, border: "none", background: "#1a5c9e", color: "#fff", fontWeight: 700, fontSize: 13, cursor: pwdSaving ? "default" : "pointer", opacity: pwdSaving || !newPwd1 || !newPwd2 ? 0.6 : 1 }}>
+              {pwdSaving ? "Mise à jour…" : "Mettre à jour"}
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {/* MAIN */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden", position: "relative", ...(isMobile ? { width: "100%" } : {}) }}>
@@ -2612,12 +2674,14 @@ export default function App() {
                   }
                   // 2. Sauvegarder la métadonnée en base (plus d'URL publique :
                   //    le bucket est privé, l'URL est générée à la demande via storage.openDoc)
+                  const uploaderName = collaborateurs.find(c => c.email === session?.user?.email)?.nom || session?.user?.email || "Inconnu";
                   await db.post("documents", {
                     nom: file.name,
                     type: newDocType,
                     client: newDocClient,
                     taille: file.size,
                     storage_path: fileName,
+                    uploaded_by: uploaderName,
                   });
                   setShowAddDoc(false);
                   setSelectedFile(null);
@@ -2746,7 +2810,7 @@ export default function App() {
                           </div>
                           <div style={{ flex: 2, minWidth: 120 }}>
                             <div style={{ fontWeight: 600, fontSize: 13, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nom}</div>
-                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.client || "—"}</div>
+                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.client || "—"}{d.uploaded_by ? ` · déposé par ${d.uploaded_by}` : ""}</div>
                           </div>
                           <div style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 6, background: "#f0f4fa", color: "#4a6d8c", flexShrink: 0 }}>{d.type || "—"}</div>
                           <div style={{ fontSize: 12, color: "#8da4c0", flexShrink: 0 }}>{formatSize(d.taille)}</div>
@@ -3902,7 +3966,7 @@ export default function App() {
                           <span style={{ fontSize: 16 }}>📄</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 12, fontWeight: 600, color: "#1e3a57", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nom}</div>
-                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.type} · {d.created_at ? new Date(d.created_at).toLocaleDateString("fr-FR") : "—"}</div>
+                            <div style={{ fontSize: 11, color: "#8da4c0" }}>{d.type} · {d.created_at ? new Date(d.created_at).toLocaleDateString("fr-FR") : "—"}{d.uploaded_by ? ` · ${d.uploaded_by}` : ""}</div>
                           </div>
                           {d.storage_path && <button onClick={() => storage.openDoc(d)} style={{ fontSize: 11, fontWeight: 700, color: "#1a5c9e", border: "none", cursor: "pointer", background: "#e8f0fb", padding: "3px 8px", borderRadius: 6 }}>Ouvrir</button>}
                         </div>
