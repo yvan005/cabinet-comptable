@@ -51,9 +51,11 @@ const db = {
     });
   },
   async deleteWhere(table, col, val) {
+    const session = auth.getSession();
+    const token = session?.access_token || SUPABASE_KEY;
     await fetch(`${SUPABASE_URL}/rest/v1/${table}?${col}=eq.${encodeURIComponent(val)}`, {
       method: "DELETE",
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` }
     });
   }
 };
@@ -109,6 +111,21 @@ const auth = {
       body: JSON.stringify({ refresh_token: refreshToken })
     });
     return res.json();
+  },
+  // Permet à l'utilisateur connecté de changer SON PROPRE mot de passe
+  // (endpoint self-service standard de Supabase Auth, pas besoin de droits admin).
+  async updatePassword(newPassword) {
+    const session = this.getSession();
+    const token = session?.access_token;
+    if (!token) return { error: { message: "Non connecté" } };
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      method: "PUT",
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ password: newPassword })
+    });
+    const data = await res.json();
+    if (!res.ok) return { error: { message: data.msg || data.error_description || data.message || "Erreur lors du changement de mot de passe" } };
+    return { data };
   }
 };
 
