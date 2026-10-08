@@ -343,7 +343,6 @@ export default function App() {
   const [clientTab, setClientTab] = useState(0);
 
   const addEcheance = async () => {
-    console.log("addEcheance called", newEcheance);
     if (!newEcheance.client) { alert("Veuillez sélectionner un client."); return; }
     if (!newEcheance.types || newEcheance.types.length === 0) { alert("Veuillez choisir au moins un type d'échéance."); return; }
     if (!newEcheance.date_echeance) { alert("Veuillez choisir une date."); return; }
