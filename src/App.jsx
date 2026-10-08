@@ -99,11 +99,16 @@ export default function App() {
     if (newPwd1.length < 6) { setPwdMsg({ type: "error", text: "Le mot de passe doit faire au moins 6 caractères." }); return; }
     if (newPwd1 !== newPwd2) { setPwdMsg({ type: "error", text: "Les deux mots de passe ne correspondent pas." }); return; }
     setPwdSaving(true);
-    const { error } = await auth.updatePassword(newPwd1);
-    setPwdSaving(false);
-    if (error) { setPwdMsg({ type: "error", text: error.message }); return; }
-    setPwdMsg({ type: "success", text: "✅ Mot de passe mis à jour." });
-    setTimeout(() => { setShowChangePwd(false); setNewPwd1(""); setNewPwd2(""); setPwdMsg(null); }, 1500);
+    try {
+      const { error } = await auth.updatePassword(newPwd1);
+      if (error) { setPwdMsg({ type: "error", text: error.message }); return; }
+      setPwdMsg({ type: "success", text: "✅ Mot de passe mis à jour." });
+      setTimeout(() => { setShowChangePwd(false); setNewPwd1(""); setNewPwd2(""); setPwdMsg(null); }, 1500);
+    } catch (e) {
+      setPwdMsg({ type: "error", text: "Erreur réseau : " + e.message });
+    } finally {
+      setPwdSaving(false);
+    }
   };
   const [docFilter, setDocFilter] = useState("Tous");
   const [newDocClient, setNewDocClient] = useState("");
